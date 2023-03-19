@@ -13,11 +13,12 @@
 
 let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']
-let hex = ['a'-'f' 'A'-'F']
+let hex = '\\' 'x' ['a'-'f' 'A'-'F' '0'-'9']
 let white  = [' ' '\t' '\r']
-let common = [^ '\\' '\'' '\"']
-let escape =  ['\'' '\\' '\"' ] | ('\\' 'x' hex hex) | '\\' '0' | '\t' | '\r' | '\n'
-let char = common | escape       (* const characters *)
+let char_common = [^ '\\' '\'' '\"']
+let char_escape = '\\' ['n' 't' 'r' '0' '\\' '\'' '\"'] | hex
+let char_const = char_common | char_escape
+let char_string = [^ '\"' '\n'] | '\\' ['n' 't' 'r' '0' '\'' '\"'] | hex
 
 rule lexer = parse
   | "and"       { T_and }
@@ -62,16 +63,17 @@ rule lexer = parse
 
   (* TODO *)
   | '$' [^ '\n' '$']* { lexer lexbuf }              (* ignore one-line comments *)
-  
-    
-  | letter (letter | digit | '_')*  { T_identifier }
-  | digit+                  { T_integer }
-  | '\'' char '\''          { T_chr }
-  | '\n'                    { incr num_lines; lexer lexbuf }
-  | white+                  { lexer lexbuf }
-  | '"'                     { strings lexbuf }
-  
-  | eof       { T_eof } 
+
+
+  | letter (letter | digit | '_')*   { T_identifier }
+  | digit+                           { T_integer }
+  | '\'' char_const '\''             { T_chr }
+  | '\n'                             { incr num_lines; lexer lexbuf }
+  | white+                           { lexer lexbuf }
+  | '"' char_string* '\n'            { Printf.eprintf "String must close in the same line it start. Line %d. \n" !num_lines; strings lexbuf}
+  | '"' char_string* '"'             { T_string }
+
+  | eof       { T_eof }
   | _ as chr  { Printf.eprintf "Unknown character '%c' at line %d.\n" chr !num_lines; lexer lexbuf }
 
   and multi_comments = parse
@@ -81,11 +83,9 @@ rule lexer = parse
     | _    { multi_comments lexbuf }
 
   and strings = parse
-    | '"'                         { T_string }
-    | '\n'                        { Printf.eprintf "String must close in the same line it starts.Line %d.\n" !num_lines; lexer lexbuf}
-    | char*                       { strings lexbuf  }
-    | _ as chr                    { Printf.eprintf "Illegal character '%c' at string, line : %d.\n" chr !num_lines; lexer lexbuf }
-    
+    | _* '"'                        { lexer lexbuf }
+    | _ as chr                      { Printf.eprintf "Illegal character '%c' at string, line : %d.\n" chr !num_lines; lexer lexbuf }
+
 {
   let string_of_token token = 
     match token with
@@ -132,16 +132,12 @@ rule lexer = parse
       | T_string      ->  "T_string"
 
   let main =
-    let lexbuf = Lexing.from_channel stdin 
+    let lexbuf = Lexing.from_channel stdin
     in
       let rec loop () =
-        let token = lexer lexbuf 
+        let token = lexer lexbuf
         in
           Printf.printf "token=%s, lexeme=%s \n" (string_of_token token) (Lexing.lexeme lexbuf);
           if token <> T_eof then loop () in
-      loop ()    
+          loop ()
 }
-  
-
-
-  
