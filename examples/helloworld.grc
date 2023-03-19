@@ -1,4 +1,7 @@
 fun hello () : nothing
 {
     writeString("Hello World!!!");
+    writeString("");
+    writeString("Name:\t\"DouglasAda
+    ms\"\nValue:\t42\n");
 } 
