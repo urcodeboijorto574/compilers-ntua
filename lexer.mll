@@ -13,7 +13,7 @@
 
 let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']
-let hex = '\\' 'x' ['a'-'f' 'A'-'F' '0'-'9']
+let hex = '\\' 'x' ['a'-'f' 'A'-'F' '0'-'9'] ['a'-'f' 'A'-'F' '0'-'9']
 let white  = [' ' '\t' '\r']
 let char_common = [^ '\\' '\'' '\"']
 let char_escape = '\\' ['n' 't' 'r' '0' '\\' '\'' '\"'] | hex
@@ -60,18 +60,15 @@ rule lexer = parse
   | "<-"  { T_assignment }
 
   | "$$"              { multi_comments lexbuf }     (* multi-line comments *)
-
-  (* TODO *)
-  | '$' [^ '\n' '$']* { lexer lexbuf }              (* ignore one-line comments *)
-
+  | '$'               { comment lexbuf }
 
   | letter (letter | digit | '_')*   { T_identifier }
   | digit+                           { T_integer }
   | '\'' char_const '\''             { T_chr }
   | '\n'                             { incr num_lines; lexer lexbuf }
   | white+                           { lexer lexbuf }
-  | '"' char_string* '\n'            { Printf.eprintf "String must close in the same line it start. Line %d. \n" !num_lines; strings lexbuf}
   | '"' char_string* '"'             { T_string }
+  | '"' char_string* '\n'            { Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines; incr num_lines; strings lexbuf}
 
   | eof       { T_eof }
   | _ as chr  { Printf.eprintf "Unknown character '%c' at line %d.\n" chr !num_lines; lexer lexbuf }
@@ -81,6 +78,11 @@ rule lexer = parse
     | "$$" { lexer lexbuf }
     | eof  { Printf.eprintf "Error! Unclosed comment at line: %d.\n" !num_lines; T_eof }
     | _    { multi_comments lexbuf }
+
+  and comment = parse
+    | '\n' { incr num_lines; lexer lexbuf }
+    | eof  { T_eof }
+    | _    { comment lexbuf }
 
   and strings = parse
     | _* '"'                        { lexer lexbuf }
