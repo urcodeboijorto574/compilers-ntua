@@ -59,16 +59,21 @@ rule lexer = parse
   | ':'   { T_colon}
   | "<-"  { T_assignment }
 
-  | "$$"              { multi_comments lexbuf }     (* multi-line comments *)
-  | '$'               { comment lexbuf }
+  | "$$"  { multi_comments lexbuf }
+  | '$'   { comment lexbuf }
 
-  | letter (letter | digit | '_')*   { T_identifier }
-  | digit+                           { T_integer }
-  | '\'' char_const '\''             { T_chr }
-  | '\n'                             { incr num_lines; lexer lexbuf }
-  | white+                           { lexer lexbuf }
-  | '"' char_string* '"'             { T_string }
-  | '"' char_string* '\n'            { Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines; incr num_lines; strings lexbuf}
+  | letter (letter | digit | '_')*        { T_identifier }
+  | digit+                                { T_integer }
+  | '\'' char_const '\''                  { T_chr }
+  | '\n'                                  { incr num_lines; lexer lexbuf }
+  | white+                                { lexer lexbuf }
+  | '\"' char_string* '\"'                { T_string }
+  | '"' char_string* (('\n' | eof) as c)  {
+                                            Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines;
+                                            incr num_lines;
+                                            if c = "\n" then strings lexbuf
+                                            else             T_eof
+                                          }
 
   | eof       { T_eof }
   | _ as chr  { Printf.eprintf "Unknown character '%c' at line %d.\n" chr !num_lines; lexer lexbuf }
@@ -85,8 +90,13 @@ rule lexer = parse
     | _    { comment lexbuf }
 
   and strings = parse
-    | _* '"'                        { lexer lexbuf }
-    | _ as chr                      { Printf.eprintf "Illegal character '%c' at string, line : %d.\n" chr !num_lines; lexer lexbuf }
+    | char_string* '\"'                   { lexer lexbuf }
+    | char_string* (('\n' | eof) as c)    {
+                                            Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines;
+                                            incr num_lines;
+                                            if c = "\n" then strings lexbuf
+                                            else             T_eof
+                                          }
 
 {
   let string_of_token token = 
