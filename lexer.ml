@@ -1525,12 +1525,12 @@ and __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state =
 
   | 36 ->
 # 62 "lexer.mll"
-                      ( multi_comments lexbuf )
+          ( multi_comments lexbuf )
 # 1530 "lexer.ml"
 
   | 37 ->
 # 63 "lexer.mll"
-                      ( comment lexbuf )
+          ( comment lexbuf )
 # 1535 "lexer.ml"
 
   | 38 ->
@@ -1572,26 +1572,24 @@ let
 # 71 "lexer.mll"
                                           (
                                             Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines;
-                                            incr num_lines;
-                                            if c = "\n" then strings lexbuf
-                                            else             T_eof
+                                            incr num_lines; if c = "\n" then strings lexbuf else T_eof
                                           )
-# 1580 "lexer.ml"
+# 1578 "lexer.ml"
 
   | 45 ->
-# 78 "lexer.mll"
+# 76 "lexer.mll"
               ( T_eof )
-# 1585 "lexer.ml"
+# 1583 "lexer.ml"
 
   | 46 ->
 let
-# 79 "lexer.mll"
+# 77 "lexer.mll"
          chr
-# 1591 "lexer.ml"
+# 1589 "lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 79 "lexer.mll"
+# 77 "lexer.mll"
               ( Printf.eprintf "Unknown character '%c' at line %d.\n" chr !num_lines; lexer lexbuf )
-# 1595 "lexer.ml"
+# 1593 "lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state
@@ -1601,24 +1599,24 @@ and multi_comments lexbuf =
 and __ocaml_lex_multi_comments_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 82 "lexer.mll"
+# 80 "lexer.mll"
            ( incr num_lines; multi_comments lexbuf )
-# 1607 "lexer.ml"
+# 1605 "lexer.ml"
 
   | 1 ->
-# 83 "lexer.mll"
+# 81 "lexer.mll"
            ( lexer lexbuf )
-# 1612 "lexer.ml"
+# 1610 "lexer.ml"
 
   | 2 ->
-# 84 "lexer.mll"
+# 82 "lexer.mll"
            ( Printf.eprintf "Error! Unclosed comment at line: %d.\n" !num_lines; T_eof )
-# 1617 "lexer.ml"
+# 1615 "lexer.ml"
 
   | 3 ->
-# 85 "lexer.mll"
+# 83 "lexer.mll"
            ( multi_comments lexbuf )
-# 1622 "lexer.ml"
+# 1620 "lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_multi_comments_rec lexbuf __ocaml_lex_state
@@ -1628,19 +1626,19 @@ and comment lexbuf =
 and __ocaml_lex_comment_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 88 "lexer.mll"
+# 86 "lexer.mll"
            ( incr num_lines; lexer lexbuf )
-# 1634 "lexer.ml"
+# 1632 "lexer.ml"
 
   | 1 ->
-# 89 "lexer.mll"
+# 87 "lexer.mll"
            ( T_eof )
-# 1639 "lexer.ml"
+# 1637 "lexer.ml"
 
   | 2 ->
-# 90 "lexer.mll"
+# 88 "lexer.mll"
            ( comment lexbuf )
-# 1644 "lexer.ml"
+# 1642 "lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_comment_rec lexbuf __ocaml_lex_state
@@ -1652,31 +1650,29 @@ and strings lexbuf =
 and __ocaml_lex_strings_rec lexbuf __ocaml_lex_state =
   match Lexing.new_engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 93 "lexer.mll"
-                            ( lexer lexbuf )
-# 1658 "lexer.ml"
+# 91 "lexer.mll"
+                                          ( lexer lexbuf )
+# 1656 "lexer.ml"
 
   | 1 ->
 let
-# 94 "lexer.mll"
+# 92 "lexer.mll"
                                     c
-# 1664 "lexer.ml"
+# 1662 "lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_mem.(0) lexbuf.Lexing.lex_curr_pos in
-# 94 "lexer.mll"
-                                        (
+# 92 "lexer.mll"
+                                          (
                                             Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines;
-                                            incr num_lines;
-                                            if c = "\n" then strings lexbuf
-                                            else             T_eof
+                                            incr num_lines; if c = "\n" then strings lexbuf else T_eof
                                           )
-# 1673 "lexer.ml"
+# 1669 "lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_strings_rec lexbuf __ocaml_lex_state
 
 ;;
 
-# 101 "lexer.mll"
+# 97 "lexer.mll"
  
   let string_of_token token = 
     match token with
@@ -1732,4 +1728,4 @@ let
           if token <> T_eof then loop () in
           loop ()
 
-# 1736 "lexer.ml"
+# 1732 "lexer.ml"
