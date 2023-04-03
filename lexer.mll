@@ -9,14 +9,26 @@
       | T_identifier | T_integer | T_chr | T_string
 
     let num_lines = ref 1
+
+    let special c = match c with
+      | 'n' -> '\n'
+      | 't' -> '\t'
+      | 'r' -> '\r'
+      | '0' -> Char.chr 0
+      | '\\' -> '\\'
+      | '\'' -> '\''
+      | '"' -> '\"'
+      | _   -> assert false
 }
+
+
 
 let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']
 let hex = ['a'-'f' 'A'-'F']
 let white  = [' ' '\t' '\r']
 let common = [^ '\\' '\'' '\"']
-let escape =  ['\'' '\\' '\"' ] | ('\\' 'x' hex hex) | '\\' '0' | '\t' | '\r' | '\n'
+let escape =  '\\' (['\'' '\\' '\"' '0' 't' 'r' 'n']) | ('\\' 'x' hex hex) (*| '\t' | '\r' | '\n'*)
 let char = common | escape       (* const characters *)
 
 rule lexer = parse
@@ -69,7 +81,7 @@ rule lexer = parse
   | '\'' char '\''          { T_chr }
   | '\n'                    { incr num_lines; lexer lexbuf }
   | white+                  { lexer lexbuf }
-  | '"'                     { strings lexbuf }
+  | '"'                     { strings "\"" lexbuf }
   
   | eof       { T_eof } 
   | _ as chr  { Printf.eprintf "Unknown character '%c' at line %d.\n" chr !num_lines; lexer lexbuf }
@@ -80,10 +92,16 @@ rule lexer = parse
     | eof  { Printf.eprintf "Error! Unclosed comment at line: %d.\n" !num_lines; T_eof }
     | _    { multi_comments lexbuf }
 
-  and strings = parse
-    | '"'                         { T_string }
-    | '\n'                        { Printf.eprintf "String must close in the same line it starts.Line %d.\n" !num_lines; lexer lexbuf}
-    | char*                       { strings lexbuf  }
+  and strings acc = parse
+    | '"'                         { Printf.printf "token=T_string, lexeme=%s \n" (acc ^ (String.make 1 '"')); T_string; }
+    | '\n'                        { Printf.eprintf "String must close in the same line it starts.Line %d.\n" !num_lines; incr num_lines; lexer lexbuf}
+    | common as chr               { strings (acc ^ (String.make 1 chr)) lexbuf }
+    | escape as chr {
+      if (String.length chr == 2) then strings (acc ^ chr)(*(String.make 1 (chr.[1])))*) lexbuf
+      else if (String.length chr == 4) then strings (acc ^ chr) lexbuf
+      else assert false
+    }
+
     | _ as chr                    { Printf.eprintf "Illegal character '%c' at string, line : %d.\n" chr !num_lines; lexer lexbuf }
     
 {
@@ -131,12 +149,15 @@ rule lexer = parse
       | T_integer     ->  "T_integer"
       | T_string      ->  "T_string"
 
+  
+
   let main =
     let lexbuf = Lexing.from_channel stdin 
     in
       let rec loop () =
         let token = lexer lexbuf 
         in
+          if token <> T_string then
           Printf.printf "token=%s, lexeme=%s \n" (string_of_token token) (Lexing.lexeme lexbuf);
           if token <> T_eof then loop () in
       loop ()    
