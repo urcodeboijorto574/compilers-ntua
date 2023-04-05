@@ -1,9 +1,10 @@
 fun hello () : nothing
 {
-    writeString("Hello World!!!");
-    writeString("");
+    $ writeString("");
+    writeString("b");
+    $ writeString("Hello World!!!");
+    writeString("Name:\t\"DouglasAdams\"\nValue:\t42\n");
     $this is a single line comment
-    writeString("Name:\t\"Douglas\Adams\"\nValue:\t42\n");
     $$ this is gonna be the end of the program
        in the form of a multi line string $$
     var my_value <- 5

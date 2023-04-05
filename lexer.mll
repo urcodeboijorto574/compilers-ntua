@@ -13,12 +13,12 @@
 
 let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']
-let char_hex = '\\' 'x' ['a'-'f' 'A'-'F' '0'-'9'] ['a'-'f' 'A'-'F' '0'-'9']
+let char_hex = "\\x" ['a'-'f' 'A'-'F' '0'-'9'] ['a'-'f' 'A'-'F' '0'-'9']
 let white  = [' ' '\t' '\r']
-let char_common = [^ '\\' '\'' '\"']
-let char_escape = '\\' ['n' 't' 'r' '0' '\\' '\'' '\"'] | char_hex
+let char_common = [^ '\\' '\'' '"']
+let char_escape = '\\' ['n' 't' 'r' '0' '\\' '\'' '"'] | char_hex
 let char_const = char_common | char_escape
-let char_string = [^ '\"' '\n'] | char_escape
+let char_string = char_common # ['"' '\n' '\\'] | char_escape
 
 rule lexer = parse
   | "and"       { T_and }
@@ -67,7 +67,7 @@ rule lexer = parse
   | '\'' char_const '\''                  { T_chr }
   | '\n'                                  { incr num_lines; lexer lexbuf }
   | white+                                { lexer lexbuf }
-  | '\"' char_string* '\"'                { T_string }
+  | '"' char_string* '"'                  { T_string }
   | '"' char_string* (('\n' | eof) as c)  {
                                             Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines;
                                             incr num_lines; if c = "\n" then strings lexbuf else T_eof
@@ -145,6 +145,7 @@ rule lexer = parse
       let rec loop () =
         let token = lexer lexbuf
         in
+          if string_of_token token = "T_string" then
           Printf.printf "token=%s, lexeme=%s \n" (string_of_token token) (Lexing.lexeme lexbuf);
           if token <> T_eof then loop () in
           loop ()
