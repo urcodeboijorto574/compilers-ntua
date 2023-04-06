@@ -13,10 +13,12 @@
 
 let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']
-let char_hex = "\\x" ['a'-'f' 'A'-'F' '0'-'9'] ['a'-'f' 'A'-'F' '0'-'9']
+let digit_hex = ['a'-'f' 'A'-'F' '0'-'9']
+let char_hex = "\\x" digit_hex digit_hex
 let white  = [' ' '\t' '\r']
 let char_common = [^ '\\' '\'' '"']
 let char_escape = '\\' ['n' 't' 'r' '0' '\\' '\'' '"'] | char_hex
+let char_not_escape = '\\' [^ 'n' 't' 'r' '0' '\\' '\'' '"' 'x'] (* The characters that if written next to a front-slash, the front-slash is considered redundant *)
 let char_const = char_common | char_escape
 let char_string = char_common # ['"' '\n' '\\'] | char_escape
 
@@ -64,10 +66,10 @@ rule lexer = parse
 
   | letter (letter | digit | '_')*        { T_identifier }
   | digit+                                { T_integer }
-  | '\'' char_const '\''                  { T_chr }
   | '\n'                                  { incr num_lines; lexer lexbuf }
   | white+                                { lexer lexbuf }
-  | '"' char_string* '"'                  { T_string }
+  | '\'' char_const '\''                  { T_chr }
+  | '"' (char_string | char_not_escape)* '"'                  { T_string }
   | '"' char_string* (('\n' | eof) as c)  {
                                             Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines;
                                             incr num_lines; if c = "\n" then strings lexbuf else T_eof
@@ -89,10 +91,7 @@ rule lexer = parse
 
   and strings = parse
     | char_string* '\"'                   { lexer lexbuf }
-    | char_string* (('\n' | eof) as c)    {
-                                            Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines;
-                                            incr num_lines; if c = "\n" then strings lexbuf else T_eof
-                                          }
+    | char_string* (('\n' | eof) as c)    { incr num_lines; if c = "\n" then strings lexbuf else T_eof }
 
 {
   let string_of_token token = 
