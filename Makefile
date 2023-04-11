@@ -1,14 +1,41 @@
-.PHONY: all
+# OS type: Linux/Win DJGPP
+ifdef OS
+   EXE=.exe
+else
+   EXE=
+endif
 
-all: lexer
+OCAMLC_FLAGS=-g
+OCAMLC=ocamlc
+OCAMLDEP=ocamldep
 
-lexer: lexer.ml
-	ocamlopt -o lexer lexer.ml
+%.cmo: %.ml %.mli
+	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
 
-lexer.ml: lexer.mll
-	ocamllex lexer.mll
+%.cmi: %.mli
+	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
 
-test:
-	./lexer < examples/helloworld.grc
+%.cmo %.cmi: %.ml
+	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
 
-clean: rm -f lexer lexer.cmi lexer.cmx lexer.o
+grace$(EXE): Lexer.cmo Parser.cmo Main.cmo
+	$(OCAMLC) $(OCAMLC_FLAGS) -o $@ $^
+
+Lexer.ml: Lexer.mll
+	ocamllex -o $@ $<
+
+Parser.ml Parser.mli: Parser.mly
+	menhir -v Parser.mly
+
+.PHONY: clean distclean
+
+-include .depend
+
+depend: Lexer.ml Lexer.mli Parser.ml Parser.mli Main.ml
+	$(OCAMLDEP) $^ > .depend
+
+clean:
+	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output *.cmo *.cmi *~
+
+distclean: clean
+	$(RM) grace$(EXE) .depend
