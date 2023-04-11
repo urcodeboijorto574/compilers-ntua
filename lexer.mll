@@ -3,33 +3,24 @@
       | T_eof | T_and | T_char | T_div | T_do | T_else | T_fun | T_if
       | T_int | T_mod | T_not | T_nothing | T_or | T_ref | T_return
       | T_then | T_var | T_while | T_plus | T_minus | T_mul | T_equal
-      | T_times | T_less | T_greater | T_less_eq | T_greater_eq
+      | T_not_equal | T_less | T_greater | T_less_eq | T_greater_eq
       | T_left_par | T_right_par | T_left_sqr | T_right_sqr | T_left_br | T_right_br
       | T_comma | T_semicolon | T_colon | T_assignment
       | T_identifier | T_integer | T_chr | T_string
 
     let num_lines = ref 1
-
-    let special c = match c with
-      | 'n' -> '\n'
-      | 't' -> '\t'
-      | 'r' -> '\r'
-      | '0' -> Char.chr 0
-      | '\\' -> '\\'
-      | '\'' -> '\''
-      | '"' -> '\"'
-      | _   -> assert false
 }
-
-
 
 let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']
-let hex = ['a'-'f' 'A'-'F']
+let digit_hex = ['a'-'f' 'A'-'F' '0'-'9']
+let char_hex = "\\x" digit_hex digit_hex
 let white  = [' ' '\t' '\r']
-let common = [^ '\\' '\'' '\"']
-let escape =  '\\' (['\'' '\\' '\"' '0' 't' 'r' 'n']) | ('\\' 'x' hex hex) (*| '\t' | '\r' | '\n'*)
-let char = common | escape       (* const characters *)
+let char_common = [^ '\\' '\'' '"']
+let char_escape = '\\' ['n' 't' 'r' '0' '\\' '\'' '"'] | char_hex
+let char_not_escape = '\\' [^ 'n' 't' 'r' '0' '\\' '\'' '"' 'x'] (* The characters that, if written next to a front-slash, the front-slash is considered redundant *)
+let char_const = char_common | char_escape
+let char_string = char_common # ['"' '\n' '\\'] | char_escape
 
 rule lexer = parse
   | "and"       { T_and }
@@ -54,7 +45,7 @@ rule lexer = parse
   | '-'   { T_minus }
   | '*'   { T_mul }
   | '='   { T_equal }
-  | '#'   { T_times }
+  | '#'   { T_not_equal }
   | '<'   { T_less }
   | '>'   { T_greater }
   | "<="  { T_less_eq }
@@ -70,20 +61,19 @@ rule lexer = parse
   | ':'   { T_colon}
   | "<-"  { T_assignment }
 
-  | "$$"              { multi_comments lexbuf }     (* multi-line comments *)
+  | "$$"  { multi_comments lexbuf }
+  | '$'   { comment lexbuf }
 
-  (* TODO *)
-  | '$' [^ '\n' '$']* { lexer lexbuf }              (* ignore one-line comments *)
-  
-    
-  | letter (letter | digit | '_')*  { T_identifier }
-  | digit+                  { T_integer }
-  | '\'' char '\''          { T_chr }
-  | '\n'                    { incr num_lines; lexer lexbuf }
-  | white+                  { lexer lexbuf }
-  | '"'                     { strings "\"" lexbuf }
-  
-  | eof       { T_eof } 
+  | letter (letter | digit | '_')*            { T_identifier }
+  | digit+                                    { T_integer }
+  | '\n'                                      { incr num_lines; lexer lexbuf }
+  | white+                                    { lexer lexbuf }
+  | '\'' char_const '\''                      { T_chr }
+  | '"' (char_string | char_not_escape)* '"'  { T_string }
+  | '"' char_string* (('\n' | eof) as c)      { Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines;
+                                                incr num_lines; if c = "\n" then strings lexbuf else T_eof }
+
+  | eof       { T_eof }
   | _ as chr  { Printf.eprintf "Unknown character '%c' at line %d.\n" chr !num_lines; lexer lexbuf }
 
   and multi_comments = parse
@@ -92,18 +82,15 @@ rule lexer = parse
     | eof  { Printf.eprintf "Error! Unclosed comment at line: %d.\n" !num_lines; T_eof }
     | _    { multi_comments lexbuf }
 
-  and strings acc = parse
-    | '"'                         { Printf.printf "token=T_string, lexeme=%s \n" (acc ^ (String.make 1 '"')); T_string; }
-    | '\n'                        { Printf.eprintf "String must close in the same line it starts.Line %d.\n" !num_lines; incr num_lines; lexer lexbuf}
-    | common as chr               { strings (acc ^ (String.make 1 chr)) lexbuf }
-    | escape as chr {
-      if (String.length chr == 2) then strings (acc ^ chr)(*(String.make 1 (chr.[1])))*) lexbuf
-      else if (String.length chr == 4) then strings (acc ^ chr) lexbuf
-      else assert false
-    }
+  and comment = parse
+    | '\n' { incr num_lines; lexer lexbuf }
+    | eof  { T_eof }
+    | _    { comment lexbuf }
 
-    | _ as chr                    { Printf.eprintf "Illegal character '%c' at string, line : %d.\n" chr !num_lines; lexer lexbuf }
-    
+  and strings = parse
+    | char_string* '\"'                   { lexer lexbuf }
+    | char_string* (('\n' | eof) as c)    { incr num_lines; if c = "\n" then strings lexbuf else T_eof }
+
 {
   let string_of_token token = 
     match token with
@@ -129,7 +116,7 @@ rule lexer = parse
       | T_minus       ->  "T_minus"
       | T_mul         ->  "T_mul"
       | T_equal       ->  "T_equal"
-      | T_times       ->  "T_times"
+      | T_not_equal   ->  "T_not_equal"
       | T_less        ->  "T_less"
       | T_greater     ->  "T_greater"
       | T_less_eq     ->  "T_less_eq"
@@ -149,20 +136,12 @@ rule lexer = parse
       | T_integer     ->  "T_integer"
       | T_string      ->  "T_string"
 
-  
-
   let main =
-    let lexbuf = Lexing.from_channel stdin 
+    let lexbuf = Lexing.from_channel stdin in
+    let rec loop () =
+      let token = lexer lexbuf in
+      Printf.printf "token=%s, lexeme=%s \n" (string_of_token token) (Lexing.lexeme lexbuf);
+      if token <> T_eof then loop ()
     in
-      let rec loop () =
-        let token = lexer lexbuf 
-        in
-          if token <> T_string then
-          Printf.printf "token=%s, lexeme=%s \n" (string_of_token token) (Lexing.lexeme lexbuf);
-          if token <> T_eof then loop () in
-      loop ()    
+    loop ()
 }
-  
-
-
-  
