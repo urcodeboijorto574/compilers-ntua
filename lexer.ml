@@ -4,7 +4,7 @@
       | T_eof | T_and | T_char | T_div | T_do | T_else | T_fun | T_if
       | T_int | T_mod | T_not | T_nothing | T_or | T_ref | T_return
       | T_then | T_var | T_while | T_plus | T_minus | T_mul | T_equal
-      | T_times | T_less | T_greater | T_less_eq | T_greater_eq
+      | T_not_equal | T_less | T_greater | T_less_eq | T_greater_eq
       | T_left_par | T_right_par | T_left_sqr | T_right_sqr | T_left_br | T_right_br
       | T_comma | T_semicolon | T_colon | T_assignment
       | T_identifier | T_integer | T_chr | T_string
@@ -1520,7 +1520,7 @@ and __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state =
 
   | 21 ->
 # 48 "lexer.mll"
-          ( T_times )
+          ( T_not_equal )
 # 1525 "lexer.ml"
 
   | 22 ->
@@ -1605,32 +1605,32 @@ and __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state =
 
   | 38 ->
 # 67 "lexer.mll"
-                                          ( T_identifier )
+                                              ( T_identifier )
 # 1610 "lexer.ml"
 
   | 39 ->
 # 68 "lexer.mll"
-                                          ( T_integer )
+                                              ( T_integer )
 # 1615 "lexer.ml"
 
   | 40 ->
 # 69 "lexer.mll"
-                                          ( incr num_lines; lexer lexbuf )
+                                              ( incr num_lines; lexer lexbuf )
 # 1620 "lexer.ml"
 
   | 41 ->
 # 70 "lexer.mll"
-                                          ( lexer lexbuf )
+                                              ( lexer lexbuf )
 # 1625 "lexer.ml"
 
   | 42 ->
 # 71 "lexer.mll"
-                                          ( T_chr )
+                                              ( T_chr )
 # 1630 "lexer.ml"
 
   | 43 ->
 # 72 "lexer.mll"
-                                                                    ( T_string )
+                                              ( T_string )
 # 1635 "lexer.ml"
 
   | 44 ->
@@ -1640,26 +1640,24 @@ let
 # 1641 "lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_mem.(0) lexbuf.Lexing.lex_curr_pos in
 # 73 "lexer.mll"
-                                          (
-                                            Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines;
-                                            incr num_lines; if c = "\n" then strings lexbuf else T_eof
-                                          )
-# 1648 "lexer.ml"
+                                              ( Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines;
+                                                incr num_lines; if c = "\n" then strings lexbuf else T_eof )
+# 1646 "lexer.ml"
 
   | 45 ->
-# 78 "lexer.mll"
+# 76 "lexer.mll"
               ( T_eof )
-# 1653 "lexer.ml"
+# 1651 "lexer.ml"
 
   | 46 ->
 let
-# 79 "lexer.mll"
+# 77 "lexer.mll"
          chr
-# 1659 "lexer.ml"
+# 1657 "lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 79 "lexer.mll"
+# 77 "lexer.mll"
               ( Printf.eprintf "Unknown character '%c' at line %d.\n" chr !num_lines; lexer lexbuf )
-# 1663 "lexer.ml"
+# 1661 "lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_lexer_rec lexbuf __ocaml_lex_state
@@ -1669,24 +1667,24 @@ and multi_comments lexbuf =
 and __ocaml_lex_multi_comments_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 82 "lexer.mll"
+# 80 "lexer.mll"
            ( incr num_lines; multi_comments lexbuf )
-# 1675 "lexer.ml"
+# 1673 "lexer.ml"
 
   | 1 ->
-# 83 "lexer.mll"
+# 81 "lexer.mll"
            ( lexer lexbuf )
-# 1680 "lexer.ml"
+# 1678 "lexer.ml"
 
   | 2 ->
-# 84 "lexer.mll"
+# 82 "lexer.mll"
            ( Printf.eprintf "Error! Unclosed comment at line: %d.\n" !num_lines; T_eof )
-# 1685 "lexer.ml"
+# 1683 "lexer.ml"
 
   | 3 ->
-# 85 "lexer.mll"
+# 83 "lexer.mll"
            ( multi_comments lexbuf )
-# 1690 "lexer.ml"
+# 1688 "lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_multi_comments_rec lexbuf __ocaml_lex_state
@@ -1696,19 +1694,19 @@ and comment lexbuf =
 and __ocaml_lex_comment_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 88 "lexer.mll"
+# 86 "lexer.mll"
            ( incr num_lines; lexer lexbuf )
-# 1702 "lexer.ml"
+# 1700 "lexer.ml"
 
   | 1 ->
-# 89 "lexer.mll"
+# 87 "lexer.mll"
            ( T_eof )
-# 1707 "lexer.ml"
+# 1705 "lexer.ml"
 
   | 2 ->
-# 90 "lexer.mll"
+# 88 "lexer.mll"
            ( comment lexbuf )
-# 1712 "lexer.ml"
+# 1710 "lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_comment_rec lexbuf __ocaml_lex_state
@@ -1720,26 +1718,26 @@ and strings lexbuf =
 and __ocaml_lex_strings_rec lexbuf __ocaml_lex_state =
   match Lexing.new_engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 93 "lexer.mll"
+# 91 "lexer.mll"
                                           ( lexer lexbuf )
-# 1726 "lexer.ml"
+# 1724 "lexer.ml"
 
   | 1 ->
 let
-# 94 "lexer.mll"
+# 92 "lexer.mll"
                                     c
-# 1732 "lexer.ml"
+# 1730 "lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_mem.(0) lexbuf.Lexing.lex_curr_pos in
-# 94 "lexer.mll"
+# 92 "lexer.mll"
                                           ( incr num_lines; if c = "\n" then strings lexbuf else T_eof )
-# 1736 "lexer.ml"
+# 1734 "lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_strings_rec lexbuf __ocaml_lex_state
 
 ;;
 
-# 96 "lexer.mll"
+# 94 "lexer.mll"
  
   let string_of_token token = 
     match token with
@@ -1765,7 +1763,7 @@ let
       | T_minus       ->  "T_minus"
       | T_mul         ->  "T_mul"
       | T_equal       ->  "T_equal"
-      | T_times       ->  "T_times"
+      | T_not_equal   ->  "T_not_equal"
       | T_less        ->  "T_less"
       | T_greater     ->  "T_greater"
       | T_less_eq     ->  "T_less_eq"
@@ -1786,14 +1784,12 @@ let
       | T_string      ->  "T_string"
 
   let main =
-    let lexbuf = Lexing.from_channel stdin
+    let lexbuf = Lexing.from_channel stdin in
+    let rec loop () =
+      let token = lexer lexbuf in
+      Printf.printf "token=%s, lexeme=%s \n" (string_of_token token) (Lexing.lexeme lexbuf);
+      if token <> T_eof then loop ()
     in
-      let rec loop () =
-        let token = lexer lexbuf
-        in
-          if string_of_token token = "T_string" then
-          Printf.printf "token=%s, lexeme=%s \n" (string_of_token token) (Lexing.lexeme lexbuf);
-          if token <> T_eof then loop () in
-          loop ()
+    loop ()
 
-# 1800 "lexer.ml"
+# 1796 "lexer.ml"
