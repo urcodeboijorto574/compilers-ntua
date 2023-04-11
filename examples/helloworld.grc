@@ -1,4 +1,17 @@
 fun hello () : nothing
 {
+<<<<<<< HEAD
     writeString("Hello World!!!");
 } 
+=======
+    writeString("");
+    writeString("b");
+    writeString("Hello World!!!");
+    writeString("Name:\t\"Douglas\Adams\"\nValue:\t42\n\\");
+
+    $this is a single line comment
+    $$ this is gonna be the end of the program
+       in the form of a multi line string $$
+    var my_value <- 5
+} 
+>>>>>>> 8a50739d11a9426b32ab6d831cb55f28d719544c

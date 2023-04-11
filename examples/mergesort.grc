@@ -1,0 +1,103 @@
+fun sort () : nothing
+    var size, i : int;
+    var arr : int[128];
+    $$  Note: Due to the reason that we can't declare arrays with dynamically in Grace,
+        the maximum size that an array can have to be sorted with this function is 128.
+        For longer arrays, the value above should be changed. $$
+
+    fun mergesort (ref x : int[]; start, end : int) : nothing
+        var mid : int;
+
+        fun merge (n, start, mid, end : int; ref x : int[]) : nothing
+            var i, j, lsize, rsize : int;
+            var left : int[mid-start];
+            var right : int[end-mid];
+
+        { $ merge
+
+            if start >= end then
+                return;
+
+            lsize <- mid-start;
+            rsize <- end-mid;
+
+            i <- 0;
+            j <- start;
+            while i < lsize do {
+                left[i] <- x[j];
+                i <- i + 1;
+                j <- j + 1;
+            }
+
+            i <- 0;
+            j <- mid;
+            while i < rsize do {
+                right[i] <- x[j];
+                i <- i + 1;
+                j <- j + 1;
+            }
+
+            i <- 0;
+            j <- 0;
+            k <- start;
+            if left[i] < right[j] then {
+                x[k] <- left[i];
+                k <- k + 1;
+                i <- i + 1;
+                if i = lsize then {
+                    while j < rsize do {
+                        x[k] <- right[j];
+                        k <- k + 1;
+                        j <- j + 1;
+                    }
+                }
+
+            } else {
+                x[k] <- right[j];
+                k <- k + 1;
+                j <- j + 1;
+                if j = rsize then {
+                    while i < lsize do {
+                        x[k] <- left[i];
+                        k <- k + 1;
+                        i <- i + 1;
+                    }
+                }
+            }
+        }
+
+    { $ mergesort
+
+        if start >= end - 1 then
+            return;
+
+        mid <- start + (end - start) / 2;
+
+        mergesort(x, start, end);
+        mergesort(x, mid, end);
+
+        merge(x, start, mid, end);
+    }
+
+{ $ sort
+
+    writeString("Size: ");
+    size <- readInteger();
+
+    i <- 0;
+    while i < size do {
+        arr[i] <- readInteger();
+        i <- i + 1;
+    }
+
+    mergesort(arr, 0, size);
+
+    writeInteger(arr[0]);
+    i <- 1;
+    while i < size do {
+        writeString(" ");
+        writeInteger(arr[i]);
+        i <- i + 1;
+    }
+    writeChar('\n');
+}

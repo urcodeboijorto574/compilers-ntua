@@ -9,6 +9,7 @@
       | T_identifier | T_integer | T_chr | T_string
 
     let num_lines = ref 1
+    open Parser
 }
 
 let digit = ['0'-'9']
@@ -136,12 +137,12 @@ rule lexer = parse
       | T_integer     ->  "T_integer"
       | T_string      ->  "T_string"
 
-  let main =
+  (* let main =
     let lexbuf = Lexing.from_channel stdin in
     let rec loop () =
       let token = lexer lexbuf in
       Printf.printf "token=%s, lexeme=%s \n" (string_of_token token) (Lexing.lexeme lexbuf);
       if token <> T_eof then loop ()
     in
-    loop ()
+    loop () *)
 }
