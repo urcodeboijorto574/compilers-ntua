@@ -4,5 +4,7 @@ In this project will be implemented a compiler for the programming language Grac
 Run until Parser:
 
 make depend
+
 make
+
 ./grace < ./examples/bsort.grc
