@@ -54,7 +54,7 @@ header_rr   : T_semicolon fpar_def { () }
 
 fpar_def    : T_ref? T_identifier fpar_def_r T_colon fpar_type { () }
 
-fpar_def_r  : (* nothing *) { () }      /* ---------------------------- */
+fpar_def_r  : (* nothing *) { () }      /* ----------------------------------------- */
             | T_comma T_identifier fpar_def_r { () }
 
 data_type   : T_int { () }
@@ -62,7 +62,7 @@ data_type   : T_int { () }
 
 mytype      : data_type mytype_r { () }
 
-mytype_r    : (* nothing *) { () }     /*  ---------------------------------------- */
+mytype_r    : (* nothing *) { () }      /* ----------------------------------------- */
             | T_left_sqr T_integer T_right_sqr mytype_r { () }
 
 ret_type    : data_type { () }
