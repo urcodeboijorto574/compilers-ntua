@@ -2,3 +2,6 @@ Lexer
 Lexer.cmi
 Lexer.cmx
 Lexer.o
+Parser.conflicts
+*.cmo
+*.cmi
