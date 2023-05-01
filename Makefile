@@ -35,7 +35,7 @@ depend: Lexer.ml Lexer.mli Parser.ml Parser.mli Main.ml
 	$(OCAMLDEP) $^ > .depend
 
 clean:
-	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output *.cmo *.cmi *~
+	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer.cmx grace Lexer Lexer.o Parser.automaton Parser.conflicts .depend *.cmo *.cmi *~ 
 
 distclean: clean
 	$(RM) grace$(EXE) .depend

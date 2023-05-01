@@ -100,45 +100,56 @@ and strings = parse
 {
   let string_of_token token =
     match token with
-    | T_eof         ->  "T_eof"
-    | T_and         ->  "T_and"
-    | T_char        ->  "T_char"
-    | T_div         ->  "T_div"
-    | T_do          ->  "T_do"
-    | T_else        ->  "T_else"
-    | T_fun         ->  "T_fun"
-    | T_if          ->  "T_if"
-    | T_int         ->  "T_int"
-    | T_mod         ->  "T_mod"
-    | T_not         ->  "T_not"
-    | T_nothing     ->  "T_nothing"
-    | T_or          ->  "T_or"
-    | T_ref         ->  "T_ref"
-    | T_return      ->  "T_return"
-    | T_then        ->  "T_then"
-    | T_var         ->  "T_var"
-    | T_while       ->  "T_while"
-    | T_plus        ->  "T_plus"
-    | T_minus       ->  "T_minus"
-    | T_mul         ->  "T_mul"
-    | T_equal       ->  "T_equal"
-    | T_not_equal   ->  "T_not_equal"
-    | T_less        ->  "T_less"
-    | T_greater     ->  "T_greater"
-    | T_less_eq     ->  "T_less_eq"
-    | T_greater_eq  ->  "T_greater_eq"
-    | T_left_par    ->  "T_left_par"
-    | T_right_par   ->  "T_right_par"
-    | T_left_sqr    ->  "T_left_sqr"
-    | T_right_sqr   ->  "T_right_sqr"
-    | T_left_br     ->  "T_left_br"
-    | T_right_br    ->  "T_right_br"
-    | T_comma       ->  "T_comma"
-    | T_semicolon   ->  "T_semicolon"
-    | T_colon       ->  "T_colon"
-    | T_assignment  ->  "T_assignment"
-    | T_chr c       ->  String.make 1 c
-    | T_identifier  ->  "T_identifier"
-    | T_integer i   ->  (string_of_int i)
-    | T_string s    ->  s
+      | T_eof         ->  "T_eof"
+      | T_and         ->  "T_and"
+      | T_char        ->  "T_char" 
+      | T_div         ->  "T_div"
+      | T_do          ->  "T_do"
+      | T_else        ->  "T_else"
+      | T_fun         ->  "T_fun"
+      | T_if          ->  "T_if"
+      | T_int         ->  "T_int"  
+      | T_mod         ->  "T_mod" 
+      | T_not         ->  "T_not"
+      | T_nothing     ->  "T_nothing"
+      | T_or          ->  "T_or"
+      | T_ref         ->  "T_ref"
+      | T_return      ->  "T_return"
+      | T_then        ->  "T_then"
+      | T_var         ->  "T_var"
+      | T_while       ->  "T_while"
+      | T_plus        ->  "T_plus"
+      | T_minus       ->  "T_minus"
+      | T_mul         ->  "T_mul"
+      | T_equal       ->  "T_equal"
+      | T_not_equal   ->  "T_not_equal"
+      | T_less        ->  "T_less"
+      | T_greater     ->  "T_greater"
+      | T_less_eq     ->  "T_less_eq"
+      | T_greater_eq  ->  "T_greater_eq"
+      | T_left_par    ->  "T_left_par"
+      | T_right_par   ->  "T_right_par"
+      | T_left_sqr    ->  "T_left_sqr"
+      | T_right_sqr   ->  "T_right_sqr"
+      | T_left_br     ->  "T_left_br"
+      | T_right_br    ->  "T_right_br"
+      | T_comma       ->  "T_comma"
+      | T_semicolon   ->  "T_semicolon"
+      | T_colon       ->  "T_colon"
+      | T_assignment  ->  "T_assignment"
+      | T_chr         ->  "T_chr"
+      | T_identifier  ->  "T_identifier"
+      | T_integer     ->  "T_integer"
+      | T_string      ->  "T_string"
+
+  (* let main =
+    let lexbuf = Lexing.from_channel stdin 
+    in
+      let rec loop () =
+        let token = lexer lexbuf 
+        in
+          Printf.printf "token=%s, lexeme=%s \n" (string_of_token token) (Lexing.lexeme lexbuf);
+          if token <> T_eof then loop () in
+      loop ()  *)  
 }
+  
