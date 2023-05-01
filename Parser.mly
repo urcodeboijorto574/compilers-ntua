@@ -33,11 +33,12 @@
 %left T_mul T_mod T_div
 
 %nonassoc T_equal T_not_equal T_less_eq T_greater_eq T_less T_greater
-%nonassoc T_then T_else
+/* %nonassoc T_then T_else */
 
 
 %start program
 %type <unit> program
+%type<unit> func_def
 
 %%
 
@@ -48,9 +49,10 @@ func_def    : header local_def* block { () }
 
 header      : T_fun T_identifier T_left_par header_r? T_right_par T_colon ret_type { () }
 
-header_r    : fpar_def header_rr*  { () }
+header_r    : fpar_def header_rr  { () }
 
-header_rr   : T_semicolon fpar_def { () }
+header_rr   : (* nothing *) { () }
+            | T_semicolon fpar_def header_rr { () }
 
 fpar_def    : T_ref? T_identifier fpar_def_r T_colon fpar_type { () }
 
@@ -90,16 +92,18 @@ stmt        : T_semicolon { () }
             | l_value T_assignment expr T_semicolon { () }
             | block { () }
             | func_call T_semicolon { () }
-            | T_if cond T_then stmt T_else stmt { () }
-            | T_if cond T_then stmt { () }
+            | T_if cond T_then else_stmt? { () }
+            // | T_if cond T_then stmt T_else stmt { () }
             | T_while cond T_do stmt { () }
             | T_return expr? T_semicolon { () }
+
+else_stmt   : T_else stmt { () }
 
 block       : T_left_br stmt* T_right_br { () }
 
 func_call   : T_identifier T_left_par func_call_rr? T_right_par { () }
 
-func_call_rr :  expr func_call_r   { () }
+func_call_rr : expr func_call_r   { () }
 
 func_call_r : (* nothing *) { () }  /* ------------------- */
             | T_comma expr func_call_r { () }
@@ -110,7 +114,7 @@ l_value     : T_identifier { () }
             | l_value T_left_sqr expr T_right_sqr { () }
 
 expr        : T_integer { () }
-            | T_char { () }
+            | T_chr { () }
             | l_value { () }
             | T_left_par expr T_right_par { () }
             | func_call { () }

@@ -62,7 +62,7 @@ rule lexer = parse
   | '}'   { T_right_br }
   | ','   { T_comma }
   | ';'   { T_semicolon }
-  | ':'   { T_colon}
+  | ':'   { T_colon } 
   | "<-"  { T_assignment }
 
   | "$$"  { multi_comments lexbuf }
