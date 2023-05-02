@@ -25,7 +25,7 @@ Lexer.ml: Lexer.mll
 	ocamllex -o $@ $<
 
 Parser.ml Parser.mli: Parser.mly
-	menhir -v Parser.mly
+	menhir --trace Parser.mly
 
 .PHONY: clean distclean
 

@@ -1,0 +1,6 @@
+fun g(ref i : char[27]) : nothing
+var j, g, i : int;
+
+{
+  return - 13;
+}

@@ -1,0 +1,6 @@
+fun k(ref m : int; ref baz, d, main : char[]) : int
+fun k() : int;
+
+{
+  m <- - 35;
+}

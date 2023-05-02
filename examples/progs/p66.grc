@@ -1,0 +1,5 @@
+fun j(ref l, h, c : int[]; ref baz : int; d : char[]; ref bar : char; ref b, d : char[5]) : nothing
+
+{
+
+}

@@ -1,0 +1,9 @@
+fun g() : nothing
+var j : char[10];
+fun g(foo, bar : char[][15]; bar : char; baz, x : int) : char;
+
+{
+  if '\'' <= 10 then {
+
+} else return;
+}

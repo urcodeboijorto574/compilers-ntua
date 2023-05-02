@@ -1,0 +1,5 @@
+fun y(m, a : char; b : int; ref e, j : int[]; ref c, g : char[23][17]; l, n, a : char[]) : char
+
+{
+  while 4 # 7 do if '\n' # 16 then return 40;
+}

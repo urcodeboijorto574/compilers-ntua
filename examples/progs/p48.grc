@@ -1,0 +1,7 @@
+fun j(e : char; ref main, y, d : int[]; foo : char[][17][36]; x, i, n : int) : char
+fun main(h, d : int[1]; g : int[][8]; j, n, l : int) : char;
+
+{
+  c(((25)), main(+ (j(((y()) + x), l(z, - (- "Name:\t\"DouglasAdams\"\nValue:\t42\n"), main))), ((+ '7') - (('7' + 26)))), i(- ((baz()))));
+  "foo" <- ('a');
+}

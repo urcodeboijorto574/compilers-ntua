@@ -1,0 +1,117 @@
+fun n(ref i, c : char[21][5]; main : int[][40]) : nothing
+fun e(ref c, y, foo : int[31][14]; ref z, baz : char; ref foo, k : int[]; baz, k : char[]; bar : char[][24]) : nothing
+fun k(ref l, k : int[]; g : char[]) : nothing
+fun j(ref e, n : char; ref c, foo : int[][15]; ref main, baz : char[][37][26]; ref boo, e : int[]) : int;
+fun x(foo, l : int; foo : char[42]; h : int; bar : int[][0]; ref boo, foo : char) : nothing
+var y, boo, a : int;
+
+{
+
+}
+
+var f, b : int[4];
+
+{
+
+}
+
+fun n(ref h, main, l : char; ref z, z, n : char[]; e, b : int[27]; ref e : int; ref z : int[][42]) : char
+
+{
+  return;
+  {
+  ;
+  i <- (21);
+  return "bar";
+  l(j(y), ((('a' - 12)) div ((34))), + (n()));
+}
+  return;
+  boo <- (34);
+  ;
+}
+
+
+{
+  {
+  {
+  bar <- (21);
+  {
+
+}
+  if 19 > '\n' then e <- 28;
+}
+  if '\'' >= 'a' then while 40 > 29 do if 'a' = 'a' then return 10; else ; else {
+  {
+  {
+  bar(((h()) - ((19 div '\''))));
+  ;
+  e(c((+ 3), + (((('7' + '7')) * (('\n')))), - k));
+  if 'a' # 9 then main <- 'a';
+}
+  return main(foo, ('\n' * 17), e());
+  return + 'a';
+  while 41 >= 'a' do if '\'' >= '\n' then while 0 <= '\'' do while '7' <= 2 do i[22] <- '\'';
+  if 20 >= '\n' then if '\n' # '7' then {
+  if 27 < 14 then if 'a' >= 14 then ; else while 40 = 4 do f(18, '\n', '\n');
+  g <- (29 + 42);
+  while 22 <= '\n' do {
+  if '\'' <= 'a' then if 'a' >= '\n' then {
+  while '\n' = '\n' do if 36 # 35 then {
+  ;
+  if 36 < '\n' then ; else return '\n';
+  {
+  "Route66"[25] <- c;
+  "Route66" <- ('a' * 41);
+}
+  ;
+  x['\n'] <- ('a' * 24);
+} else main <- '\n';
+  a(((- 41) mod (('7' mod 17))), c(((5))));
+  b();
+  g(((- 17) * (+ '7')), + (((27 * '7'))));
+}
+  ;
+  if 15 >= '\n' then return 15; else ;
+  baz("Route66");
+}
+  d(((+ 15) + ((18))), (((42)) div ((8))));
+  {
+  ;
+  {
+  z();
+}
+  ;
+  return (11 + 32);
+  return;
+}
+}
+}
+  {
+  return a;
+  return;
+}
+  boo(((('\n')) mod (h((40), + 3))));
+}
+}
+  "bar" <- l(main(k(- '\''), i((2), "Name:\t\"DouglasAdams\"\nValue:\t42\n", ('7' mod 11))));
+  ;
+  ;
+}
+
+
+{
+  if 26 <= '\'' then x(- 33);
+  while '7' <= '\'' do if 33 > 35 then ;
+  {
+  {
+  if 0 < '7' then h((27 div '\''), z); else return;
+  while '\n' >= '\'' do ;
+  ;
+  i();
+}
+  ;
+  return bar;
+  m((('a' mod 40)));
+}
+  if '\n' = '7' then i();
+}

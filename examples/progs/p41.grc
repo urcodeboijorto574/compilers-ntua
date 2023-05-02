@@ -1,0 +1,44 @@
+fun d(ref a, z : char; ref c, bar : char[]; ref y, j : char[]; ref k, l : char[][30]; ref c, k, a : char[]) : nothing
+fun j(b, h : char[][21]) : nothing
+fun bar(ref baz, b : char[]; z, h : int[]; ref a : int; k, a : char[40]; ref bar : int[][41]) : char
+
+{
+  if 'a' = '\n' then g(('a'), - '\n'); else return 18;
+  return;
+}
+
+
+{
+  "Route66" <- + 30;
+  if 26 < 33 then return;
+  if 20 < 'a' then if '\'' > '\n' then i('\n'); else return 'a'; else if 35 > 2 then {
+  c();
+} else {
+  ;
+  if 37 >= 6 then if 38 > 6 then while '7' <= '\n' do {
+  m((e(a(m, g(+ '\'', + '7'), h(i(), + 32)))));
+  while 2 # 2 do ;
+} else if 15 < 5 then k['\''] <- 'a';
+  {
+
+}
+  if 27 # 35 then g(('\n'), ('a'), ('\n' mod 21));
+}
+  while 6 < 20 do if '7' # 38 then {
+  return;
+  return;
+} else return '\n';
+}
+
+
+{
+  baz(m((bar()), (((37 * 8)) - (+ 'a')), (bar * ((42 * 38)))), (a div (('a' - 1))), + (((k(- 8)) + (b()))));
+  {
+  e("foo", a(+ ((('7'))), f[('\n')], e));
+  k <- + 31;
+  return;
+}
+  c();
+  ;
+  g['\''] <- baz((7));
+}

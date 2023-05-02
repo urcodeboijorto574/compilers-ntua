@@ -1,0 +1,6 @@
+fun f(ref foo, baz : int[][19]; ref x, c : int[41]; ref bar, foo, i : char[]; j, e : int; ref c : int) : int
+var c : char;
+
+{
+
+}

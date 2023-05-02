@@ -1,0 +1,9 @@
+fun l(ref h, boo, b : int; ref i : char[36]; ref d, boo, x : int[24]; ref m : int[]; ref baz, k : int) : nothing
+
+{
+  {
+  if 33 >= 12 then while '\n' < 21 do while '7' > 'a' do l('\'', 10, 17); else ;
+  while 18 # 23 do i <- 15;
+  b(m((m(- '7')), - foo));
+}
+}

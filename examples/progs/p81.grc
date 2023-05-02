@@ -1,0 +1,12 @@
+fun z() : char
+var d, i : int[33];
+
+{
+  if '\n' > 'a' then while 21 # 17 do return;
+  {
+
+}
+  ;
+  ;
+  d <- (22 * 23);
+}

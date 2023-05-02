@@ -1,0 +1,6 @@
+fun main(n, main : char; ref g, x : char[]; d, l : char[27][12]) : nothing
+
+{
+  m <- (7);
+  z(((35)), (('\n')));
+}

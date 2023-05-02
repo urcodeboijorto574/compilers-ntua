@@ -1,0 +1,7 @@
+fun d(j, n, m : char; boo, foo, y : int[42]; ref boo : int[]) : char
+var m, m : int;
+
+{
+  k("foo", + ((foo(l(bar(baz(e(+ 35)), (16)))))));
+  if '\'' # 35 then if 34 <= 4 then return;
+}

@@ -1,0 +1,13 @@
+fun b(g, x, k : int[]; a, z : char[][1]) : nothing
+
+{
+  return foo(y(+ 4));
+  bar <- (22 mod 25);
+  while 20 # '\n' do {
+  return;
+  if '7' < '7' then ;
+  ;
+  b();
+}
+  return main;
+}

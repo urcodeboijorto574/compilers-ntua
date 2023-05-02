@@ -1,0 +1,14 @@
+fun g(ref k, g : int; ref main, m, j : char) : nothing
+
+{
+  while '\n' # 27 do {
+  if '\n' >= '7' then "Name:\t\"DouglasAdams\"\nValue:\t42\n" <- '7';
+  l((h((25 - 21), + '\n')), h(((boo("Name:\t\"DouglasAdams\"\nValue:\t42\n", c, h)) div ((39 * 'a')))));
+  d <- (23);
+  baz[1]['7'] <- - 40;
+  {
+
+}
+}
+  l <- + 3;
+}

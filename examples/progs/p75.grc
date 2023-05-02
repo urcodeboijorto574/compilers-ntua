@@ -1,0 +1,5 @@
+fun h(m, main : char; ref z : char[][39]; ref bar, y : char[22]; c : char[2]) : int
+
+{
+  ;
+}

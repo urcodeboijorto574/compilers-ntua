@@ -1,0 +1,8 @@
+fun l(ref a, f, h : char[]; ref m, e : int; i, baz, baz : char[][9][35]; m, z, n : char[][38]; ref n : char[20]) : char
+
+{
+  return;
+  c <- j((11), main(), d);
+  g <- (25);
+  l <- ('a' * 'a');
+}

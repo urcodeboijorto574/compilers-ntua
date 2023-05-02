@@ -1,0 +1,9 @@
+fun boo(foo : int[12][33]; ref y : int; ref z, y, boo : char[][13][14]; ref n : char[1]; ref y, i, y : int) : int
+
+{
+  {
+
+}
+  if 29 = 26 then g((20 - '\''), ('\n')); else z(- '7', b(('\'' * 'a')), (21));
+  k();
+}

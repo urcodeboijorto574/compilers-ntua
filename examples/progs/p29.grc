@@ -1,0 +1,6 @@
+fun bar() : nothing
+
+{
+  "Name:\t\"DouglasAdams\"\nValue:\t42\n" <- "Name:\t\"DouglasAdams\"\nValue:\t42\n";
+  return;
+}

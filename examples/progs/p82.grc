@@ -1,0 +1,32 @@
+fun baz(c : int[]; ref b, boo : int[][9]; boo : char[][1]; ref y, d : int[][8]; ref k : char[]) : nothing
+fun x(ref e, z, m : int[17][8]; ref g : int[][25]; k, k, f : char; ref foo, main : char[][41][25]) : char;
+fun main(ref l, l : char[][7]; ref g : int[40]; ref m : char) : nothing
+fun j(ref f, f : char[]; a, g, h : int; l, foo : int[32]; ref y, g, n : int[]; ref b, e, f : int) : nothing;
+fun b(ref main, l : int; c, l : int[31][21]) : int
+
+{
+  d <- d['\n'];
+  m(((19 - 42)), j(x(- (j(- (('a')))), + (((- 6) div (('\n')))), ((h()) div f)), - (boo())), ((('\n' div 34)) + ((37))));
+  ;
+  while 13 > '\n' do boo((14));
+  if 2 >= 'a' then return 26;
+}
+
+
+{
+  y(z, f());
+  ;
+  return;
+  while '\n' < '\n' do y <- '\'';
+  if '\n' > '7' then if 33 <= 19 then {
+  return;
+  ;
+} else if '\'' # '\'' then ; else ;
+}
+
+
+{
+  "Route66" <- - '\'';
+  return;
+  if 36 <= '\'' then ;
+}

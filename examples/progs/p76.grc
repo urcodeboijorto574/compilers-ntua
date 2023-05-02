@@ -1,0 +1,118 @@
+fun boo(z, d, z : char[]; h, y : char[]; ref d : int[][35]; ref e, n, i : char; ref b, a : char[][29][4]) : int
+var foo : int[30];
+fun n(c, z, g : int; m, j, h : int[]; ref h, baz, f : char[]; boo, x, bar : int[8]) : char
+fun m(ref z : int; bar, d, bar : int; ref y, d, y : int[8]) : int
+var e, a, x : char;
+fun j() : char
+fun h(y : char[][22][25]) : int
+fun d() : int
+
+{
+  "bar" <- + 13;
+  if 2 = 18 then j((2 + 'a'));
+  return;
+}
+
+fun j(b, a : char[42]; d, boo, c : char[2]; a, y, baz : char[][19][33]) : nothing
+fun baz(ref a, c : char; ref e : char[][20]) : nothing
+var y : int[19];
+
+{
+  return;
+  g <- + 37;
+}
+
+fun bar(foo : char[][22][5]; n, x, b : int) : char
+fun z(ref h : char; ref boo, d : char; f, m : int; g : char[0]) : char;
+var l : char;
+
+{
+  f[34] <- (42);
+  return;
+  ;
+}
+
+
+{
+  ;
+  if 40 = '\n' then {
+  if '7' = 12 then while '7' < 13 do while 41 > '\n' do ;
+  return - 42;
+  while 27 = 32 do if 37 = 0 then c <- '7';
+}
+  return;
+  ;
+}
+
+
+{
+  {
+
+}
+  while '\'' <= '7' do {
+  e(- (z(((3)))));
+  if 6 = '\'' then return;
+}
+  {
+  {
+  b <- + '\'';
+  return ('\'');
+  if 18 # 16 then ;
+}
+  y(z());
+  return;
+  if '\'' < 38 then baz(z("Name:\t\"DouglasAdams\"\nValue:\t42\n", d(baz(), l(('7' div '\''), (23 div 29)))));
+}
+  "Name:\t\"DouglasAdams\"\nValue:\t42\n"['\''] <- "bar";
+}
+
+fun f(b, h : char[]; ref y : char[][12]) : nothing;
+
+{
+  if '7' <= 27 then return; else if '\'' <= 'a' then if '\n' > 21 then ; else {
+  k <- b['\n'];
+  foo(+ ((y)), (((5)) * d), (('7' + '\'')));
+  return;
+  j(- (d(+ (- (('a' * 14))), (((28 * '\n')) * (e(+ 7, ('7'), ('7' - 27)))), - (('7' div 5)))));
+}
+}
+
+
+{
+  while 'a' > 33 do x();
+  return g(z, - 'a');
+  {
+  {
+
+}
+  {
+  k <- - '7';
+  while '7' > '7' do n(- 16);
+}
+}
+  return main;
+  return;
+}
+
+fun d(foo, h : char; g, g, f : int[]; ref z, a : int[]; a, f : int[][39]; ref foo, h, j : int[]) : int;
+fun b(ref bar, f : int[][18]; ref b, b, d : int[10]; i, x, y : int[16]) : int;
+
+{
+  n((m[15]));
+  ;
+  while '\'' # 36 do while 7 = 42 do while '\n' # 7 do ;
+  if 3 = '\n' then return 35;
+}
+
+fun foo(h : char[][30][24]; f : int[][3]; ref l : char) : int
+
+{
+
+}
+
+
+{
+  foo[38] <- f;
+  l <- ('a' div 'a');
+  return + '7';
+}

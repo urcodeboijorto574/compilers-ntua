@@ -1,0 +1,19 @@
+fun main(ref a : char[31]; c, j, f : int[33]) : char
+fun k() : nothing
+
+{
+  f(((14)));
+  return;
+  return;
+  "bar" <- g['\n'][1];
+}
+
+fun i(foo, l : int; ref i, m, c : int[38]) : nothing;
+
+{
+  if 31 > '\'' then while 38 < 14 do {
+
+}
+  z <- ('\n');
+  return ('a');
+}

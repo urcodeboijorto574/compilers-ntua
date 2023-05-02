@@ -1,0 +1,30 @@
+fun f(ref f : char[37]; ref main, baz : char[]) : nothing
+fun x(c, boo : char[][22][32]; ref m, z : char[][24]) : nothing;
+fun h(y, y, boo : int; ref k : int[][8]; n, foo, g : int[][32]; main, x, bar : int[][16]) : nothing;
+fun k(k, boo : char[9]) : char
+
+{
+  c <- y((28));
+  ;
+  ;
+  bar(i, b, (c((35), j(h((18), + 35, foo((18 + 12), ('a' * '7'))), (37)), (0 + 'a'))));
+  {
+  main <- ('\n' * 25);
+  while 41 < 42 do main(('7'), c);
+  {
+
+}
+  while 0 >= '\'' do {
+
+}
+  j <- ('\n');
+}
+}
+
+
+{
+  {
+
+}
+  ;
+}

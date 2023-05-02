@@ -1,0 +1,29 @@
+fun y(ref z, f : char[27]; ref baz : char[][33]; x : int[][2]; l, foo, baz : char[39]; f, y : int) : nothing
+fun x() : char
+var boo : char[33];
+fun x(y, boo, h : char; j : int[][37]) : char
+
+{
+  return "Route66";
+  while '\n' # 'a' do "foo" <- 8;
+}
+
+
+{
+  if '7' >= 37 then i(('a'));
+  return;
+  return ('\n' * '\'');
+}
+
+fun y(m, n : int; z, y, z : int[][18]; ref h, e : char; bar, x, l : char[]; ref x : char[]) : int;
+
+{
+  ;
+  while 'a' = '7' do ;
+  if 37 <= '\n' then i(k); else {
+  e <- y(b(n[29]), i((18 mod 15), baz(boo, ('7'))), (38));
+  i(((+ 42) mod (('\'' mod 'a'))), (('\'' * 8)), boo(l, e));
+  ;
+  baz <- ('\'');
+}
+}

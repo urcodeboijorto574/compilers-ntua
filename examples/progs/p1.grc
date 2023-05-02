@@ -1,0 +1,29 @@
+fun k(ref c, f : char[34]; l, a : int[23]; y, h : int; x : int[][19]) : char
+fun k(n, x : int[17][41]; ref l : char[]; bar, d : int; main, h, d : char[]) : nothing
+fun e(i, a, x : int[39][31]; z, e : char[]; ref y, boo : char[]; bar, c, m : char[][37]) : nothing;
+fun bar(ref foo, m : int[14]; ref n, boo : char[]; e, j, foo : int[]; ref e, k, g : int[]) : int;
+
+{
+  return;
+  "foo"[3] <- g['\n'];
+  return;
+  ;
+  {
+  while '\'' < '7' do a(+ 'a', (23));
+}
+}
+
+fun a(ref k : char) : nothing
+
+{
+  if 25 # 34 then ;
+  return baz;
+  ;
+  ;
+}
+
+
+{
+  return c((5 * 'a'), ('\n'), foo(c(('\n'), - 26), + 41, c(- 7, ('7'))));
+  return j(y(('\'' + '\n')));
+}

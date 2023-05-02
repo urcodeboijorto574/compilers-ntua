@@ -1,0 +1,24 @@
+fun main(ref h, bar, a : char; x, y, m : int[][27][40]) : int
+var h : int;
+
+{
+  return main;
+  {
+  if '\'' > 2 then {
+  l(z, "bar", d);
+  ;
+  if 22 < 9 then if '7' # 'a' then return;
+  boo <- (17 + 'a');
+  if 9 < 39 then while '\'' = 'a' do return;
+} else i(i(x(), - 4, + 5), ('a'));
+  f(- (x((('\'' div 'a')))), a(foo));
+  return ('a' * 5);
+  return ('\'' - '7');
+}
+  ;
+  {
+  ;
+  return baz;
+}
+  return;
+}

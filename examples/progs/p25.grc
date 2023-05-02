@@ -1,0 +1,5 @@
+fun f(d, x : char[]; i : int[]) : char
+
+{
+
+}

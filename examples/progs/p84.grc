@@ -1,0 +1,97 @@
+fun baz(n, b : char; l : int[7]; e : int[][3]; ref j, n : char[23]; main : char) : nothing
+fun i(ref j, g, f : int; baz, z, a : int; ref l, n, g : int[][32][30]; j, foo : char[]) : int
+fun a(a, n, d : char[][42]; l, j, d : int[]) : int;
+fun a(c, g, bar : int; ref f : char[37]; ref d, b, m : int) : int;
+fun g(ref x, bar, main : char[7]; c, k, m : char[]; ref z, i, j : char[][30]; n, m, l : char[][38]) : nothing
+
+{
+  while 25 < '\n' do if 34 # 19 then {
+  if '\n' = '\n' then h((2), baz(+ 12), ('\n'));
+  ;
+  bar <- - '\n';
+} else if '7' = 33 then {
+  if 13 = 'a' then if 21 < '\'' then ;
+  return c(- '\n');
+  h <- ('7' - '7');
+  return + '\'';
+  {
+
+}
+}
+  {
+  g();
+}
+  {
+  return;
+  if '7' > '7' then {
+  n[30] <- ('a');
+} else while '\'' = '7' do return;
+  c();
+}
+}
+
+
+{
+  ;
+}
+
+fun z(main, j, b : char[][35]) : nothing
+
+{
+  while 35 <= 'a' do {
+
+}
+  while '\n' # '\n' do m(- 'a', b((3 mod 26), (11), + 1));
+  ;
+  h <- baz;
+}
+
+
+{
+  while '\'' <= '\'' do {
+  while 'a' <= 12 do {
+
+}
+  if 5 = 21 then {
+  bar['\''] <- + 10;
+  ;
+  l();
+  {
+  return;
+  ;
+  while '7' >= 31 do while '7' <= 6 do while 29 # 1 do if 9 < '\n' then {
+  k <- - 22;
+  while '\n' > 'a' do if '\n' <= 12 then return 'a'; else {
+  {
+  while 'a' = '\n' do "Name:\t\"DouglasAdams\"\nValue:\t42\n" <- 7;
+  boo <- ('a');
+  if 3 = '\n' then ;
+  ;
+}
+  {
+
+}
+  while 7 = 33 do ;
+}
+  main((n(('\n'), g, f(+ '7', boo[23]['a'], ('7')))), f, j);
+}
+  if 8 <= '\'' then ;
+  foo <- - '\n';
+}
+} else if '\n' <= 30 then if 11 # 'a' then ; else d(34); else g();
+  while 'a' <= 38 do if '\n' >= 'a' then while 7 <= '7' do {
+  ;
+  while '7' >= 3 do l((31 + 'a'));
+  return;
+  if 0 = '\'' then return '\''; else z();
+} else return 23;
+  c <- h;
+}
+  k(((+ 6) + b), e(- ((f * (- '\n'))), (y), e(+ "Name:\t\"DouglasAdams\"\nValue:\t42\n", "foo")));
+  return;
+  {
+  return;
+  if 36 < '7' then i(+ '\n', j); else ;
+  f(+ (((('7')) * (('\n')))), "bar", l(l));
+}
+}
