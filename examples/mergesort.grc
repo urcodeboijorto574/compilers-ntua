@@ -1,103 +1,88 @@
-fun sort () : nothing
-    var size, i : int;
-    var arr : int[128];
-    $$  Note: Due to the reason that we can't declare arrays with dynamically in Grace,
-        the maximum size that an array can have to be sorted with this function is 128.
-        For longer arrays, the value above should be changed. $$
+$$ This is a mergeSort program written in Grace.
+    It is not necessary able to return.
+    But it should follow all the grammatical and sematic rules.
+    Be cautious with the size N of the array
+$$
 
-    fun mergesort (ref x : int[]; start, end : int) : nothing
+fun main() : nothing
+    
+    fun mergeSort(ref array: int[]; begin, end : int) : nothing
         var mid : int;
 
-        fun merge (n, start, mid, end : int; ref x : int[]) : nothing
-            var i, j, lsize, rsize : int;
-            var left : int[mid-start];
-            var right : int[end-mid];
+        fun merge(ref array: int[]; first, mid, last : int): nothing
+            var b: int[10];
+            var i, j, k : int;
+        {
+            i<- first;
+            j<-mid+1;
+            k<-0;
 
-        { $ merge
 
-            if start >= end then
-                return;
-
-            lsize <- mid-start;
-            rsize <- end-mid;
-
-            i <- 0;
-            j <- start;
-            while i < lsize do {
-                left[i] <- x[j];
-                i <- i + 1;
-                j <- j + 1;
-            }
-
-            i <- 0;
-            j <- mid;
-            while i < rsize do {
-                right[i] <- x[j];
-                i <- i + 1;
-                j <- j + 1;
-            }
-
-            i <- 0;
-            j <- 0;
-            k <- start;
-            if left[i] < right[j] then {
-                x[k] <- left[i];
-                k <- k + 1;
-                i <- i + 1;
-                if i = lsize then {
-                    while j < rsize do {
-                        x[k] <- right[j];
-                        k <- k + 1;
-                        j <- j + 1;
-                    }
+            while( i<=mid and j<=last) do{
+                if(array[i]<array[j]) then {
+                    b[k]<-array[i];
+                    k<-k+1;
+                    i<-i+1;
                 }
-
-            } else {
-                x[k] <- right[j];
-                k <- k + 1;
-                j <- j + 1;
-                if j = rsize then {
-                    while i < lsize do {
-                        x[k] <- left[i];
-                        k <- k + 1;
-                        i <- i + 1;
-                    }
+                else{
+                    b[k]<-array[j];
+                    k<-k+1;
+                    j<-j+1;
                 }
             }
+
+
+            while(i<=mid) do {
+                b[k]<-array[i];
+                k<-k+1;
+                i<-i+1;
+            }
+
+            while(j<=last) do {
+                b[k]<-array[j];
+                k<-k+1;
+                j<-j+1;
+            }
+
+            i<-0;
+            while i#k do{
+                array[first+i]<-b[i];
+                i<-i+1;
+            }
+
         }
 
-    { $ mergesort
-
-        if start >= end - 1 then
-            return;
-
-        mid <- start + (end - start) / 2;
-
-        mergesort(x, start, end);
-        mergesort(x, mid, end);
-
-        merge(x, start, mid, end);
+    {
+        if (begin >= end) then
+            return; $ Returns recursively
+    
+        mid <- begin + (end - begin) div 2;
+        mergeSort(array, begin, mid);
+        mergeSort(array, mid + 1, end);
+        merge(array, begin, mid, end);
     }
 
-{ $ sort
 
-    writeString("Size: ");
-    size <- readInteger();
-
-    i <- 0;
-    while i < size do {
-        arr[i] <- readInteger();
-        i <- i + 1;
+    var arr : int[10];
+    var i, N : int;
+{
+    writeString("Give number of elements (less than 10):\n");
+    N <- readInteger();
+ 
+    writeString("Give the integers:\n");
+    i<-0;
+    while i#N do{
+        arr[i]<-readInteger();
+        i<-i+1;
     }
 
-    mergesort(arr, 0, size);
 
-    writeInteger(arr[0]);
-    i <- 1;
-    while i < size do {
-        writeString(" ");
+    mergeSort(arr, 0, N - 1);
+    i<-0;
+    while i#N do{
         writeInteger(arr[i]);
-        i <- i + 1;
+        writeString(", ");
+        i<-i+1;
     }
-    writeChar('\n');
+    writeString("\n");
 }
