@@ -1,44 +1,79 @@
-type func_def = {
-  header: header;
-  local_def: local_def list;
-  block:  stmt list;
+type Const = int;
+type Char = char;
+
+type FuncDef = {
+  header: Header;
+  local_def_list: LocalDef list;
+  block: Block;
 }
 
-type header = {
+and Header = {
   id: string;
-  header_r: header_r;
-  ret_type: ret_type;
+  fpar_def_list: FparDef list;
+  ret_type: RetType;
 }
 
-type header_r = {
-  fpar_def: fpar_def;
-  header_rr: fpar_def list;
-}
-
-type fpar_def = {
+and FparDef = {
   ref: bool;
+  id_list: string list; 
+  fpar_type: FparType;
+}
+
+and DataType = Const of int | Char of char;
+
+and MyType = {
+  data_type: DataType;
+  array_dimension: Const list;
+}
+
+and RetType = DataType | Nothing of string;
+
+and FparType = {
+  data_type: DataType;
+  array_dimension: Const list;
+}
+
+and LocalDef = FuncDef | FuncDecl | VarDef
+
+and FuncDecl = Header;
+
+and VarDef = {
   id: string;
-  fpar_def_r: list string;
-  fpar_type: fpar_type;
+  id_list: string list;
+  mytype: MyType;
 }
 
-type data_type = int | char
+and Stmt =
+  | S_assignment of Lvalue * Expr
+  | S_block of Block
+  | S_func_call of FuncCall
+  | S_if of Cond * Stmt
+  | S_if_else of Cond * Stmt * Stmt
+  | S_while of Cond * Stmt
+  | S_return of Expr
 
-type mytype = {
-  data_type: data_type;
-  my_type_r: list int;
+and Block = Stmt list
+
+and FuncCall = {
+  id: string;
+  expr_list: Expr list;
 }
 
-type ret_type = data_type | nothing of string
+and Lvalue = 
+  | L_id of string 
+  | L_string of string; 
+  | L_comp of Lvalue * Expr;
 
-type fpar_type = {
-  data_type: data_type;
-  rest: integer;
-}
+and Expr = 
+  | E_const of Const 
+  | E_char of Char
+  | E_lvalue of Lvalue
+  | E_expr of Expr
+  | E_func_call of FuncCall
+  | E_op_expr of Operator * Expr 
+  | E_op_expr_expr of Expr * Operator * Expr
 
-type local_def = func_def | func_decl | var_def
-
-type func_decl = header;
-
-
-
+and Cond = 
+  | C_not_cond of Oper * Cond
+  | C_cond_cond of Cond * BinOperator * Cond
+  | C_expr_expr of Expr * BinOperator * Expr

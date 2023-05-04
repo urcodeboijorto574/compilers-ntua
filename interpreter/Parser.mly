@@ -34,40 +34,45 @@
 %nonassoc T_not
 
 %start program
-%type <unit> program
+%type <local_def list> program
+%type <local_def list> func_def
 
 %%
 
 
 program     : func_def T_eof { $1 }
 
-func_def    : header local_def* block { S_func_def ($1, $2, $3) }
+func_def    : header local_def_list block { $2 }
 
-header      : T_fun T_identifier T_left_par header_r? T_right_par T_colon ret_type { S_header ($2, $4, $7) }
+local_def_list : { () }
+               | local_def local_def_list   { $1 :: $2 }
 
-header_r    : fpar_def header_rr*  { S_header_r ($1, $2) }
+header      : T_fun T_identifier T_left_par T_right_par T_colon ret_type { () }
+            | T_fun T_identifier T_left_par fpar_def_list T_right_par T_colon ret_type { () }
 
-header_rr   : T_semicolon fpar_def { S_header_rr ($2) }
+fpar_def_list : fpar_def    { () }
+              | fpar_def T_semicolon fpar_def_list  { () }
 
-fpar_def    : T_ref? T_identifier fpar_def_r* T_colon fpar_type { S_fpar_def ($1, $2, $3, $5) }
 
-fpar_def_r  : T_comma T_identifier  { () }
+fpar_def    : T_ref T_identifier id_list T_colon fpar_type { () }
+            | T_identifier id_list T_colon fpar_type { () }
+
+id_list  :  { () } 
+            | T_comma T_identifier id_list { () }
 
 data_type   : T_int { () }
             | T_char { () }
 
-mytype      : data_type mytype_r* { () }
+mytype      : data_type array_dimension { () }
 
-mytype_r    : T_left_sqr T_integer T_right_sqr { () }
+array_dimension    : { () }
+                   | T_left_sqr T_integer T_right_sqr array_dimension { () }
 
 ret_type    : data_type { () }
             | T_nothing { () }
 
-fpar_type   : data_type rest    {()}
-
-rest        : rest_r*   {()}
-
-rest_r      : T_left_sqr T_integer? T_right_sqr {()}
+fpar_type   : data_type array_dimension    { () }
+            | data_type T_left_sqr T_right_sqr array_dimension { () }
 
 local_def   : func_def { () }
             | func_decl { () }
@@ -75,27 +80,28 @@ local_def   : func_def { () }
 
 func_decl   : header T_semicolon { () }
 
-var_def     : T_var T_identifier var_def_r* T_colon mytype T_semicolon { () }
-
-var_def_r   : T_comma T_identifier { () }
+var_def     : T_var T_identifier id_list T_colon mytype T_semicolon { () }
 
 stmt        : T_semicolon { () }
             | l_value T_assignment expr T_semicolon { () }
             | block { () }
             | func_call T_semicolon { () }
-            | T_if cond T_then stmt else_stmt? { () }
+            | T_if cond T_then stmt { () }
+            | T_if cond T_then stmt T_else stmt{ () }
             | T_while cond T_do stmt { () }
-            | T_return expr? T_semicolon { () }
+            | T_return T_semicolon { () }
+            | T_return expr T_semicolon { () }
 
-else_stmt   :   T_else stmt { () }
+block       : T_left_br stmt_list T_right_br { () }
 
-block       : T_left_br stmt* T_right_br { () }
+stmt_list   : { () }
+            | stmt stmt_list { () }
 
-func_call   : T_identifier T_left_par func_call_rr? T_right_par { () }
+func_call   : T_identifier T_left_par T_right_par { () }
+            | T_identifier T_left_par expr_list T_right_par { () }
 
-func_call_rr : expr func_call_r*   { () }
-
-func_call_r : T_comma expr { () }
+expr_list   : expr { () }
+            | expr T_comma expr_list { () }
 
 
 l_value     : T_identifier { () }
