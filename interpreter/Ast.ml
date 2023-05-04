@@ -1,11 +1,16 @@
-type Const = int;
+(* type Const = int;
 type Char = char;
+ *)
+type Operator = O_plus | O_minus | O_mul | O_div | O_mod
+type BinOperator =  O_and | O_or | O_equal | O_less | O_greater | O_less_eq | O_greater_eq | O_not_equal
 
 type FuncDef = {
   header: Header;
   local_def_list: LocalDef list;
   block: Block;
 }
+
+let rec print_func_def func_def = Prinf.printf("FuncDef("); print_header
 
 and Header = {
   id: string;
@@ -14,7 +19,7 @@ and Header = {
 }
 
 and FparDef = {
-  ref: bool;
+  ref: string;
   id_list: string list; 
   fpar_type: FparType;
 }
@@ -23,22 +28,24 @@ and DataType = Const of int | Char of char;
 
 and MyType = {
   data_type: DataType;
-  array_dimension: Const list;
+  array_dimension: int list;
 }
 
-and RetType = DataType | Nothing of string;
+and RetType = RetDataType of DataType | Nothing of string;
 
 and FparType = {
   data_type: DataType;
-  array_dimension: Const list;
+  array_dimension: int list;
 }
 
-and LocalDef = FuncDef | FuncDecl | VarDef
+and LocalDef = 
+  | L_FuncDef of FuncDef 
+  | L_FuncDecl of FuncDecl
+  | L_varDef of VarDef
 
-and FuncDecl = Header;
+and FuncDecl = FuncDecl_Header of Header;
 
 and VarDef = {
-  id: string;
   id_list: string list;
   mytype: MyType;
 }
@@ -51,8 +58,6 @@ and Stmt =
   | S_if_else of Cond * Stmt * Stmt
   | S_while of Cond * Stmt
   | S_return of Expr
-
-and Block = Stmt list
 
 and FuncCall = {
   id: string;
@@ -68,7 +73,6 @@ and Expr =
   | E_const of Const 
   | E_char of Char
   | E_lvalue of Lvalue
-  | E_expr of Expr
   | E_func_call of FuncCall
   | E_op_expr of Operator * Expr 
   | E_op_expr_expr of Expr * Operator * Expr
@@ -77,3 +81,4 @@ and Cond =
   | C_not_cond of Oper * Cond
   | C_cond_cond of Cond * BinOperator * Cond
   | C_expr_expr of Expr * BinOperator * Expr
+ 
