@@ -16,16 +16,16 @@
 %token T_plus T_minus
 %token T_mul T_mod T_div
 
-%token<Char> T_char
-%token<Int> T_var
+%token T_char
+%token T_var
 
 %token T_left_par T_right_par T_left_sqr T_right_sqr T_left_br T_right_br
 %token T_comma T_semicolon T_colon
 %token T_assignment
-%token T_identifier
-%token T_integer
-%token T_chr
-%token<string> T_string
+%token <string> T_identifier
+%token <int> T_integer
+%token <char> T_chr
+%token <string> T_string
 
 %token T_eof
 
@@ -57,7 +57,7 @@
 %type <stmt list> block
 %type <stmt list> stmt_list
 %type <funcCall> func_call
-%type <expr> expr_list
+%type <expr list> expr_list
 %type <lvalue> l_value
 %type <expr> expr
 %type <cond> cond
@@ -84,8 +84,8 @@ fpar_def    : T_ref T_identifier id_list T_colon fpar_type { newFparDef("ref", $
 id_list  :  { [] } 
             | T_comma T_identifier id_list { $2 :: $3 }
 
-data_type   : T_int { Const($1) }
-            | T_char { Char($1) }
+data_type   : T_int { Const("int") }
+            | T_char { Char("char") }
 
 mytype      : data_type array_dimension { newMyType($1, $2) }
 
@@ -100,20 +100,20 @@ fpar_type   : data_type array_dimension    { newFparType($1, $2) }
 
 local_def   : func_def { L_FuncDef($1) }
             | func_decl { L_FuncDecl($1) }
-            | var_def { L_VarDef($1) }
+            | var_def { L_varDef($1) }
 
 func_decl   : header T_semicolon { FuncDecl_Header($1) }
 
 var_def     : T_var T_identifier id_list T_colon mytype T_semicolon { newVarDef($2 :: $3, $5) }
 
-stmt        : T_semicolon { () }
+stmt        : T_semicolon { S_semicolon(";") }
             | l_value T_assignment expr T_semicolon { S_assignment($1, $3) }
             | block { S_block($1) }
             | func_call T_semicolon { S_func_call($1) }
             | T_if cond T_then stmt { S_if($2, $4) }
             | T_if cond T_then stmt T_else stmt{ S_if_else($2, $4, $6) }
             | T_while cond T_do stmt { S_while($2, $4) }
-            | T_return T_semicolon { () }
+            | T_return T_semicolon {  S_semicolon(";") }
             | T_return expr T_semicolon { S_return($2)  }
 
 block       : T_left_br stmt_list T_right_br { $2 }
@@ -124,7 +124,7 @@ stmt_list   : { [] }
 func_call   : T_identifier T_left_par T_right_par { newFuncCall($1, []) }
             | T_identifier T_left_par expr_list T_right_par { newFuncCall($1, $3) }
 
-expr_list   : expr { $1 }
+expr_list   : expr { [$1] }
             | expr T_comma expr_list { $1 :: $3 }
 
 
@@ -137,14 +137,14 @@ expr        : T_integer { E_const($1) }
             | T_chr { E_char($1) }
             | l_value { E_lvalue($1) }
             | T_left_par expr T_right_par { $2 }
-            | func_call { () }
+            | func_call { E_func_call($1) }
             | T_plus expr { E_op_expr(O_plus, $2) }
             | T_minus expr { E_op_expr(O_minus, $2) }
-            | expr T_plus expr { E_op_expr_exp($1, O_plus, $3) }
-            | expr T_minus expr { E_op_expr_exp($1, O_minus, $3) }
-            | expr T_mul expr { E_op_expr_exp($1, O_mul, $3) }
-            | expr T_div expr { E_op_expr_exp($1, O_div, $3) }
-            | expr T_mod expr { E_op_expr_exp($1, O_mod, $3) }
+            | expr T_plus expr { E_op_expr_expr($1, O_plus, $3) }
+            | expr T_minus expr { E_op_expr_expr($1, O_minus, $3) }
+            | expr T_mul expr { E_op_expr_expr($1, O_mul, $3) }
+            | expr T_div expr { E_op_expr_expr($1, O_div, $3) }
+            | expr T_mod expr { E_op_expr_expr($1, O_mod, $3) }
 
 cond        : T_left_par cond T_right_par { $2 }
             | T_not cond { C_not_cond(O_not, $2) }

@@ -5,7 +5,7 @@ type token =
   | T_while
   | T_var
   | T_then
-  | T_string
+  | T_string of (string)
   | T_semicolon
   | T_right_sqr
   | T_right_par
@@ -25,10 +25,10 @@ type token =
   | T_left_sqr
   | T_left_par
   | T_left_br
-  | T_integer
+  | T_integer of (int)
   | T_int
   | T_if
-  | T_identifier
+  | T_identifier of (string)
   | T_greater_eq
   | T_greater
   | T_fun
@@ -39,7 +39,7 @@ type token =
   | T_div
   | T_comma
   | T_colon
-  | T_chr
+  | T_chr of (char)
   | T_char
   | T_assignment
   | T_and

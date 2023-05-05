@@ -20,7 +20,7 @@ let white  = [' ' '\t' '\r']
 let char_common = [^ '\\' '\'' '"']
 let char_escape = '\\' ['n' 't' 'r' '0' '\\' '\'' '"'] | char_hex
 let char_not_escape = '\\' [^ 'n' 't' 'r' '0' '\\' '\'' '"' 'x'] (* The characters that, if written next to a front-slash, the front-slash is considered redundant *)
-let char_const = char_common | char_escape
+let char_const = char_common (* | char_escape *)
 let char_string = char_common # ['"' '\n' '\\'] | char_escape
 
 rule lexer = parse
@@ -65,12 +65,12 @@ rule lexer = parse
   | "$$"  { multi_comments lexbuf }
   | '$'   { comment lexbuf }
 
-  | letter (letter | digit | '_')*            { T_identifier }
-  | digit+                                    { T_integer }
-  | '\n'                                      { incr num_lines; lexer lexbuf }
-  | white+                                    { lexer lexbuf }
-  | '\'' char_const '\''                      { T_chr }
-  | '"' (char_string | char_not_escape)* '"'  { T_string }
+  | letter (letter | digit | '_')* as id                  { T_identifier id}
+  | digit+ as v                                           { T_integer (int_of_string v) }
+  | '\n'                                                  { incr num_lines; lexer lexbuf }
+  | white+                                                { lexer lexbuf }
+  | '\'' (char_const as chr) '\''                         { T_chr chr }
+  | '"' (char_string | char_not_escape)* '"' as str       { T_string str}
   | '"' char_string* (('\n' | eof) as c)      { Printf.eprintf "String must close in the same line it starts. Line %d. \n" !num_lines;
                                                 incr num_lines; if c = "\n" then strings lexbuf else T_eof }
 
@@ -132,10 +132,10 @@ rule lexer = parse
       | T_semicolon   ->  "T_semicolon"
       | T_colon       ->  "T_colon"
       | T_assignment  ->  "T_assignment"
-      | T_chr         ->  "T_chr"
-      | T_identifier  ->  "T_identifier"
-      | T_integer     ->  "T_integer"
-      | T_string      ->  "T_string"
+      (* | T_chr         ->  "T_chr" *)
+      (* | T_identifier  ->  "T_identifier" *)
+      (* | T_integer     ->  "T_integer"
+      | T_string      ->  "T_string" *)
 
   (* let main =
     let lexbuf = Lexing.from_channel stdin 

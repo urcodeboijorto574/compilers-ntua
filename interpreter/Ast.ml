@@ -20,8 +20,8 @@ and fparDef = {
 }
 
 and dataType = 
-  | Const of int 
-  | Char of char
+  | Const of string 
+  | Char of string
 
 and myType = {
   data_type: dataType;
@@ -33,8 +33,8 @@ and retType =
   | Nothing of string
 
 and fparType = {
-  data_type: dataType;
-  array_dimension: int list;
+  data_type2: dataType;
+  array_dimension2: int list;
 }
 
 and localDef = 
@@ -57,6 +57,7 @@ and stmt =
   | S_if_else of cond * stmt * stmt
   | S_while of cond * stmt
   | S_return of expr
+  | S_semicolon of string
 
 and funcCall = {
   id: string;
@@ -106,8 +107,8 @@ let newMyType (a, b) = {
 }
 
 let newFparType (a, b) = {
-  data_type = a;
-  array_dimension = b
+  data_type2 = a;
+  array_dimension2 = b
 }
 
 let newVarDef (a, b) = {
@@ -119,3 +120,20 @@ let newFuncCall (a, b) = {
   id = a;
   expr_list = b;
 }
+
+let rec print_funcDef funcDef = 
+  Printf.printf("FuncDef("); print_header funcDef.header; List.iter print_localDef funcDef.local_def_list; List.iter print_stmt funcDef.block; Printf.printf(")");
+
+let rec print_header header = 
+  Printf.printf("Header(fun("); Printf.print("%s") id; Printf.printf ("(") List.iter print_fparDef header.fpar_def_list; Printf.printf("):"); print_retType header.ret_type Printf.printf(")");
+
+let rec print_fparDef fparDef = 
+  match fparDef.ref with
+  | ""  -> Printf.printf("FparDef("); List.iter print_id fparDef.id_list; Printf.printf(":") print_fparType fparDef.fpar_type; Printf.printf(")");
+  
+  | "ref" -> Printf.printf("FparDef(ref"); List.iter print_id fparDef.id_list; Printf.printf(":") print_fparType fparDef.fpar_type; Printf.printf(")");
+
+let rec print_myType myType = 
+  print_dataType myType.data_type; print_arrayDimension myType.array_dimension;
+
+let rec 
