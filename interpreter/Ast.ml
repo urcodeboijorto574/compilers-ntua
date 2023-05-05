@@ -1,84 +1,121 @@
-(* type Const = int;
-type Char = char;
- *)
-type Operator = O_plus | O_minus | O_mul | O_div | O_mod
-type BinOperator =  O_and | O_or | O_equal | O_less | O_greater | O_less_eq | O_greater_eq | O_not_equal
+type operator = O_plus | O_minus | O_mul | O_div | O_mod
+and binOperator =  O_and | O_or | O_equal | O_less | O_greater | O_less_eq | O_greater_eq | O_not_equal | O_not
 
-type FuncDef = {
-  header: Header;
-  local_def_list: LocalDef list;
-  block: Block;
+and funcDef = {
+  header: header;
+  local_def_list: localDef list;
+  block: stmt list;
 }
 
-let rec print_func_def func_def = Prinf.printf("FuncDef("); print_header
-
-and Header = {
+and header = {
   id: string;
-  fpar_def_list: FparDef list;
-  ret_type: RetType;
+  fpar_def_list: fparDef list;
+  ret_type: retType;
 }
 
-and FparDef = {
+and fparDef = {
   ref: string;
   id_list: string list; 
-  fpar_type: FparType;
+  fpar_type: fparType;
 }
 
-and DataType = Const of int | Char of char;
+and dataType = 
+  | Const of int 
+  | Char of char
 
-and MyType = {
-  data_type: DataType;
+and myType = {
+  data_type: dataType;
   array_dimension: int list;
 }
 
-and RetType = RetDataType of DataType | Nothing of string;
+and retType = 
+  | RetDataType of dataType 
+  | Nothing of string
 
-and FparType = {
-  data_type: DataType;
+and fparType = {
+  data_type: dataType;
   array_dimension: int list;
 }
 
-and LocalDef = 
-  | L_FuncDef of FuncDef 
-  | L_FuncDecl of FuncDecl
-  | L_varDef of VarDef
+and localDef = 
+  | L_FuncDef of funcDef 
+  | L_FuncDecl of funcDecl
+  | L_varDef of varDef
 
-and FuncDecl = FuncDecl_Header of Header;
+and funcDecl = FuncDecl_Header of header
 
-and VarDef = {
+and varDef = {
   id_list: string list;
-  mytype: MyType;
+  mytype: myType;
 }
 
-and Stmt =
-  | S_assignment of Lvalue * Expr
-  | S_block of Block
-  | S_func_call of FuncCall
-  | S_if of Cond * Stmt
-  | S_if_else of Cond * Stmt * Stmt
-  | S_while of Cond * Stmt
-  | S_return of Expr
+and stmt =
+  | S_assignment of lvalue * expr
+  | S_block of stmt list
+  | S_func_call of funcCall
+  | S_if of cond * stmt
+  | S_if_else of cond * stmt * stmt
+  | S_while of cond * stmt
+  | S_return of expr
 
-and FuncCall = {
+and funcCall = {
   id: string;
-  expr_list: Expr list;
+  expr_list: expr list;
 }
 
-and Lvalue = 
+and lvalue = 
   | L_id of string 
-  | L_string of string; 
-  | L_comp of Lvalue * Expr;
+  | L_string of string
+  | L_comp of lvalue * expr
 
-and Expr = 
-  | E_const of Const 
-  | E_char of Char
-  | E_lvalue of Lvalue
-  | E_func_call of FuncCall
-  | E_op_expr of Operator * Expr 
-  | E_op_expr_expr of Expr * Operator * Expr
+and expr = 
+  | E_const of int 
+  | E_char of char
+  | E_lvalue of lvalue
+  | E_func_call of funcCall
+  | E_op_expr of operator * expr 
+  | E_op_expr_expr of expr * operator * expr
 
-and Cond = 
-  | C_not_cond of Oper * Cond
-  | C_cond_cond of Cond * BinOperator * Cond
-  | C_expr_expr of Expr * BinOperator * Expr
+and cond = 
+  | C_not_cond of binOperator * cond
+  | C_cond_cond of cond * binOperator * cond
+  | C_expr_expr of expr * binOperator * expr
  
+
+let newFuncDef (a, b, c) = {
+  header = a;
+  local_def_list = b;
+  block = c
+}  
+
+let newHeader (a, b, c) = {
+  id = a;
+  fpar_def_list = b;
+  ret_type = c;
+}
+
+let newFparDef (a, b, c) = {
+  ref = a;
+  id_list = b;
+  fpar_type = c;
+}
+
+let newMyType (a, b) = {
+  data_type = a;
+  array_dimension = b
+}
+
+let newFparType (a, b) = {
+  data_type = a;
+  array_dimension = b
+}
+
+let newVarDef (a, b) = {
+  id_list = a;
+  mytype = b
+}
+
+let newFuncCall (a, b) = {
+  id = a;
+  expr_list = b;
+}

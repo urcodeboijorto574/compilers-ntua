@@ -16,8 +16,8 @@
 %token T_plus T_minus
 %token T_mul T_mod T_div
 
-%token T_char
-%token T_var
+%token<Char> T_char
+%token<Int> T_var
 
 %token T_left_par T_right_par T_left_sqr T_right_sqr T_left_br T_right_br
 %token T_comma T_semicolon T_colon
@@ -25,7 +25,7 @@
 %token T_identifier
 %token T_integer
 %token T_chr
-%token T_string
+%token<string> T_string
 
 %token T_eof
 
@@ -38,50 +38,48 @@
 %nonassoc T_not
 
 %start program
-%type <Ast.FuncDef> program
-%type <FuncDef> func_def
-%type <LocalDef list> local_def_list
-%type <Header> header
-%type <FparDef> fpar_def
-%type <FparDef list> fpar_def_list
+%type <Ast.funcDef> program
+%type <funcDef> func_def
+%type <localDef list> local_def_list
+%type <header> header
+%type <fparDef> fpar_def
+%type <fparDef list> fpar_def_list
 %type <string list> id_list
-%type <DataType> data_type
-%type <MyType> mytype
+%type <dataType> data_type
+%type <myType> mytype
 %type <int list> array_dimension
-%type <RetType> ret_type
-%type <FparType> fpar_type
-%type <LocalDef> local_def
-%type <FuncDecl> func_decl
-%type <VarDef> var_def
-%type <Stmt> stmt
-%type <Stmt list> block
-%type <Stmt list> stmt_list
-%type <FuncCall> func_call
-%type <Expr> expr_list
-%type <Lvalue> l_value
-%type <Expr> expr
-%type <Cond> cond
-
+%type <retType> ret_type
+%type <fparType> fpar_type
+%type <localDef> local_def
+%type <funcDecl> func_decl
+%type <varDef> var_def
+%type <stmt> stmt
+%type <stmt list> block
+%type <stmt list> stmt_list
+%type <funcCall> func_call
+%type <expr> expr_list
+%type <lvalue> l_value
+%type <expr> expr
+%type <cond> cond
 
 %%
 
-
 program     : func_def T_eof { $1 }
 
-func_def    : header local_def_list block { FuncDef($1, $2, $3) }
+func_def    : header local_def_list block { newFuncDef($1, $2, $3) }
 
 local_def_list : { [] }
                | local_def local_def_list   { $1 :: $2 }
 
-header      : T_fun T_identifier T_left_par T_right_par T_colon ret_type { Header($2, [], $6) }
-            | T_fun T_identifier T_left_par fpar_def_list T_right_par T_colon ret_type { Header($2, $4, $7) }
+header      : T_fun T_identifier T_left_par T_right_par T_colon ret_type { newHeader($2, [], $6) }
+            | T_fun T_identifier T_left_par fpar_def_list T_right_par T_colon ret_type { newHeader($2, $4, $7) }
 
 fpar_def_list : fpar_def    { [$1] }
               | fpar_def T_semicolon fpar_def_list  { $1 :: $3 }
 
 
-fpar_def    : T_ref T_identifier id_list T_colon fpar_type { FparDef("ref", $2 :: $3, $5) }
-            | T_identifier id_list T_colon fpar_type { FparDef("", $2, $4) }
+fpar_def    : T_ref T_identifier id_list T_colon fpar_type { newFparDef("ref", $2 :: $3, $5) }
+            | T_identifier id_list T_colon fpar_type { newFparDef("", $2, $4) }
 
 id_list  :  { [] } 
             | T_comma T_identifier id_list { $2 :: $3 }
@@ -89,7 +87,7 @@ id_list  :  { [] }
 data_type   : T_int { Const($1) }
             | T_char { Char($1) }
 
-mytype      : data_type array_dimension { MyType($1, $2) }
+mytype      : data_type array_dimension { newMyType($1, $2) }
 
 array_dimension    : { [] }
                    | T_left_sqr T_integer T_right_sqr array_dimension { $2 :: $4 }
@@ -97,8 +95,8 @@ array_dimension    : { [] }
 ret_type    : data_type { RetDataType($1) }
             | T_nothing { Nothing("nothing") }
 
-fpar_type   : data_type array_dimension    { FparType($1, $2) }
-            | data_type T_left_sqr T_right_sqr array_dimension { FparType($1, $4) }
+fpar_type   : data_type array_dimension    { newFparType($1, $2) }
+            | data_type T_left_sqr T_right_sqr array_dimension { newFparType($1, $4) }
 
 local_def   : func_def { L_FuncDef($1) }
             | func_decl { L_FuncDecl($1) }
@@ -106,7 +104,7 @@ local_def   : func_def { L_FuncDef($1) }
 
 func_decl   : header T_semicolon { FuncDecl_Header($1) }
 
-var_def     : T_var T_identifier id_list T_colon mytype T_semicolon { VarDef($2 :: $3, $5) }
+var_def     : T_var T_identifier id_list T_colon mytype T_semicolon { newVarDef($2 :: $3, $5) }
 
 stmt        : T_semicolon { () }
             | l_value T_assignment expr T_semicolon { S_assignment($1, $3) }
@@ -123,8 +121,8 @@ block       : T_left_br stmt_list T_right_br { $2 }
 stmt_list   : { [] }
             | stmt stmt_list { $1 :: $2 }
 
-func_call   : T_identifier T_left_par T_right_par { FuncCall($1, []) }
-            | T_identifier T_left_par expr_list T_right_par { FuncCall($1, $3) }
+func_call   : T_identifier T_left_par T_right_par { newFuncCall($1, []) }
+            | T_identifier T_left_par expr_list T_right_par { newFuncCall($1, $3) }
 
 expr_list   : expr { $1 }
             | expr T_comma expr_list { $1 :: $3 }
@@ -140,21 +138,21 @@ expr        : T_integer { E_const($1) }
             | l_value { E_lvalue($1) }
             | T_left_par expr T_right_par { $2 }
             | func_call { () }
-            | T_plus expr { E_op_expr($1, $2) }
-            | T_minus expr { E_op_expr($1, $2) }
-            | expr T_plus expr { E_op_expr_exp($1, $3) }
-            | expr T_minus expr { E_op_expr_exp($1, $3) }
-            | expr T_mul expr { E_op_expr_exp($1, $3) }
-            | expr T_div expr { E_op_expr_exp($1, $3) }
-            | expr T_mod expr { E_op_expr_exp($1, $3) }
+            | T_plus expr { E_op_expr(O_plus, $2) }
+            | T_minus expr { E_op_expr(O_minus, $2) }
+            | expr T_plus expr { E_op_expr_exp($1, O_plus, $3) }
+            | expr T_minus expr { E_op_expr_exp($1, O_minus, $3) }
+            | expr T_mul expr { E_op_expr_exp($1, O_mul, $3) }
+            | expr T_div expr { E_op_expr_exp($1, O_div, $3) }
+            | expr T_mod expr { E_op_expr_exp($1, O_mod, $3) }
 
 cond        : T_left_par cond T_right_par { $2 }
-            | T_not cond { C_not_cond($1, $2) }
-            | cond T_and cond { C_cond_cond($1, $3) }
-            | cond T_or cond { C_cond_cond($1, $3) }
-            | expr T_equal expr { C_expr_expr($1, $3) }
-            | expr T_less expr { C_expr_expr($1, $3) }
-            | expr T_less_eq expr { C_expr_expr($1, $3) }
-            | expr T_greater expr { C_expr_expr($1, $3) }
-            | expr T_greater_eq expr { C_expr_expr($1, $3) }
-            | expr T_not_equal expr { C_expr_expr($1, $3) }
+            | T_not cond { C_not_cond(O_not, $2) }
+            | cond T_and cond { C_cond_cond($1, O_and, $3) }
+            | cond T_or cond { C_cond_cond($1, O_or, $3)  }
+            | expr T_equal expr { C_expr_expr($1, O_equal, $3) }
+            | expr T_less expr { C_expr_expr($1, O_less, $3)  }
+            | expr T_less_eq expr { C_expr_expr($1, O_less_eq, $3)  }
+            | expr T_greater expr { C_expr_expr($1, O_greater, $3)  }
+            | expr T_greater_eq expr { C_expr_expr($1, O_greater_eq, $3)  }
+            | expr T_not_equal expr { C_expr_expr($1, O_not_equal, $3)  }

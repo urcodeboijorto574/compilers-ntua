@@ -50,4 +50,4 @@ exception Error
 
 (* The monolithic API. *)
 
-val program: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (unit)
+val program: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast.funcDef)
