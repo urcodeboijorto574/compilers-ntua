@@ -18,7 +18,7 @@ OCAMLDEP=ocamldep
 %.cmo %.cmi: %.ml
 	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
 
-minibasic$(EXE): Ast.cmo Lexer.cmo Parser.cmo Main.cmo
+grace$(EXE): Ast.cmo Lexer.cmo Parser.cmo Main.cmo
 	$(OCAMLC) $(OCAMLC_FLAGS) -o $@ $^
 
 Lexer.ml: Lexer.mll
