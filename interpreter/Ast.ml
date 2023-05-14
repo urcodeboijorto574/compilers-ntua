@@ -177,11 +177,6 @@ and print_retType retType =
     Printf.printf("(RetType("); help retType; Printf.printf(")")
 
   
-(* and print_retType retType =
-  match retType with 
-    | RetDataType dataType -> Printf.printf("RetType("); print_dataType dataType; Printf.printf(")");
-    | Nothing str -> Printf.printf("RetType("); Printf.printf("nothing"); Printf.printf(")"); *)
-  
 
 and print_fparType fparType = 
   let hasSquares = if fparType.has_squares = true then Printf.printf("[]") else Printf.printf("")
@@ -242,10 +237,9 @@ and print_funcCall funcCall =
   Printf.printf("FuncCall("); Printf.printf("%s") funcCall.id; Printf.printf("("); print_exprList funcCall.expr_list; Printf.printf("))");
 
 and print_exprList expr_list =
-  match expr_list with 
-  | []        -> Printf.printf("");
-  | [h]       -> print_expr h
-  | h :: tail -> print_expr; Printf.printf(","); print_exprList tail; 
+  match expr_list with
+  | [] -> ()
+  | h :: tail -> print_expr h; if tail <> [] then Printf.printf(", "); print_exprList tail
 
 
 and print_lvalue lvalue =
