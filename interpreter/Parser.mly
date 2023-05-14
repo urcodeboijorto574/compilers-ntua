@@ -54,7 +54,7 @@
 %type <funcDecl> func_decl
 %type <varDef> var_def
 %type <stmt> stmt
-%type <stmt list> block
+%type <block> block
 %type <stmt list> stmt_list
 %type <funcCall> func_call
 %type <expr list> expr_list
@@ -95,8 +95,8 @@ array_dimension    : { [] }
 ret_type    : data_type { RetDataType($1) }
             | T_nothing { Nothing("nothing") }
 
-fpar_type   : data_type array_dimension    { newFparType($1, $2) }
-            | data_type T_left_sqr T_right_sqr array_dimension { newFparType($1, $4) }
+fpar_type   : data_type array_dimension    { newFparType($1, $2, false) }
+            | data_type T_left_sqr T_right_sqr array_dimension { newFparType($1, $4, true) }
 
 local_def   : func_def { L_FuncDef($1) }
             | func_decl { L_FuncDecl($1) }
@@ -116,7 +116,7 @@ stmt        : T_semicolon { S_semicolon(";") }
             | T_return T_semicolon {  S_semicolon(";") }
             | T_return expr T_semicolon { S_return($2)  }
 
-block       : T_left_br stmt_list T_right_br { $2 }
+block       : T_left_br stmt_list T_right_br { Block($2) }
 
 stmt_list   : { [] }
             | stmt stmt_list { $1 :: $2 }
@@ -136,7 +136,7 @@ l_value     : T_identifier { L_id($1) }
 expr        : T_integer { E_const($1) }
             | T_chr { E_char($1) }
             | l_value { E_lvalue($1) }
-            | T_left_par expr T_right_par { $2 }
+            | T_left_par expr T_right_par { E_expr_parenthesized($2) }
             | func_call { E_func_call($1) }
             | T_plus expr { E_op_expr(O_plus, $2) }
             | T_minus expr { E_op_expr(O_minus, $2) }
