@@ -146,7 +146,7 @@ expr        : T_integer { E_const($1) }
             | expr T_div expr { E_op_expr_expr($1, O_div, $3) }
             | expr T_mod expr { E_op_expr_expr($1, O_mod, $3) }
 
-cond        : T_left_par cond T_right_par { $2 }
+cond        : T_left_par cond T_right_par { C_cond_parenthesized($2) }
             | T_not cond { C_not_cond(O_not, $2) }
             | cond T_and cond { C_cond_cond($1, O_and, $3) }
             | cond T_or cond { C_cond_cond($1, O_or, $3)  }

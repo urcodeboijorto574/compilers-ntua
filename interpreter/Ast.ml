@@ -85,6 +85,7 @@ and cond =
   | C_not_cond of binOperator * cond
   | C_cond_cond of cond * binOperator * cond
   | C_expr_expr of expr * binOperator * expr
+  | C_cond_parenthesized of cond
  
 
 let newFuncDef (a, b, c) = {
@@ -286,5 +287,6 @@ let rec print_cond cond =
                                      | O_greater    -> print_expr e1; Printf.printf(">"); print_expr e2
                                      | O_less_eq    -> print_expr e1; Printf.printf("<="); print_expr e2
                                      | O_greater_eq -> print_expr e1; Printf.printf(">="); print_expr e2
+    | C_cond_parenthesized c      -> Printf.printf("("); print_cond c; Printf.printf(")")
   in
     Printf.printf("Cond("); help cond; Printf.printf(")")
