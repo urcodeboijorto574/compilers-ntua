@@ -10,10 +10,12 @@ Lexer.cmi : \
     Parser.cmi
 Main.cmo : \
     Parser.cmi \
-    Lexer.cmi
+    Lexer.cmi \
+    Ast.cmo
 Main.cmx : \
     Parser.cmx \
-    Lexer.cmx
+    Lexer.cmx \
+    Ast.cmx
 Parser.cmo : \
     Ast.cmo \
     Parser.cmi

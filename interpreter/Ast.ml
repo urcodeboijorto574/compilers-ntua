@@ -94,94 +94,109 @@ let newFuncDef (a, b, c) = {
   block = c
 }  
 
-let newHeader (a, b, c) = {
+and newHeader (a, b, c) = {
   id = a;
   fpar_def_list = b;
   ret_type = c;
 }
 
-let newFparDef (a, b, c) = {
+and newFparDef (a, b, c) = {
   ref = a;
   id_list = b;
   fpar_type = c;
 }
 
-let newMyType (a, b) = {
+and newMyType (a, b) = {
   data_type = a;
   array_dimension = b
 }
 
-let newFparType (a, b, c) = {
+and newFparType (a, b, c) = {
   data_type2 = a;
-  array_dimension2 = b
+  array_dimension2 = b;
   has_squares = c
 }
 
-let newVarDef (a, b) = {
+and newVarDef (a, b) = {
   id_list = a;
   mytype = b
 }
 
-let newFuncCall (a, b) = {
+and newFuncCall (a, b) = {
   id = a;
   expr_list = b;
 }
 
-let rec print_fparDef_list fpar_def_list =
+(* let rec print_fparDef_list fpar_def_list =
   match fpar_def_list with
   | [] -> Printf.printf("")
   | h  -> print_fparDef h
-  | h :: tail ->  Printf.printf("; ") ; print_fparDef_list tail
+  | h :: tail ->  Printf.printf("; "); print_fparDef_list tail; *)
+
+let rec print_fparDef_list fpar_def_list =
+  match fpar_def_list with
+  | [] -> ()
+  | h :: tail -> print_fparDef h; if tail <> [] then Printf.printf("; "); print_fparDef_list tail
 
 
-let rec print_funcDef funcDef = 
-  Printf.printf("FuncDef("); print_header funcDef.header; Printf.printf(", "); List.iter print_localDef funcDef.local_def_list; Printf.printf(", "); List.iter print_stmt funcDef.block; Printf.printf(")")
+and print_funcDef funcDef = 
+  Printf.printf("FuncDef("); print_header funcDef.header; Printf.printf(", "); List.iter print_localDef funcDef.local_def_list; Printf.printf(", "); List.iter print_stmt funcDef.block; Printf.printf(")");
 
 
-let rec print_header header = 
-  Printf.printf("Header(fun("); Printf.print("%s") id; Printf.printf ("(") print_fparDef_list header.fpar_def_list; Printf.printf("):"); print_retType header.ret_type Printf.printf(")")
+and print_header header = 
+  Printf.printf("Header(fun("); Printf.printf("%s") header.id; Printf.printf ("("); print_fparDef_list header.fpar_def_list; Printf.printf("):"); print_retType header.ret_type Printf.printf(")");
 
 
-let rec print_fparDef fparDef = 
+and print_fparDef fparDef = 
   match fparDef.ref with
-  | ""  -> Printf.printf("FparDef("); print_idList fparDef.id_list; Printf.printf(":") print_fparType fparDef.fpar_type; Printf.printf(")")
-  | "ref" -> Printf.printf("FparDef(ref"); print_idList fparDef.id_list; Printf.printf(":") print_fparType fparDef.fpar_type; Printf.printf(")")
+  | ""  -> Printf.printf("FparDef("); print_idList fparDef.id_list; Printf.printf(":"); print_fparType fparDef.fpar_type; Printf.printf(")")
+  | "ref" -> Printf.printf("FparDef(ref"); print_idList fparDef.id_list; Printf.printf(":"); print_fparType fparDef.fpar_type; Printf.printf(")");
 
 
-let rec print_dataType dataType =
+and print_dataType dataType =
   match dataType with
-  | "int" -> Printf.printf("(DataType(int)");
-  | "char" -> Printf.printf("(DataType(char)");
+  | Const str-> Printf.printf("(DataType(int)");
+  | Char str -> Printf.printf("(DataType(char)");
 
   
-let rec print_myType myType = 
-  let help myType = 
-    match myType.array_dimension with
+and print_myType myType = 
+  let rec help array_dimension = 
+    match array_dimension with
     | [] -> Printf.printf("")
     | h :: tail -> Printf.printf("["); Printf.printf("%d") h; Printf.printf("]"); help tail
   in
-    Printf.printf("MyType("); print_dataType myType.data_type; help myType; Printf.printf(")")
+    Printf.printf("MyType("); print_dataType myType.data_type; help myType.array_dimension; Printf.printf(")");
 
 
-let rec print_retType retType =
+(* and print_retType retType =
   let help retType =
     match retType with 
     | RetDataType dataType -> print_dataType dataType
-    | Nothing nothing -> Printf.printf("nothing");
+    | Nothing nothing -> Printf.printf("nothing")
   in
-    Printf.printf("(RetType("); help retType; Printf.printf(")")
+    Printf.printf("(RetType("); help retType; Printf.printf(")") *)
 
   
-let rec print_fparType fparType = 
-  let fun hasSquares = if fparType.has_squares = true then Printf.printf("[]") else Printf.printf("")
+and print_retType retType =
+  let help retType =
+    match retType with 
+    | RetDataType dataType -> print_dataType dataType
+    | Nothing _ -> Printf.printf("nothing")
+  in
+  let result = Printf.sprintf "(RetType(%s))" (help retType) in
+  Printf.printf "%s" result
+  
+
+and print_fparType fparType = 
+  let hasSquares = if fparType.has_squares = true then Printf.printf("[]") else Printf.printf("")
   in 
     match fparType.array_dimension2 with
     | [] -> Printf.printf("FparType("); print_dataType fparType.data_type2; hasSquares; Printf.printf(")")
     | list -> Printf.printf("FparType("); print_dataType fparType.data_type2; hasSquares; 
-              List.iter (fun x -> Printf.printf "[%d]" x; ) fparType.array_dimension2;  Printf.printf(")")
-  
+              List.iter (fun x -> Printf.printf "[%d]" x; ) fparType.array_dimension2;  Printf.printf(")")  
 
-let rec print_localDef localDef =
+
+and print_localDef localDef =
   let help localDef =
     match localDef with
     | L_FuncDef funcDef -> print_funcDef funcDef;
@@ -191,19 +206,19 @@ let rec print_localDef localDef =
     Printf.printf("LocalDef("); help localDef; Printf.prinf(")");
 
   
-let rec print_funcDecl funcDecl = 
+and print_funcDecl funcDecl = 
   Printf.printf("FuncDecl("); print_header funcDecl; Printf.printf(";)");
 
-let rec print_idList idList =
+and print_idList idList =
   match idList with 
   | h -> Printf.printf("%s") h
-  | h :: tail -> Printf.printf("%s ,") h; print_idList tail
+  | h :: tail -> Printf.printf("%s ,") h; print_idList tail;
 
-let rec print_varDef varDef =
+and print_varDef varDef =
   Printf.printf("VarDef(var"); print_idList varDef.id_list; Printf.printf(":"); print_myType varDef.mytype; Printf.printf(";)");
 
 
-let rec print_stmt stmt =
+and print_stmt stmt =
   let help stmt = 
     match stmt with
     | S_assignment (l, e)   -> Printf.printf("Assignment("); print_lvalue l; Printf.printf("<-") print_expr e; Printf.printf(";)");
@@ -216,25 +231,25 @@ let rec print_stmt stmt =
     | S_return e            -> Printf.printf("Return("); print_expr e; Printf.printf(";)");
     | S_semicolon           -> Printf.printf("Semicolon(;)");
   in
-    Printf.printf("Statement("); print_stmt stmt; Printf.printf(")")
+    Printf.printf("Statement("); print_stmt stmt; Printf.printf(")");
 
 
-let rec print_block block =
+and print_block block =
   match block with
-  | Block stmt_list = Printf.printf("Block({"); List.iter print_stmt stmt_list; Printf.printf("})");
+  | Block stmt_list -> Printf.printf("Block({"); List.iter print_stmt stmt_list; Printf.printf("})");
 
 
-let rec printf_funcCall funcCall =
+and printf_funcCall funcCall =
   Printf.printf("FuncCall("); Printf.printf("%s ") funcCall.id; Printf.printf("("); print_exprList funcCall.expr_list; Printf.printf("))");
 
-let rec print_exrpList expr_list =
+and print_exrpList expr_list =
   match expr_list with 
   | []        -> Printf.printf("");
   | h         -> print_expr h
   | h :: tail -> print_expr; Printf.printf(","); print_exprList tail; 
 
 
-let rec print_lvalue lvalue =
+and print_lvalue lvalue =
   let help lvalue =
     match lvalue with
     | L_id str      -> Printf.printf("%s") str;
@@ -243,16 +258,8 @@ let rec print_lvalue lvalue =
   in
     Printf.printf("Lvalue(") help lvalue; Printf.printf(")");
 
-and expr = 
-  | E_const of int 
-  | E_char of char
-  | E_lvalue of lvalue
-  | E_func_call of funcCall
-  | E_op_expr of operator * expr 
-  | E_op_expr_expr of expr * operator * expr
 
-
-let rec print_expr expr =
+and print_expr expr =
   let help expr =
     match expr with
     | E_const x                   -> Printf.printf("Const(%d)") x;
@@ -268,12 +275,12 @@ let rec print_expr expr =
                                     | O_mul   -> print_expr e1; Printf.printf("*"); print_expr e2;
                                     | O_div   -> print_expr e1; Printf.printf("div"); print_expr e2;
                                     | O_mod   -> print_expr e1; Printf.printf("mod"); print_expr e2;
-    | E_expr_parenthesized e      -> Printf.printf("("); print_expr e; Printf.printf(")")
+    | E_expr_parenthesized e      -> Printf.printf("("); print_expr e; Printf.printf(")");
   in
-    Printf.printf("Expression("); help expr; Printf.printf(")")
+    Printf.printf("Expression("); help expr; Printf.printf(")");
 
 
-let rec print_cond cond = 
+and print_cond cond = 
   let help cond =
     match cond with
     | C_not_cond (binop, c)       -> Printf.printf("not"); print_cond c
@@ -287,6 +294,8 @@ let rec print_cond cond =
                                      | O_greater    -> print_expr e1; Printf.printf(">"); print_expr e2
                                      | O_less_eq    -> print_expr e1; Printf.printf("<="); print_expr e2
                                      | O_greater_eq -> print_expr e1; Printf.printf(">="); print_expr e2
-    | C_cond_parenthesized c      -> Printf.printf("("); print_cond c; Printf.printf(")")
+    | C_cond_parenthesized c      -> Printf.printf("("); print_cond c; Printf.printf(")");
   in
-    Printf.printf("Cond("); help cond; Printf.printf(")")
+    Printf.printf("Cond("); help cond; Printf.printf(")");
+
+and print_on asts = print_funcDef asts;
