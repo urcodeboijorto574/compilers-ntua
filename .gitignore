@@ -1,7 +1,15 @@
-Lexer
-Lexer.cmi
-Lexer.cmx
-Lexer.o
-Parser.conflicts
-*.cmo
-*.cmi
+# Ignore every file...
+*
+
+# ...except the files below
+!.gitignore
+!README.md
+!Makefile
+
+!Main.ml
+
+!Lexer.mll
+!Lexer.mli
+
+!Parser.mly
+!Ast.ml
