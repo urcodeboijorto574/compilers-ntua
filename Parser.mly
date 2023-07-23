@@ -6,7 +6,6 @@
 %token T_ref
 %token T_return
 
-%token T_equal T_not_equal T_less_eq T_greater_eq T_less T_greater
 %token T_or
 %token T_not
 %token T_and
@@ -26,53 +25,19 @@
 
 %token T_eof
 
-%nonassoc T_then
-%nonassoc T_else
+%token T_equal T_not_equal T_less_eq T_greater_eq T_less T_greater
 
 %left T_or
 %left T_and
-%nonassoc T_not
-
 %left T_plus T_minus
 %left T_mul T_mod T_div
 
+%nonassoc T_equal T_not_equal T_less_eq T_greater_eq T_less T_greater
+%nonassoc T_then T_else
 
-%start <unit> program
-%type <unit> block
-%type <unit> cond
-%type <unit> data_type
-%type <unit> expr
-%type <unit> fpar_def
-%type <unit> fpar_def_r
-%type <unit> fpar_type
-%type <unit> fpar_type_r
-%type <unit> fpar_type_rr
-%type <unit> fpar_type_rrr
-%type <unit> option(T_right_sqr)
-%type <unit> option(fpar_type_r)
-%type <unit> func_call
-%type <unit> func_call_r
-%type <unit> func_call_rr
-%type <unit> func_decl
-%type <unit> func_def
-%type <unit> header
-%type <unit> header_r
-%type <unit> header_rr
-%type <unit> l_value
-%type <unit> list(header_rr)
-%type <unit> list(local_def)
-%type <unit> list(stmt)
-%type <unit> local_def
-%type <unit> mytype
-%type <unit> mytype_r
-%type <unit> option(T_ref)
-%type <unit> option(expr)
-%type <unit> option(func_call_rr)
-%type <unit> option(header_r)
-%type <int> ret_type
-%type <unit> stmt
-%type <unit> var_def
-%type <unit> var_def_r
+
+%start program
+%type <unit> program
 
 %%
 
@@ -103,14 +68,12 @@ mytype_r    : (* nothing *) { () }      /* -------------------------------------
 ret_type    : data_type { () }
             | T_nothing { () }
 
-fpar_type   : data_type fpar_type_r? { () }
+fpar_type   : data_type squares? fpar_type_r { () }
 
-fpar_type_r : T_left_sqr T_right_sqr? fpar_type_rr { () }
+squares     : T_left_sqr T_right_sqr    { () }
 
-fpar_type_rr: T_integer T_right_sqr fpar_type_rrr { () }
-
-fpar_type_rrr:(* nothing *) { () }      /* ----------------------------------------- */
-            | T_left_sqr T_integer T_right_sqr fpar_type_rrr { () }
+fpar_type_r : (* nothing *) { () }
+            | T_left_sqr T_integer T_right_sqr fpar_type_r { () }
 
 local_def   : func_def { () }
             | func_decl { () }
@@ -136,10 +99,10 @@ block       : T_left_br stmt* T_right_br { () }
 
 func_call   : T_identifier T_left_par func_call_rr? T_right_par { () }
 
+func_call_rr :  expr func_call_r   { () }
+
 func_call_r : (* nothing *) { () }  /* ------------------- */
             | T_comma expr func_call_r { () }
-
-func_call_rr:  expr func_call_r   { () }
 
 
 l_value     : T_identifier { () }
@@ -147,7 +110,7 @@ l_value     : T_identifier { () }
             | l_value T_left_sqr expr T_right_sqr { () }
 
 expr        : T_integer { () }
-            | T_chr { () }
+            | T_char { () }
             | l_value { () }
             | T_left_par expr T_right_par { () }
             | func_call { () }
@@ -164,8 +127,8 @@ cond        : T_left_par cond T_right_par { () }
             | cond T_and cond { () }
             | cond T_or cond { () }
             | expr T_equal expr { () }
-            | expr T_not_equal expr { () }
             | expr T_less expr { () }
-            | expr T_greater expr { () }
             | expr T_less_eq expr { () }
+            | expr T_greater expr { () }
             | expr T_greater_eq expr { () }
+            | expr T_not_equal expr { () }

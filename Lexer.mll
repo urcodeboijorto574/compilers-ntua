@@ -1,5 +1,4 @@
 {
-    (*
     type token = 
       | T_eof | T_and | T_char | T_div | T_do | T_else | T_fun | T_if
       | T_int | T_mod | T_not | T_nothing | T_or | T_ref | T_return
@@ -8,7 +7,6 @@
       | T_left_par | T_right_par | T_left_sqr | T_right_sqr | T_left_br | T_right_br
       | T_comma | T_semicolon | T_colon | T_assignment
       | T_identifier | T_integer | T_chr | T_string
-    *)
 
     let num_lines = ref 1
     open Parser
