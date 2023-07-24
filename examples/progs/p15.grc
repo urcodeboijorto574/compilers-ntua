@@ -1,8 +1,0 @@
-fun x(z, i, c : char[]; f, z : char[][2]; ref bar, c : char[][9][9]; ref z, h, g : int[][6]) : int
-
-{
-  return - 42;
-  ;
-  k <- - '7';
-  "Route66" <- bar(h(k(+ 'a', - 6, + 5)));
-}

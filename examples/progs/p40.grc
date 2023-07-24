@@ -1,6 +1,0 @@
-fun h(ref bar, j, k : int[]) : int
-
-{
-  ;
-  if 0 >= 31 then ; else if 28 <= '\n' then if 30 < 41 then ; else while 42 > '7' do j();
-}

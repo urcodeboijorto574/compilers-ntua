@@ -1,5 +1,0 @@
-fun g(ref main, d, b : int[40][8]; d, n : int) : nothing
-
-{
-  a <- d();
-}

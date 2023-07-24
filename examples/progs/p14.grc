@@ -1,8 +1,0 @@
-fun j(ref l, foo : int[]; ref boo : int[][4]) : char
-
-{
-  ;
-  ;
-  x <- + 8;
-  a <- n;
-}

@@ -1,9 +1,0 @@
-fun z(ref l, m : int[]) : char
-
-{
-  ;
-  ;
-  return f(baz(+ '\n', m, j(a((41), (8 div 29)))), ('a' div '7'), x);
-  d <- (4);
-  ;
-}

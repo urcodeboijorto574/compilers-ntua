@@ -1,6 +1,0 @@
-fun foo(ref baz : char; ref k : int[35]; ref k, y : char[][25]; bar : char[][25]) : nothing
-
-{
-  ;
-  while 'a' <= '7' do b(+ 27, - 12, (41 * 22));
-}

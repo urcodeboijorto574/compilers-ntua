@@ -1,8 +1,0 @@
-fun l() : int
-var y : char[41];
-
-{
-  return;
-  return foo['a'];
-  n();
-}

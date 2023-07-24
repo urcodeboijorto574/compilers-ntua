@@ -1,5 +1,0 @@
-fun y(h, main, g : int; ref f : char[]; ref baz : char) : char
-
-{
-
-}

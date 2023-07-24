@@ -1,6 +1,0 @@
-fun main(ref n, y : char) : char
-fun l(ref k, l : char[3]; ref main, boo, z : int[][39]; ref j, l : int[][3]; ref b, y, d : int[]) : nothing;
-
-{
-
-}

@@ -1,0 +1,19 @@
+# To format an ocaml file (.ml) manualy, execute the command below in the file's directory:
+# > ocamlformat -i <file-name>
+
+profile = default
+version = 0.26.0
+
+break-before-in = fit-or-vertical
+
+extension-indent = 2
+field-space = loose
+function-indent = 0
+function-indent-nested = never
+
+if-then-else = fit-or-vertical
+indicate-nested-or-patterns = space
+
+let-and = sparse
+
+type-decl = sparse
