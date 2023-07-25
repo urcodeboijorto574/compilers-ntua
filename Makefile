@@ -39,3 +39,7 @@ clean:
 
 distclean: clean
 	$(RM) grace$(EXE) .depend
+
+# To format the ocaml code, first install the ocamlformat tool with "opam install ocamlformat"
+format: Ast.ml Lexer.mli Main.ml Symbol.ml Symbol.mli Type.ml Type.mli
+	ocamlformat -i $^

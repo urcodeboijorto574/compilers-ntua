@@ -14,3 +14,8 @@
 
 !Parser.mly
 !Ast.ml
+
+!Symbol.ml
+!Symbol.mli
+!Type.ml
+!Type.mli
