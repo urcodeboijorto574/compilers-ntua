@@ -5,6 +5,11 @@ type operator =
   | O_div
   | O_mod
 
+and t_type =
+  | T_int
+  | T_char
+  | T_array of t_type * int
+
 and binOperator =
   | O_and
   | O_or
@@ -86,6 +91,11 @@ and lvalue =
   | L_id of string
   | L_string of string
   | L_comp of lvalue * expr
+
+and sem_expr = {
+  expr_kind : expr;
+  expr_type : Types.t_type;
+}
 
 and expr =
   | E_const of int
@@ -417,3 +427,9 @@ and print_cond cond =
   Printf.printf ")"
 
 and print_on asts = print_funcDef asts
+
+and sem_expr_op expr_type =
+  if expr_type <> T_int then Printf.printf "Type error"
+
+and sem_expr_op_op expr1_type expr2_type =
+  if expr1_type <> expr2_type then Printf.printf "Type error"

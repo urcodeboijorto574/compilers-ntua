@@ -17,3 +17,4 @@ indicate-nested-or-patterns = space
 let-and = sparse
 
 type-decl = sparse
+type-decl-indent = 0
