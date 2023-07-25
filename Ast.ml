@@ -1,117 +1,116 @@
-type operator =
-  | O_plus
-  | O_minus
-  | O_mul
-  | O_div
-  | O_mod
+open Types
 
-and t_type =
-  | T_int
-  | T_char
-  | T_array of t_type * int
+type operator =
+| O_plus
+| O_minus
+| O_mul
+| O_div
+| O_mod
 
 and binOperator =
-  | O_and
-  | O_or
-  | O_equal
-  | O_less
-  | O_greater
-  | O_less_eq
-  | O_greater_eq
-  | O_not_equal
-  | O_not
+| O_and
+| O_or
+| O_equal
+| O_less
+| O_greater
+| O_less_eq
+| O_greater_eq
+| O_not_equal
+| O_not
 
 and funcDef = {
-  header : header;
-  local_def_list : localDef list;
-  block : block;
+header : header;
+local_def_list : localDef list;
+block : block;
 }
 
 and header = {
-  id : string;
-  fpar_def_list : fparDef list;
-  ret_type : retType;
+id : string;
+fpar_def_list : fparDef list;
+ret_type : retType;
 }
 
 and fparDef = {
-  ref : string;
-  id_list : string list;
-  fpar_type : fparType;
+ref : bool;
+id_list : string list;
+fpar_type : fparType;
 }
 
 and dataType =
-  | Const of string
-  | Char of string
+| ConstInt
+| ConstChar
 
 and myType = {
-  data_type : dataType;
-  array_dimension : int list;
+data_type : dataType;
+array_dimension : int list;
 }
 
 and retType =
-  | RetDataType of dataType
-  | Nothing of string
+| RetDataType of dataType
+| Nothing
 
 and fparType = {
-  data_type2 : dataType;
-  array_dimension2 : int list;
-  has_squares : bool;
+data_type2 : dataType;
+array_dimension2 : int list;
+has_squares : bool;
 }
 
 and localDef =
-  | L_FuncDef of funcDef
-  | L_FuncDecl of funcDecl
-  | L_varDef of varDef
+| L_FuncDef of funcDef
+| L_FuncDecl of funcDecl
+| L_varDef of varDef
 
 and funcDecl = FuncDecl_Header of header
 
 and varDef = {
-  id_list : string list;
-  mytype : myType;
+id_list : string list;
+mytype : myType;
 }
 
 and stmt =
-  | S_assignment of lvalue * expr
-  | S_block of block
-  | S_func_call of funcCall
-  | S_if of cond * stmt
-  | S_if_else of cond * stmt * stmt
-  | S_while of cond * stmt
-  | S_return of expr
-  | S_semicolon of string
+| S_assignment of lvalue * sem_expr
+| S_block of block
+| S_func_call of funcCall
+| S_if of cond * stmt
+| S_if_else of cond * stmt * stmt
+| S_while of cond * stmt
+| S_return of sem_expr
+| S_semicolon
 
 and block = Block of stmt list
 
 and funcCall = {
-  id : string;
-  expr_list : expr list;
+id : string;
+expr_list : sem_expr list;
+func_type : Types.t_type;
 }
 
 and lvalue =
-  | L_id of string
-  | L_string of string
-  | L_comp of lvalue * expr
+| L_id of string
+| L_string of string
+| L_comp of lvalue * sem_expr
 
 and sem_expr = {
-  expr_kind : expr;
-  expr_type : Types.t_type;
+expr_kind : expr;
+expr_type : Types.t_type;
 }
 
 and expr =
-  | E_const of int
-  | E_char of char
-  | E_lvalue of lvalue
-  | E_func_call of funcCall
-  | E_op_expr of operator * expr
-  | E_op_expr_expr of expr * operator * expr
-  | E_expr_parenthesized of expr
+| E_const_int of int
+| E_const_char of char
+| E_lvalue of lvalue
+| E_func_call of funcCall
+| E_op_expr of operator * sem_expr
+| E_op_expr_expr of sem_expr * operator * sem_expr
+| E_expr_parenthesized of sem_expr
 
 and cond =
-  | C_not_cond of binOperator * cond
-  | C_cond_cond of cond * binOperator * cond
-  | C_expr_expr of expr * binOperator * expr
-  | C_cond_parenthesized of cond
+| C_not_cond of binOperator * cond
+| C_cond_cond of cond * binOperator * cond
+| C_expr_expr of sem_expr * binOperator * sem_expr
+| C_cond_parenthesized of cond
 
+(* Functions to construct the records above *)
 let newFuncDef (a, b, c) = { header = a; local_def_list = b; block = c }
 and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
 and newFparDef (a, b, c) = { ref = a; id_list = b; fpar_type = c }
@@ -121,14 +120,10 @@ and newFparType (a, b, c) =
   { data_type2 = a; array_dimension2 = b; has_squares = c }
 
 and newVarDef (a, b) = { id_list = a; mytype = b }
-and newFuncCall (a, b) = { id = a; expr_list = b }
+and newFuncCall (a, b, c) = { id = a; expr_list = b; func_type = c }
+and newSemExpr (a, b) = { expr_kind = a; expr_type = b }
 
-(* let rec print_fparDef_list fpar_def_list =
-   match fpar_def_list with
-   | [] -> Printf.printf("")
-   | h  -> print_fparDef h
-   | h :: tail ->  Printf.printf("; "); print_fparDef_list tail; *)
-
+(* Functions to print the ast *)
 let rec print_fparDef_list fpar_def_list =
   match fpar_def_list with
   | [] -> ()
@@ -156,33 +151,24 @@ and print_header header =
   Printf.printf ")"
 
 and print_fparDef fparDef =
-  match fparDef.ref with
-  | "" ->
-      Printf.printf "FparDef(";
-      print_idList fparDef.id_list;
-      Printf.printf ":";
-      print_fparType fparDef.fpar_type;
-      Printf.printf ")"
-  | "ref" ->
-      Printf.printf "FparDef(ref";
-      print_idList fparDef.id_list;
-      Printf.printf ":";
-      print_fparType fparDef.fpar_type;
-      Printf.printf ")"
+  Printf.printf "FparDef(";
+  if fparDef.ref then Printf.printf "ref";
+  print_idList fparDef.id_list;
+  Printf.printf ":";
+  print_fparType fparDef.fpar_type;
+  Printf.printf ")"
 
 and print_dataType dataType =
   match dataType with
-  | Const str -> Printf.printf "(DataType(int)"
-  | Char str -> Printf.printf "(DataType(char)"
+  | ConstInt -> Printf.printf "(DataType(int)"
+  | ConstChar -> Printf.printf "(DataType(char)"
 
 and print_myType myType =
   let rec help array_dimension =
     match array_dimension with
     | [] -> Printf.printf ""
     | h :: tail ->
-        Printf.printf "[";
-        Printf.printf "%d" h;
-        Printf.printf "]";
+        Printf.printf "[%d]" h;
         help tail
   in
   Printf.printf "MyType(";
@@ -194,7 +180,7 @@ and print_retType retType =
   let help retType =
     match retType with
     | RetDataType dataType -> print_dataType dataType
-    | Nothing nothing -> Printf.printf "nothing"
+    | Nothing -> Printf.printf "nothing"
   in
   Printf.printf "(RetType(";
   help retType;
@@ -204,18 +190,12 @@ and print_fparType fparType =
   let hasSquares =
     if fparType.has_squares = true then Printf.printf "[]" else Printf.printf ""
   in
-  match fparType.array_dimension2 with
-  | [] ->
-      Printf.printf "FparType(";
-      print_dataType fparType.data_type2;
-      hasSquares;
-      Printf.printf ")"
-  | list ->
-      Printf.printf "FparType(";
-      print_dataType fparType.data_type2;
-      hasSquares;
-      List.iter (fun x -> Printf.printf "[%d]" x) fparType.array_dimension2;
-      Printf.printf ")"
+  Printf.printf "FparType(";
+  print_dataType fparType.data_type2;
+  hasSquares;
+  if fparType.array_dimension2 <> [] then
+    List.iter (fun x -> Printf.printf "[%d]" x) fparType.array_dimension2;
+  Printf.printf ")"
 
 and print_localDef localDef =
   let help localDef =
@@ -257,7 +237,7 @@ and print_stmt stmt =
         Printf.printf "Assignment(";
         print_lvalue l;
         Printf.printf "<-";
-        print_expr e;
+        print_semExpr e;
         Printf.printf ";)"
     | S_block block -> print_block block
     | S_func_call f ->
@@ -284,9 +264,9 @@ and print_stmt stmt =
         Printf.printf ")"
     | S_return e ->
         Printf.printf "Return(";
-        print_expr e;
+        print_semExpr e;
         Printf.printf ";)"
-    | S_semicolon str -> Printf.printf "Semicolon(;)"
+    | S_semicolon -> Printf.printf "Semicolon(;)"
   in
   Printf.printf "Statement(";
   help stmt;
@@ -310,7 +290,7 @@ and print_exprList expr_list =
   match expr_list with
   | [] -> ()
   | h :: tail ->
-      print_expr h;
+      print_semExpr h;
       if tail <> [] then Printf.printf ", ";
       print_exprList tail
 
@@ -322,53 +302,77 @@ and print_lvalue lvalue =
     | L_comp (l, e) ->
         print_lvalue l;
         Printf.printf "[";
-        print_expr e;
+        print_semExpr e;
         Printf.printf "]"
   in
   Printf.printf "Lvalue(";
   help lvalue;
   Printf.printf ")"
 
+and print_semExpr semExpr =
+  Printf.printf "SemExpr(";
+  print_expr semExpr.expr_kind;
+  Printf.printf ",";
+  print_type semExpr.expr_type;
+  Printf.printf ")"
+
+and print_type =
+  let print_type_option = function
+    | Some t -> print_type t
+    | None -> Printf.printf "nothing"
+  in
+  function
+  | T_int -> Printf.printf "int"
+  | T_char -> Printf.printf "char"
+  | T_array (t, i) ->
+      print_type t;
+      Printf.printf "[%d]" i
+  | T_func t ->
+      Printf.printf "func(";
+      print_type_option t;
+      Printf.printf ")"
+
 and print_expr expr =
   let help expr =
     match expr with
-    | E_const x -> Printf.printf "Const(%d)" x
-    | E_char chr -> Printf.printf "Char(%c)" chr
+    | E_const_int x -> Printf.printf "ConstInt(%d)" x
+    | E_const_char chr -> Printf.printf "ConstChar(%c)" chr
     | E_lvalue l -> print_lvalue l
     | E_func_call f -> print_funcCall f
     | E_op_expr (op, e) -> (
         match op with
         | O_plus ->
             Printf.printf "+";
-            print_expr e
+            print_semExpr e
         | O_minus ->
             Printf.printf "-";
-            print_expr e)
+            print_semExpr e
+        | O_mul | O_div | O_mod -> ())
     | E_op_expr_expr (e1, op, e2) -> (
         match op with
         | O_plus ->
-            print_expr e1;
+            print_semExpr e1;
             Printf.printf "+";
-            print_expr e2
+            print_semExpr e2
         | O_minus ->
-            print_expr e1;
+            print_semExpr e1;
             Printf.printf "-";
-            print_expr e2
+            print_semExpr e2
         | O_mul ->
-            print_expr e1;
+            print_semExpr e1;
             Printf.printf "*";
-            print_expr e2
+            print_semExpr e2
         | O_div ->
-            print_expr e1;
+            print_semExpr e1;
             Printf.printf "div";
-            print_expr e2
+            print_semExpr e2
         | O_mod ->
-            print_expr e1;
+            print_semExpr e1;
             Printf.printf "mod";
-            print_expr e2)
+            print_semExpr e2)
     | E_expr_parenthesized e ->
         Printf.printf "(";
-        print_expr e;
+        print_semExpr e;
         Printf.printf ")"
   in
   Printf.printf "Expression(";
@@ -390,33 +394,37 @@ and print_cond cond =
         | O_or ->
             print_cond c1;
             Printf.printf "or";
-            print_cond c2)
+            print_cond c2
+        | O_equal | O_less | O_greater | O_less_eq | O_greater_eq
+         |O_not_equal | O_not ->
+            ())
     | C_expr_expr (e1, binop, e2) -> (
         match binop with
         | O_equal ->
-            print_expr e1;
+            print_semExpr e1;
             Printf.printf "=";
-            print_expr e2
+            print_semExpr e2
         | O_not_equal ->
-            print_expr e1;
+            print_semExpr e1;
             Printf.printf "#";
-            print_expr e2
+            print_semExpr e2
         | O_less ->
-            print_expr e1;
+            print_semExpr e1;
             Printf.printf "<";
-            print_expr e2
+            print_semExpr e2
         | O_greater ->
-            print_expr e1;
+            print_semExpr e1;
             Printf.printf ">";
-            print_expr e2
+            print_semExpr e2
         | O_less_eq ->
-            print_expr e1;
+            print_semExpr e1;
             Printf.printf "<=";
-            print_expr e2
+            print_semExpr e2
         | O_greater_eq ->
-            print_expr e1;
+            print_semExpr e1;
             Printf.printf ">=";
-            print_expr e2)
+            print_semExpr e2
+        | O_and | O_or | O_not -> ())
     | C_cond_parenthesized c ->
         Printf.printf "(";
         print_cond c;
@@ -427,9 +435,3 @@ and print_cond cond =
   Printf.printf ")"
 
 and print_on asts = print_funcDef asts
-
-and sem_expr_op expr_type =
-  if expr_type <> T_int then Printf.printf "Type error"
-
-and sem_expr_op_op expr1_type expr2_type =
-  if expr1_type <> expr2_type then Printf.printf "Type error"
