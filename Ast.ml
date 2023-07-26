@@ -127,6 +127,28 @@ and newFparType (a, b, c) =
 
 and newVarDef (a, b) = { id_list = a; mytype = b }
 and newFuncCall (a, b, c) = { id = a; expr_list = b; func_type = c }
+
+and newAssignment (a, b) =
+  let check = equal_type b.expr_type in
+  let error_str = Printf.eprintf "Semantic Error: Cannot assign to string" in
+  let rec help = function
+    | L_id _ -> Types.T_int
+    | L_comp (lv, _) -> help lv
+    | _ ->
+        error_str;
+        Types.T_int
+  in
+  match a with
+  | L_id id ->
+      check id.id_type;
+      S_assignment (a, b)
+  | L_comp (lv, _) ->
+      check (help lv);
+      S_assignment (a, b)
+  | _ ->
+      error_str;
+      S_assignment (a, b)
+
 and newSemExpr (a, b) = { expr_kind = a; expr_type = b }
 
 (* Functions to print the ast *)
@@ -303,7 +325,7 @@ and print_exprList expr_list =
 and print_lvalue lvalue =
   let help lvalue =
     match lvalue with
-    | L_id str -> Printf.printf "%s" str
+    | L_id id -> Printf.printf "%s" id.id_name
     | L_string str -> Printf.printf "%s" str
     | L_comp (l, e) ->
         print_lvalue l;
@@ -328,12 +350,12 @@ and print_type =
     | None -> Printf.printf "nothing"
   in
   function
-  | T_int -> Printf.printf "int"
-  | T_char -> Printf.printf "char"
-  | T_array (t, i) ->
+  | Types.T_int -> Printf.printf "int"
+  | Types.T_char -> Printf.printf "char"
+  | Types.T_array (t, i) ->
       print_type t;
       Printf.printf "[%d]" i
-  | T_func t ->
+  | Types.T_func t ->
       Printf.printf "func(";
       print_type_option t;
       Printf.printf ")"

@@ -23,7 +23,7 @@
 %token T_left_par T_right_par T_left_sqr T_right_sqr T_left_br T_right_br
 %token T_comma T_semicolon T_colon
 %token T_assignment
-%token <string> T_identifier
+%token <Ast.sem_id> T_identifier
 %token <int> T_integer
 %token <char> T_chr
 %token <string> T_string
@@ -60,6 +60,7 @@
 %type <funcCall> func_call
 %type <sem_expr list> expr_list
 %type <lvalue> l_value
+%type <lvalue> l_value_id_or_array
 %type <sem_expr> expr
 %type <cond> cond
 
@@ -85,7 +86,7 @@ fpar_def_list:
 
 fpar_def:
   T_ref T_identifier id_list T_colon fpar_type { newFparDef(true, $2 :: $3, $5) }
-| T_identifier id_list T_colon fpar_type { newFparDef(false, $2, $4) }
+| T_identifier id_list T_colon fpar_type { newFparDef(false, $1 :: $2, $4) }
 
 id_list:
   (* nothing *) { [] }
@@ -123,17 +124,7 @@ var_def:
 
 stmt:
   T_semicolon { S_semicolon }
-| l_value T_assignment expr T_semicolon {
-  match $1 with 
-  |  L_string _ -> Printf.eprintf("Cannot assign to string")
-  |  L_id id -> 
-    let x = id.id_type in
-      match id.id_type with
-      |  T_array _ _ -> Printf.eprintf("Cannot assign to array")
-      |  T_func _ -> (* we must see what will do with functions *)
-      |  _ -> equal_type x $3.expr_type; S_assignment($1, $3) 
-  end
-  }
+| l_value_id_or_array T_assignment expr T_semicolon { newAssignment($1, $3) }
 | block { S_block($1) }
 | func_call T_semicolon { S_func_call($1) }
 | T_if cond T_then stmt { S_if($2, $4) }
@@ -160,7 +151,17 @@ expr_list:
 l_value:
   T_identifier { L_id($1) }
 | T_string { L_string($1) }
-| l_value T_left_sqr expr T_right_sqr { L_comp($1, $3) }
+| l_value T_left_sqr expr T_right_sqr {
+    check_type_int $3.expr_type;
+    L_comp($1, $3)
+  }
+
+l_value_id_or_array:
+  T_identifier { L_id($1) }
+| l_value T_left_sqr expr T_right_sqr {
+    check_type_int $3.expr_type;
+    L_comp($1, $3)
+  }
 
 expr:
   T_integer { newSemExpr(E_const_int($1), T_int) }
