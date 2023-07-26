@@ -86,9 +86,15 @@ func_type : Types.t_type;
 }
 
 and lvalue =
-| L_id of string
+| L_id of sem_id
 | L_string of string
 | L_comp of lvalue * sem_expr
+
+(* added for stmts semantic checks. An identifier must have a type and we don't know it's type *)
+and sem_id = {
+  id_name = string;
+  id_type = Types.t_type (* what happens with T_func? Why does it exist? *)
+}
 
 and sem_expr = {
 expr_kind : expr;

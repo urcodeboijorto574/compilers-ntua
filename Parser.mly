@@ -123,7 +123,17 @@ var_def:
 
 stmt:
   T_semicolon { S_semicolon }
-| l_value T_assignment expr T_semicolon { S_assignment($1, $3) }
+| l_value T_assignment expr T_semicolon {
+  match $1 with 
+  |  L_string _ -> Printf.eprintf("Cannot assign to string")
+  |  L_id id -> 
+    let x = id.id_type in
+      match id.id_type with
+      |  T_array _ _ -> Printf.eprintf("Cannot assign to array")
+      |  T_func _ -> (* we must see what will do with functions *)
+      |  _ -> equal_type x $3.expr_type; S_assignment($1, $3) 
+  end
+  }
 | block { S_block($1) }
 | func_call T_semicolon { S_func_call($1) }
 | T_if cond T_then stmt { S_if($2, $4) }
