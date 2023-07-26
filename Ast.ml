@@ -92,8 +92,8 @@ and lvalue =
 
 (* added for stmts semantic checks. An identifier must have a type and we don't know it's type *)
 and sem_id = {
-  id_name = string;
-  id_type = Types.t_type (* what happens with T_func? Why does it exist? *)
+id_name : string;
+id_type : Types.t_type; (* what happens with T_func? Why does it exist? *)
 }
 
 and sem_expr = {
