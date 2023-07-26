@@ -1,6 +1,6 @@
 open Types
 
-type operator =
+type arithmOperator =
 | O_plus
 | O_minus
 | O_mul
@@ -106,8 +106,8 @@ and expr =
 | E_const_char of char
 | E_lvalue of lvalue
 | E_func_call of funcCall
-| E_op_expr of operator * sem_expr
-| E_op_expr_expr of sem_expr * operator * sem_expr
+| E_op_expr of arithmOperator * sem_expr
+| E_op_expr_expr of sem_expr * arithmOperator * sem_expr
 | E_expr_parenthesized of sem_expr
 
 and cond =

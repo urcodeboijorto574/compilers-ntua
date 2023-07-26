@@ -62,7 +62,10 @@
 %type <lvalue> l_value
 %type <lvalue> l_value_id_or_array
 %type <sem_expr> expr
+%type <arithmOperator> arithm_oper
 %type <cond> cond
+%type <binOperator> bin_oper_cond
+%type <binOperator> bin_oper_expr
 
 %%
 
@@ -177,58 +180,36 @@ expr:
     check_type_int $2.expr_type;
     newSemExpr(E_op_expr(O_minus, $2), $2.expr_type)
   }
-| expr T_plus expr {
+| expr arithm_oper expr {
     equal_type $1.expr_type $3.expr_type;
     check_type_int $1.expr_type;
-    newSemExpr(E_op_expr_expr($1, O_plus, $3), $2.expr_type)
+    newSemExpr(E_op_expr_expr($1, $2, $3), T_int)
   }
-| expr T_minus expr {
-    equal_type $1.expr_type $3.expr_type;
-    check_type_int $1.expr_type;
-    newSemExpr(E_op_expr_expr($1, O_minus, $3), $2.expr_type)
-  }
-| expr T_mul expr {
-    equal_type $1.expr_type $3.expr_type;
-    check_type_int $1.expr_type;
-    newSemExpr(E_op_expr_expr($1, O_mul, $3), $2.expr_type)
-  }
-| expr T_div expr {
-    equal_type $1.expr_type $3.expr_type;
-    check_type_int $1.expr_type;
-    newSemExpr(E_op_expr_expr($1, O_div, $3), $2.expr_type)
-  }
-| expr T_mod expr {
-    equal_type $1.expr_type $3.expr_type;
-    check_type_int $1.expr_type;
-    newSemExpr(E_op_expr_expr($1, O_mod, $3), $2.expr_type)
-  }
+
+arithm_oper:
+  T_plus { O_plus }
+| T_minus { O_minus }
+| T_mul { O_mul }
+| T_div { O_div }
+| T_mod { O_mod }
 
 cond:
   T_left_par cond T_right_par { C_cond_parenthesized($2) }
 | T_not cond { C_not_cond(O_not, $2) }
-| cond T_and cond { C_cond_cond($1, O_and, $3) }
-| cond T_or cond { C_cond_cond($1, O_or, $3) }
-| expr T_equal expr {
-    equal_type $1.expr_type $2.expr_type;
-    C_expr_expr($1, O_equal, $3)
+| cond bin_oper_cond cond { C_cond_cond($1, $2, $3) }
+| expr bin_oper_expr expr {
+    equal_type $1.expr_type $3.expr_type;
+    C_expr_expr($1, $2, $3)
   }
-| expr T_less expr {
-    equal_type $1.expr_type $2.expr_type;
-    C_expr_expr($1, O_less, $3)
-  }
-| expr T_less_eq expr {
-    equal_type $1.expr_type $2.expr_type;
-    C_expr_expr($1, O_less_eq, $3)
-  }
-| expr T_greater expr {
-    equal_type $1.expr_type $2.expr_type;
-    C_expr_expr($1, O_greater, $3)
-  }
-| expr T_greater_eq expr {
-    equal_type $1.expr_type $2.expr_type;
-    C_expr_expr($1, O_greater_eq, $3)
-  }
-| expr T_not_equal expr {
-    equal_type $1.expr_type $2.expr_type;
-    C_expr_expr($1, O_not_equal, $3)
-  }
+
+bin_oper_cond:
+  T_and { O_and }
+| T_or { O_or }
+
+bin_oper_expr:
+  T_equal { O_equal }
+| T_less { O_less }
+| T_less_eq { O_less_eq }
+| T_greater { O_greater }
+| T_greater_eq { O_greater_eq }
+| T_not_equal { O_not_equal }
