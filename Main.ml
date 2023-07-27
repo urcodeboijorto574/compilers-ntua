@@ -1,4 +1,5 @@
-open Ast
+open PrintAst
+open SemAst
 
 let main =
   let lexbuf = Lexing.from_channel stdin in

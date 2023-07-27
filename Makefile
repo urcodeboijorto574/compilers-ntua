@@ -18,7 +18,7 @@ OCAMLDEP=ocamldep
 %.cmo %.cmi: %.ml
 	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
 
-grace$(EXE): Types.cmo Ast.cmo Lexer.cmo Parser.cmo Main.cmo
+grace$(EXE): Types.cmo Symbol.cmo PrintAst.cmo SemAst.cmo Ast.cmo Lexer.cmo Parser.cmo Main.cmo
 	$(OCAMLC) $(OCAMLC_FLAGS) -o $@ $^
 
 Lexer.ml: Lexer.mll
@@ -31,7 +31,7 @@ Parser.ml Parser.mli: Parser.mly
 
 -include .depend
 
-depend: Types.ml Types.mli Ast.ml Lexer.ml Lexer.mli Parser.ml Parser.mli Main.ml
+depend: Types.ml Types.mli Symbol.ml Symbol.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli Ast.ml Lexer.ml Lexer.mli Parser.ml Parser.mli Main.ml
 	$(OCAMLDEP) $^ > .depend
 
 clean:
@@ -41,5 +41,5 @@ distclean: clean
 	$(RM) grace$(EXE) .depend
 
 # To format the ocaml code, first install the ocamlformat tool with "opam install ocamlformat"
-format: Ast.ml Lexer.mli Main.ml Symbol.ml Symbol.mli Types.ml Types.mli
+format: Ast.ml Lexer.mli Main.ml Symbol.ml Symbol.mli Types.ml Types.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli
 	ocamlformat -i $^
