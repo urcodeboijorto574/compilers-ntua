@@ -8,7 +8,7 @@ let main =
     Printf.printf "Successful parsing.\n";
     print_on asts;
     Printf.printf "\n";
-    (* sem_on asts; *)
+    sem_on asts;
     exit 0
   with Parsing.Parse_error ->
     Printf.eprintf "syntax error\n";

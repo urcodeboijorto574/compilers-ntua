@@ -32,30 +32,25 @@ fpar_def_list : fparDef list;
 ret_type : retType;
 }
 
+and retType =
+| RetDataType of dataType
+| Nothing
+
 and fparDef = {
 ref : bool;
 id_list : string list;
 fpar_type : fparType;
 }
 
-and dataType =
-| ConstInt
-| ConstChar
-
-and myType = {
-data_type : dataType;
-array_dimension : int list;
-}
-
-and retType =
-| RetDataType of dataType
-| Nothing
-
 and fparType = {
 data_type : dataType;
 array_dimension : int list;
 has_squares : bool;
 }
+
+and dataType =
+| ConstInt
+| ConstChar
 
 and localDef =
 | L_FuncDef of funcDef
@@ -66,8 +61,15 @@ and funcDecl = FuncDecl_Header of header
 
 and varDef = {
 id_list : string list;
-mytype : myType;
+var_type : varType;
 }
+
+and varType = {
+data_type : dataType;
+array_dimension : int list;
+}
+
+and block = Block of stmt list
 
 and stmt =
 | S_assignment of lvalue * expr
@@ -79,25 +81,12 @@ and stmt =
 | S_return of expr option
 | S_semicolon
 
-and block = Block of stmt list
-
-and funcCall = {
-id : string;
-expr_list : expr list;
-func_type : Types.t_type;
-}
-
 and lvalue =
 | L_id of string
 | L_string of string
 | L_comp of lvalue * expr
 
-and expr = {
-expr_value : exprValue;
-expr_type : Types.t_type;
-}
-
-and exprValue =
+and expr =
 | E_const_int of int
 | E_const_char of char
 | E_lvalue of lvalue
@@ -105,6 +94,12 @@ and exprValue =
 | E_sgn_expr of sign * expr
 | E_op_expr_expr of expr * arithmOperator * expr
 | E_expr_parenthesized of expr
+
+and funcCall = {
+id : string;
+expr_list : expr list;
+func_type : Types.t_type;
+}
 
 and cond =
 | C_not_cond of binOperator * cond
@@ -116,25 +111,10 @@ and cond =
 let newFuncDef (a, b, c) = { header = a; local_def_list = b; block = c }
 and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
 and newFparDef (a, b, c) = { ref = a; id_list = b; fpar_type = c }
-and newMyType (a, b) = { data_type = a; array_dimension = b }
+and newVarType (a, b) = { data_type = a; array_dimension = b }
 
 and newFparType (a, b, c) =
   { data_type = a; array_dimension = b; has_squares = c }
 
-and newVarDef (a, b) = { id_list = a; mytype = b }
+and newVarDef (a, b) = { id_list = a; var_type = b }
 and newFuncCall (a, b, c) = { id = a; expr_list = b; func_type = c }
-
-and newAssignment (a, b) =
-  let error_str = Printf.eprintf "Semantic Error: Cannot assign to string\n" in
-  match a with
-  | L_id id ->
-      (* TODO: this requires symbol table "equal_type T_int ... " *)
-      S_assignment (a, b)
-  | L_comp (lv, _) ->
-      (* TODO: this requires symbol table *)
-      S_assignment (a, b)
-  | _ ->
-      error_str;
-      S_assignment (a, b)
-
-and newExpr (a, b) = { expr_value = a; expr_type = b }
