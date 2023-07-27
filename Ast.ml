@@ -132,7 +132,7 @@ and newVarDef (a, b) = { id_list = a; mytype = b }
 and newFuncCall (a, b, c) = { id = a; expr_list = b; func_type = c }
 
 and newAssignment (a, b) =
-  let error_str = Printf.eprintf "Semantic Error: Cannot assign to string" in
+  let error_str = Printf.eprintf "Semantic Error: Cannot assign to string\n" in
   match a with
   | L_id id ->
       (* TODO: this requires symbol table "equal_type T_int ... " *)
