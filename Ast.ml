@@ -7,6 +7,10 @@ type arithmOperator =
 | O_div
 | O_mod
 
+and sign =
+| O_plus
+| O_minus
+
 and binOperator =
 | O_and
 | O_or
@@ -80,22 +84,21 @@ and stmt =
 and block = Block of stmt list
 
 and funcCall = {
-id : string;
+id : string; (* was sem_id when the comment below wasn't a comment *)
 expr_list : sem_expr list;
 func_type : Types.t_type;
 }
 
 and lvalue =
-| L_id of sem_id
+| L_id of string
 | L_string of string
 | L_comp of lvalue * sem_expr
 
 (* added for stmts semantic checks. An identifier must have a type and we don't know it's type *)
-and sem_id = {
-id_name : string;
-id_type : Types.t_type; (* what happens with T_func? Why does it exist? *)
-}
-
+(* and sem_id = {
+   id_name : string;
+   id_type : Types.t_type; (* what happens with T_func? Why does it exist? *)
+   } *)
 and sem_expr = {
 expr_kind : expr;
 expr_type : Types.t_type;
@@ -106,7 +109,7 @@ and expr =
 | E_const_char of char
 | E_lvalue of lvalue
 | E_func_call of funcCall
-| E_op_expr of arithmOperator * sem_expr
+| E_sgn_expr of sign * sem_expr
 | E_op_expr_expr of sem_expr * arithmOperator * sem_expr
 | E_expr_parenthesized of sem_expr
 
@@ -129,21 +132,13 @@ and newVarDef (a, b) = { id_list = a; mytype = b }
 and newFuncCall (a, b, c) = { id = a; expr_list = b; func_type = c }
 
 and newAssignment (a, b) =
-  let check = equal_type b.expr_type in
   let error_str = Printf.eprintf "Semantic Error: Cannot assign to string" in
-  let rec help = function
-    | L_id _ -> Types.T_int
-    | L_comp (lv, _) -> help lv
-    | _ ->
-        error_str;
-        Types.T_int
-  in
   match a with
   | L_id id ->
-      check id.id_type;
+      (* TODO: this requires symbol table "equal_type T_int ... " *)
       S_assignment (a, b)
   | L_comp (lv, _) ->
-      check (help lv);
+      (* TODO: this requires symbol table *)
       S_assignment (a, b)
   | _ ->
       error_str;
@@ -164,7 +159,11 @@ and print_funcDef funcDef =
   Printf.printf "FuncDef(";
   print_header funcDef.header;
   Printf.printf ", ";
-  List.iter print_localDef funcDef.local_def_list;
+  if funcDef.local_def_list <> [] then (
+    List.iter print_localDef funcDef.local_def_list;
+    Printf.printf "")
+  else
+    Printf.printf "%s" "(noLocalDef)";
   Printf.printf ", ";
   print_block funcDef.block;
   Printf.printf ")"
@@ -325,7 +324,7 @@ and print_exprList expr_list =
 and print_lvalue lvalue =
   let help lvalue =
     match lvalue with
-    | L_id id -> Printf.printf "%s" id.id_name
+    | L_id id -> Printf.printf "%s" id
     | L_string str -> Printf.printf "%s" str
     | L_comp (l, e) ->
         print_lvalue l;
@@ -338,27 +337,27 @@ and print_lvalue lvalue =
   Printf.printf ")"
 
 and print_semExpr semExpr =
+  let rec print_type =
+    let print_type_option = function
+    | Some t -> print_type t
+    | None -> Printf.printf "nothing"
+    in
+    function
+    | Types.T_int -> Printf.printf "int"
+    | Types.T_char -> Printf.printf "char"
+    | Types.T_array (t, i) ->
+        print_type t;
+        Printf.printf "[%d]" i
+    | Types.T_func t ->
+        Printf.printf "func(";
+        print_type_option t;
+        Printf.printf ")"
+  in
   Printf.printf "SemExpr(";
   print_expr semExpr.expr_kind;
   Printf.printf ",";
   print_type semExpr.expr_type;
   Printf.printf ")"
-
-and print_type =
-  let print_type_option = function
-    | Some t -> print_type t
-    | None -> Printf.printf "nothing"
-  in
-  function
-  | Types.T_int -> Printf.printf "int"
-  | Types.T_char -> Printf.printf "char"
-  | Types.T_array (t, i) ->
-      print_type t;
-      Printf.printf "[%d]" i
-  | Types.T_func t ->
-      Printf.printf "func(";
-      print_type_option t;
-      Printf.printf ")"
 
 and print_expr expr =
   let help expr =
@@ -367,40 +366,28 @@ and print_expr expr =
     | E_const_char chr -> Printf.printf "ConstChar(%c)" chr
     | E_lvalue l -> print_lvalue l
     | E_func_call f -> print_funcCall f
-    | E_op_expr (op, e) -> (
+    | E_sgn_expr (op, s_e) -> (
         match op with
         | O_plus ->
             Printf.printf "+";
-            print_semExpr e
+            print_semExpr s_e
         | O_minus ->
             Printf.printf "-";
-            print_semExpr e
-        | O_mul | O_div | O_mod -> ())
-    | E_op_expr_expr (e1, op, e2) -> (
-        match op with
-        | O_plus ->
-            print_semExpr e1;
-            Printf.printf "+";
-            print_semExpr e2
-        | O_minus ->
-            print_semExpr e1;
-            Printf.printf "-";
-            print_semExpr e2
-        | O_mul ->
-            print_semExpr e1;
-            Printf.printf "*";
-            print_semExpr e2
-        | O_div ->
-            print_semExpr e1;
-            Printf.printf "div";
-            print_semExpr e2
-        | O_mod ->
-            print_semExpr e1;
-            Printf.printf "mod";
-            print_semExpr e2)
-    | E_expr_parenthesized e ->
+            print_semExpr s_e)
+    | E_op_expr_expr (s_e1, op, s_e2) ->
+        print_semExpr s_e1;
+        let str_from_op = function
+        | O_plus -> Printf.printf "+"
+        | O_minus -> Printf.printf "-"
+        | O_mul -> Printf.printf "*"
+        | O_div -> Printf.printf "div"
+        | O_mod -> Printf.printf "mod"
+        in
+        str_from_op op;
+        print_semExpr s_e2
+    | E_expr_parenthesized s_e ->
         Printf.printf "(";
-        print_semExpr e;
+        print_semExpr s_e;
         Printf.printf ")"
   in
   Printf.printf "Expression(";

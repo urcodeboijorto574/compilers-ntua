@@ -68,7 +68,7 @@ rule lexer = parse
 | "$$"  { multi_comments lexbuf }
 | '$'   { comment lexbuf }
 
-| identifier  { T_identifier { id_name = (Lexing.lexeme lexbuf); id_type = Types.T_int (* TODO: this is a placeholder *) } }
+| identifier  { T_identifier (Lexing.lexeme lexbuf) }
 | integer     { T_integer (int_of_string (Lexing.lexeme lexbuf)) }
 
 | '\n'                                  { incr num_lines; lexer lexbuf }

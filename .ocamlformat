@@ -9,7 +9,7 @@ break-before-in = fit-or-vertical
 extension-indent = 2
 field-space = loose
 function-indent = 0
-function-indent-nested = never
+function-indent-nested = always
 
 if-then-else = fit-or-vertical
 indicate-nested-or-patterns = space

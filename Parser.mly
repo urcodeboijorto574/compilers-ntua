@@ -23,7 +23,7 @@
 %token T_left_par T_right_par T_left_sqr T_right_sqr T_left_br T_right_br
 %token T_comma T_semicolon T_colon
 %token T_assignment
-%token <Ast.sem_id> T_identifier
+%token <string> T_identifier
 %token <int> T_integer
 %token <char> T_chr
 %token <string> T_string
@@ -127,7 +127,7 @@ var_def:
 
 stmt:
   T_semicolon { S_semicolon }
-| l_value_id_or_array T_assignment expr T_semicolon { newAssignment($1, $3) }
+| l_value_id_or_array T_assignment expr T_semicolon { newAssignment($1, $3) (* TODO: this requires symbol table *)}
 | block { S_block($1) }
 | func_call T_semicolon { S_func_call($1) }
 | T_if cond T_then stmt { S_if($2, $4) }
@@ -145,7 +145,7 @@ stmt_list:
 
 func_call:
   T_identifier T_left_par T_right_par { newFuncCall($1, [], T_func(None)) }
-| T_identifier T_left_par expr_list T_right_par { newFuncCall($1, $3, T_func(Some(T_int))) }
+| T_identifier T_left_par expr_list T_right_par { newFuncCall($1, $3, T_func(Some(T_int))) (* TODO: this requires symbol table *)}
 
 expr_list:
   expr { [$1] }
@@ -174,11 +174,11 @@ expr:
 | func_call { newSemExpr(E_func_call($1), $1.func_type) }
 | T_plus expr {
     check_type_int $2.expr_type;
-    newSemExpr(E_op_expr(O_plus, $2), $2.expr_type)
+    newSemExpr(E_sgn_expr(O_plus, $2), $2.expr_type)
   }
 | T_minus expr {
     check_type_int $2.expr_type;
-    newSemExpr(E_op_expr(O_minus, $2), $2.expr_type)
+    newSemExpr(E_sgn_expr(O_minus, $2), $2.expr_type)
   }
 | expr arithm_oper expr {
     equal_type $1.expr_type $3.expr_type;
