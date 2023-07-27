@@ -58,10 +58,10 @@
 %type <block> block
 %type <stmt list> stmt_list
 %type <funcCall> func_call
-%type <sem_expr list> expr_list
+%type <expr list> expr_list
 %type <lvalue> l_value
 %type <lvalue> l_value_id_or_array
-%type <sem_expr> expr
+%type <expr> expr
 %type <arithmOperator> arithm_oper
 %type <cond> cond
 %type <binOperator> bin_oper_cond
@@ -133,8 +133,8 @@ stmt:
 | T_if cond T_then stmt { S_if($2, $4) }
 | T_if cond T_then stmt T_else stmt { S_if_else($2, $4, $6) }
 | T_while cond T_do stmt { S_while($2, $4) }
-| T_return T_semicolon { S_semicolon }
-| T_return expr T_semicolon { S_return($2) }
+| T_return T_semicolon { S_return(None) }
+| T_return expr T_semicolon { S_return(Some($2)) }
 
 block:
   T_left_br stmt_list T_right_br { Block($2) }
@@ -167,23 +167,23 @@ l_value_id_or_array:
   }
 
 expr:
-  T_integer { newSemExpr(E_const_int($1), T_int) }
-| T_chr { newSemExpr(E_const_char($1), T_char) }
-| l_value { newSemExpr(E_lvalue($1), T_int(* TODO: missing value here, T_int is placeholder *)) }
-| T_left_par expr T_right_par { newSemExpr(E_expr_parenthesized($2), $2.expr_type) }
-| func_call { newSemExpr(E_func_call($1), $1.func_type) }
+  T_integer { newExpr(E_const_int($1), T_int) }
+| T_chr { newExpr(E_const_char($1), T_char) }
+| l_value { newExpr(E_lvalue($1), T_int (* TODO: missing value here, T_int is placeholder *)) }
+| T_left_par expr T_right_par { newExpr(E_expr_parenthesized($2), $2.expr_type) }
+| func_call { newExpr(E_func_call($1), $1.func_type) }
 | T_plus expr {
     check_type_int $2.expr_type;
-    newSemExpr(E_sgn_expr(O_plus, $2), $2.expr_type)
+    newExpr(E_sgn_expr(O_plus, $2), $2.expr_type)
   }
 | T_minus expr {
     check_type_int $2.expr_type;
-    newSemExpr(E_sgn_expr(O_minus, $2), $2.expr_type)
+    newExpr(E_sgn_expr(O_minus, $2), $2.expr_type)
   }
 | expr arithm_oper expr {
     equal_type $1.expr_type $3.expr_type;
     check_type_int $1.expr_type;
-    newSemExpr(E_op_expr_expr($1, $2, $3), T_int)
+    newExpr(E_op_expr_expr($1, $2, $3), T_int)
   }
 
 arithm_oper:
