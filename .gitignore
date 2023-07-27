@@ -19,3 +19,8 @@
 !Symbol.mli
 !Types.ml
 !Types.mli
+
+!PrintAst.ml
+!PrintAst.mli
+!SemAst.ml
+!SemAst.mli
