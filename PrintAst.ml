@@ -30,6 +30,16 @@ and print_header header =
   print_retType header.ret_type;
   Printf.printf ")"
 
+and print_retType retType =
+  let help retType =
+    match retType with
+    | RetDataType dataType -> print_dataType dataType
+    | Nothing -> Printf.printf "nothing"
+  in
+  Printf.printf "(RetType(";
+  help retType;
+  Printf.printf ")"
+
 and print_fparDef fparDef =
   Printf.printf "FparDef(";
   if fparDef.ref then Printf.printf "ref";
@@ -40,30 +50,18 @@ and print_fparDef fparDef =
 
 and print_dataType dataType =
   match dataType with
-  | ConstInt -> Printf.printf "(DataType(int)"
-  | ConstChar -> Printf.printf "(DataType(char)"
+  | ConstInt -> Printf.printf "(DataType(int))"
+  | ConstChar -> Printf.printf "(DataType(char))"
 
-and print_myType myType =
+and print_varType varType =
   let rec help array_dimension =
     match array_dimension with
     | [] -> Printf.printf ""
-    | h :: tail ->
-        Printf.printf "[%d]" h;
-        help tail
+    | ad -> List.iter (Printf.printf "[%d]") ad
   in
-  Printf.printf "MyType(";
-  print_dataType myType.data_type;
-  help myType.array_dimension;
-  Printf.printf ")"
-
-and print_retType retType =
-  let help retType =
-    match retType with
-    | RetDataType dataType -> print_dataType dataType
-    | Nothing -> Printf.printf "nothing"
-  in
-  Printf.printf "(RetType(";
-  help retType;
+  Printf.printf "VarType(";
+  print_dataType varType.data_type;
+  help varType.array_dimension;
   Printf.printf ")"
 
 and print_fparType fparType =
@@ -103,11 +101,11 @@ and print_idList idList =
       Printf.printf "%s ," h;
       print_idList tail
 
-and print_varDef varDef =
+and print_varDef (varDef : Ast.varDef) =
   Printf.printf "VarDef(var";
   print_idList varDef.id_list;
   Printf.printf ":";
-  print_myType varDef.mytype;
+  print_varType varDef.var_type;
   Printf.printf ";)"
 
 and print_stmt stmt =
@@ -146,8 +144,10 @@ and print_stmt stmt =
         Printf.printf "Return(";
         match e with
         | None -> ()
-        | Some v -> print_expr v Printf.printf ";)"
-        | S_semicolon -> Printf.printf "Semicolon(;)")
+        | Some v ->
+            print_expr v;
+            Printf.printf ";)")
+    | S_semicolon -> Printf.printf "Semicolon(;)"
   in
   Printf.printf "Statement(";
   help stmt;
@@ -191,61 +191,36 @@ and print_lvalue lvalue =
   Printf.printf ")"
 
 and print_expr expr =
-  let rec print_type =
-    let print_type_option = function
-    | Some t -> print_type t
-    | None -> Printf.printf "nothing"
-    in
-    function
-    | Types.T_int -> Printf.printf "int"
-    | Types.T_char -> Printf.printf "char"
-    | Types.T_array (t, i) ->
-        print_type t;
-        Printf.printf "[%d]" i
-    | Types.T_func t ->
-        Printf.printf "func(";
-        print_type_option t;
-        Printf.printf ")"
-  in
-  Printf.printf "Expr(";
-  print_exprValue expr.expr_value;
-  Printf.printf ",";
-  print_type expr.expr_type;
-  Printf.printf ")"
-
-and print_exprValue expr =
-  let help expr =
-    match expr with
-    | E_const_int x -> Printf.printf "ConstInt(%d)" x
-    | E_const_char chr -> Printf.printf "ConstChar(%c)" chr
-    | E_lvalue l -> print_lvalue l
-    | E_func_call f -> print_funcCall f
-    | E_sgn_expr (op, e) -> (
-        match op with
-        | O_plus ->
-            Printf.printf "+";
-            print_expr e
-        | O_minus ->
-            Printf.printf "-";
-            print_expr e)
-    | E_op_expr_expr (e1, op, e2) ->
-        print_expr e1;
-        let str_from_op = function
+  Printf.printf "Expression(";
+  (match expr with
+  | E_const_int x -> Printf.printf "ConstInt(%d)" x
+  | E_const_char chr -> Printf.printf "ConstChar(%c)" chr
+  | E_lvalue l -> print_lvalue l
+  | E_func_call f -> print_funcCall f
+  | E_sgn_expr ((op : sign), e) -> (
+      match op with
+      | O_plus ->
+          Printf.printf "+";
+          print_expr e
+      | O_minus ->
+          Printf.printf "-";
+          print_expr e)
+  | E_op_expr_expr (e1, (op : arithmOperator), e2) ->
+      print_expr e1;
+      let str_from_op (ao : arithmOperator) =
+        match ao with
         | O_plus -> Printf.printf "+"
         | O_minus -> Printf.printf "-"
         | O_mul -> Printf.printf "*"
         | O_div -> Printf.printf "div"
         | O_mod -> Printf.printf "mod"
-        in
-        str_from_op op;
-        print_expr e2
-    | E_expr_parenthesized e ->
-        Printf.printf "(";
-        print_expr e;
-        Printf.printf ")"
-  in
-  Printf.printf "Expression(";
-  help expr;
+      in
+      str_from_op op;
+      print_expr e2
+  | E_expr_parenthesized e ->
+      Printf.printf "(";
+      print_expr e;
+      Printf.printf ")");
   Printf.printf ")"
 
 and print_cond cond =
