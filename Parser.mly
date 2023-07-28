@@ -3,22 +3,16 @@
   open Types
 %}
 
-%token T_while T_do
-%token T_if T_then T_else
+%token T_while T_do T_if T_then T_else
 %token T_fun
-%token T_int
+%token T_int T_char T_var
 %token T_nothing
 %token T_ref
 %token T_return
 
-%token T_or
-%token T_not
-%token T_and
-%token T_plus T_minus
-%token T_mul T_mod T_div
-
-%token T_char
-%token T_var
+%token T_plus T_minus T_mul T_mod T_div
+%token T_or T_not T_and
+%token T_equal T_not_equal T_less_eq T_greater_eq T_less T_greater
 
 %token T_left_par T_right_par T_left_sqr T_right_sqr T_left_br T_right_br
 %token T_comma T_semicolon T_colon
@@ -30,14 +24,18 @@
 
 %token T_eof
 
-(* TODO: check the operator hierarchy below, for re-assurance *)
-%token T_equal T_not_equal T_less_eq T_greater_eq T_less T_greater
+
+(* Operators' hierarchy *)
 %left T_or
 %left T_and
+%nonassoc T_not
 %left T_plus T_minus
 %left T_mul T_mod T_div
-%nonassoc T_not
 
+%nonassoc T_then
+%nonassoc T_else
+
+(* Types of non-terminal symbols *)
 %start program
 %type <Ast.funcDef> program
 %type <funcDef> func_def
@@ -61,10 +59,7 @@
 %type <expr> expr
 %type <funcCall> func_call
 %type <expr list> expr_list
-%type <arithmOperator> arithm_oper
 %type <cond> cond
-%type <binOperator> bin_oper_cond
-%type <binOperator> bin_oper_expr
 
 %%
 
@@ -155,7 +150,11 @@ expr:
 | func_call { E_func_call($1) }
 | T_plus expr { E_sgn_expr(O_plus, $2) }
 | T_minus expr { E_sgn_expr(O_minus, $2) }
-| expr arithm_oper expr { E_op_expr_expr($1, $2, $3) }
+| expr T_plus expr { E_op_expr_expr($1, O_plus, $3) }
+| expr T_minus expr { E_op_expr_expr($1, O_minus, $3) }
+| expr T_mul expr { E_op_expr_expr($1, O_mul, $3) }
+| expr T_div expr { E_op_expr_expr($1, O_div, $3) }
+| expr T_mod expr { E_op_expr_expr($1, O_mod, $3) }
 
 func_call:
   T_identifier T_left_par T_right_par { newFuncCall($1, [], T_func(None)) }
@@ -165,27 +164,14 @@ expr_list:
   expr { [$1] }
 | expr T_comma expr_list { $1 :: $3 }
 
-arithm_oper:
-  T_plus { O_plus }
-| T_minus { O_minus }
-| T_mul { O_mul }
-| T_div { O_div }
-| T_mod { O_mod }
-
 cond:
   T_left_par cond T_right_par { C_cond_parenthesized($2) }
 | T_not cond { C_not_cond(O_not, $2) }
-| cond bin_oper_cond cond { C_cond_cond($1, $2, $3) }
-| expr bin_oper_expr expr { C_expr_expr($1, $2, $3) }
-
-bin_oper_cond:
-  T_and { O_and }
-| T_or { O_or }
-
-bin_oper_expr:
-  T_equal { O_equal }
-| T_less { O_less }
-| T_less_eq { O_less_eq }
-| T_greater { O_greater }
-| T_greater_eq { O_greater_eq }
-| T_not_equal { O_not_equal }
+| cond T_and cond { C_cond_cond($1, O_and, $3) }
+| cond T_or cond { C_cond_cond($1, O_or, $3) }
+| expr T_equal expr { C_expr_expr($1, O_equal, $3) }
+| expr T_not_equal expr { C_expr_expr($1, O_not_equal, $3) }
+| expr T_less expr { C_expr_expr($1, O_less, $3) }
+| expr T_less_eq expr { C_expr_expr($1, O_less_eq, $3) }
+| expr T_greater expr { C_expr_expr($1, O_greater, $3) }
+| expr T_greater_eq expr { C_expr_expr($1, O_greater_eq, $3) }
