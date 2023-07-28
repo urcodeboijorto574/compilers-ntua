@@ -12,9 +12,8 @@ and print_funcDef funcDef =
   Printf.printf "FuncDef(";
   print_header funcDef.header;
   Printf.printf ", ";
-  if funcDef.local_def_list <> [] then (
-    List.iter print_localDef funcDef.local_def_list;
-    Printf.printf "")
+  if funcDef.local_def_list <> [] then
+    List.iter print_localDef funcDef.local_def_list
   else
     Printf.printf "%s" "(noLocalDef)";
   Printf.printf ", ";
@@ -22,13 +21,13 @@ and print_funcDef funcDef =
   Printf.printf ")"
 
 and print_header header =
-  Printf.printf "Header(fun(";
+  Printf.printf "Header( fun(";
   Printf.printf "%s" header.id;
   Printf.printf "(";
   print_fparDef_list header.fpar_def_list;
-  Printf.printf "):";
+  Printf.printf "): ";
   print_retType header.ret_type;
-  Printf.printf ")"
+  Printf.printf "))"
 
 and print_retType retType =
   let help retType =
@@ -36,7 +35,7 @@ and print_retType retType =
     | RetDataType dataType -> print_dataType dataType
     | Nothing -> Printf.printf "nothing"
   in
-  Printf.printf "(RetType(";
+  Printf.printf "RetType(";
   help retType;
   Printf.printf ")"
 
@@ -44,14 +43,14 @@ and print_fparDef fparDef =
   Printf.printf "FparDef(";
   if fparDef.ref then Printf.printf "ref";
   print_idList fparDef.id_list;
-  Printf.printf ":";
+  Printf.printf " : ";
   print_fparType fparDef.fpar_type;
   Printf.printf ")"
 
 and print_dataType dataType =
   match dataType with
-  | ConstInt -> Printf.printf "(DataType(int))"
-  | ConstChar -> Printf.printf "(DataType(char))"
+  | ConstInt -> Printf.printf "DataType(int)"
+  | ConstChar -> Printf.printf "DataType(char)"
 
 and print_varType varType =
   let rec help array_dimension =
@@ -102,9 +101,9 @@ and print_idList idList =
       print_idList tail
 
 and print_varDef (varDef : Ast.varDef) =
-  Printf.printf "VarDef(var";
+  Printf.printf "VarDef( var";
   print_idList varDef.id_list;
-  Printf.printf ":";
+  Printf.printf " : ";
   print_varType varDef.var_type;
   Printf.printf ";)"
 
@@ -114,7 +113,7 @@ and print_stmt stmt =
     | S_assignment (l, e) ->
         Printf.printf "Assignment(";
         print_lvalue l;
-        Printf.printf "<-";
+        Printf.printf " <- ";
         print_expr e;
         Printf.printf ";)"
     | S_block block -> print_block block
@@ -122,17 +121,17 @@ and print_stmt stmt =
         print_funcCall f;
         Printf.printf ";"
     | S_if (c, s) ->
-        Printf.printf "If(If(";
+        Printf.printf "IfThen(If(";
         print_cond c;
         Printf.printf "), Then(";
         print_stmt s;
         Printf.printf "))"
     | S_if_else (c, s1, s2) ->
-        Printf.printf "IfElse(";
+        Printf.printf "IfThenElse(If(";
         print_cond c;
         Printf.printf "), Then(";
         print_stmt s1;
-        Printf.printf "), Else";
+        Printf.printf "), Else(";
         print_stmt s2;
         Printf.printf "))"
     | S_while (c, s) ->
@@ -200,20 +199,20 @@ and print_expr expr =
   | E_sgn_expr ((op : sign), e) -> (
       match op with
       | O_plus ->
-          Printf.printf "+";
+          Printf.printf " + ";
           print_expr e
       | O_minus ->
-          Printf.printf "-";
+          Printf.printf " - ";
           print_expr e)
   | E_op_expr_expr (e1, (op : arithmOperator), e2) ->
       print_expr e1;
       let str_from_op (ao : arithmOperator) =
         match ao with
-        | O_plus -> Printf.printf "+"
-        | O_minus -> Printf.printf "-"
-        | O_mul -> Printf.printf "*"
-        | O_div -> Printf.printf "div"
-        | O_mod -> Printf.printf "mod"
+        | O_plus -> Printf.printf " + "
+        | O_minus -> Printf.printf " - "
+        | O_mul -> Printf.printf " * "
+        | O_div -> Printf.printf " div "
+        | O_mod -> Printf.printf " mod "
       in
       str_from_op op;
       print_expr e2
@@ -227,17 +226,18 @@ and print_cond cond =
   let help cond =
     match cond with
     | C_not_cond (binop, c) ->
-        Printf.printf "not";
-        print_cond c
+        Printf.printf "not(";
+        print_cond c;
+        Printf.printf ")"
     | C_cond_cond (c1, binop, c2) -> (
         match binop with
         | O_and ->
             print_cond c1;
-            Printf.printf "and";
+            Printf.printf " and ";
             print_cond c2
         | O_or ->
             print_cond c1;
-            Printf.printf "or";
+            Printf.printf " or ";
             print_cond c2
         | O_equal | O_less | O_greater | O_less_eq | O_greater_eq
          |O_not_equal | O_not ->
@@ -246,27 +246,27 @@ and print_cond cond =
         match binop with
         | O_equal ->
             print_expr e1;
-            Printf.printf "=";
+            Printf.printf " = ";
             print_expr e2
         | O_not_equal ->
             print_expr e1;
-            Printf.printf "#";
+            Printf.printf " # ";
             print_expr e2
         | O_less ->
             print_expr e1;
-            Printf.printf "<";
+            Printf.printf " < ";
             print_expr e2
         | O_greater ->
             print_expr e1;
-            Printf.printf ">";
+            Printf.printf " > ";
             print_expr e2
         | O_less_eq ->
             print_expr e1;
-            Printf.printf "<=";
+            Printf.printf " <= ";
             print_expr e2
         | O_greater_eq ->
             print_expr e1;
-            Printf.printf ">=";
+            Printf.printf " >= ";
             print_expr e2
         | O_and | O_or | O_not -> ())
     | C_cond_parenthesized c ->
