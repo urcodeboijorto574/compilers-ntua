@@ -98,7 +98,6 @@ and expr =
 and funcCall = {
 id : string;
 expr_list : expr list;
-func_type : Types.t_type;
 }
 
 and cond =
@@ -117,4 +116,4 @@ and newFparType (a, b, c) =
   { data_type = a; array_dimension = b; has_squares = c }
 
 and newVarDef (a, b) = { id_list = a; var_type = b }
-and newFuncCall (a, b, c) = { id = a; expr_list = b; func_type = c }
+and newFuncCall (a, b) = { id = a; expr_list = b }
