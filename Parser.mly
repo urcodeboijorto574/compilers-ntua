@@ -3,6 +3,7 @@
   open Types
 %}
 
+(* Token declarations *)
 %token T_while T_do T_if T_then T_else
 %token T_fun
 %token T_int T_char T_var
@@ -23,7 +24,6 @@
 %token <string> T_string
 
 %token T_eof
-
 
 (* Operators' hierarchy *)
 %left T_or
@@ -157,8 +157,8 @@ expr:
 | expr T_mod expr { E_op_expr_expr($1, O_mod, $3) }
 
 func_call:
-  T_identifier T_left_par T_right_par { newFuncCall($1, [], T_func(None)) }
-| T_identifier T_left_par expr_list T_right_par { newFuncCall($1, $3, T_func(Some(T_int) (* TODO: placeholder *))) }
+  T_identifier T_left_par T_right_par { newFuncCall($1, []) }
+| T_identifier T_left_par expr_list T_right_par { newFuncCall($1, $3) }
 
 expr_list:
   expr { [$1] }
