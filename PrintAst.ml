@@ -64,12 +64,12 @@ and print_varType varType =
   Printf.printf ")"
 
 and print_fparType fparType =
-  let hasSquares =
-    if fparType.has_squares = true then Printf.printf "[]" else Printf.printf ""
+  let fixedSize =
+    if fparType.fixed_size = false then Printf.printf "[]" else Printf.printf ""
   in
   Printf.printf "FparType(";
   print_dataType fparType.data_type;
-  hasSquares;
+  fixedSize;
   if fparType.array_dimension <> [] then
     List.iter (fun x -> Printf.printf "[%d]" x) fparType.array_dimension;
   Printf.printf ")"

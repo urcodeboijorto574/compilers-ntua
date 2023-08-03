@@ -43,3 +43,6 @@ distclean: clean
 # To format the ocaml code, first install the ocamlformat tool with "opam install ocamlformat"
 format: Ast.ml Lexer.mli Main.ml Symbol.ml Symbol.mli Types.ml Types.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli
 	ocamlformat -i $^
+
+test: clean format depend
+	make
