@@ -4,13 +4,13 @@ type passing_params =
 
 and scope = {
 parent : scope option;
-symbol_entries : entry list;
+mutable symbol_entries : entry list;
 }
 
 and entry = {
 id : string;
 scope : scope;
-kind : entry_kind;
+mutable kind : entry_kind;
 }
 
 and entry_kind =
@@ -34,4 +34,7 @@ parameters_list : entry_parameter list;
 return_type : Types.t_type;
 }
 
+val create_symbol_table : int -> unit
 val current_scope : scope ref
+val open_scope : unit -> unit
+val close_scope : unit -> unit
