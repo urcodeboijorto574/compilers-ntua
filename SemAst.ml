@@ -2,7 +2,6 @@ open Ast
 open Symbol
 
 let rec sem_funcDef = function
-(* done *)
 | { header = h; local_def_list = l; block = b } ->
     sem_header h;
     sem_localDefList l;
@@ -35,13 +34,11 @@ and sem_localDefList = function
 | ldl -> List.iter sem_localDef ldl
 
 and sem_localDef = function
-(* done *)
 | L_FuncDef fd -> sem_funcDef fd
 | L_FuncDecl fd -> sem_funcDecl fd
 | L_varDef vd -> sem_varDef vd
 
-and sem_funcDecl = function (* done *)
-| FuncDecl_Header h -> sem_header h
+and sem_funcDecl = function FuncDecl_Header h -> sem_header h
 
 and sem_varDef = function
 (* TODO: insert to SymbolTable the variable's name, its type and the size
@@ -51,71 +48,86 @@ and sem_varDef = function
 and sem_block = function
 (* TODO: if a function has a return type,
    then its block must contain the statement 'return'
-   with the corresponding type returned *)
+   with the corresponding type returned.
+   The return type of sem_block will be Types.t_type option.
+   This will help distinguish whether the block has a return statement
+   with and expression or not. *)
 | Block [] -> ()
 | Block b -> List.iter sem_stmt b
 
 and sem_stmt = function
-| S_assignment (lv, e) ->
-    (* TODO: compare the types of the lv and e. lv shouldn't be a string
-       literal *)
-    ()
+| S_assignment (lv, e) -> (
+    let lv_t = sem_lvalue lv in
+    match lv_t with
+    | Types.T_array (T_char, _) ->
+        failwith "Assignment to string literal is not possible.\n"
+    | _ -> Types.equal_type (sem_lvalue lv) (sem_expr e))
 | S_block b -> sem_block b
-| S_func_call fc ->
-    (* TODO: find function in SymbolTable. Every param should have the same
-       type and, if is passed by reference, should be an lvalue. *)
-    List.iter sem_expr fc.expr_list
+| S_func_call fc -> Types.equal_type (T_func None) (sem_funcCall fc)
 | S_if (c, s) ->
-    (* done *)
     sem_cond c;
     sem_stmt s
 | S_if_else (c, s1, s2) ->
-    (* done *)
     sem_cond c;
     sem_stmt s1;
     sem_stmt s2
 | S_while (c, s) ->
-    (* done *)
     sem_cond c;
     sem_stmt s
 | S_return re -> (
     (* TODO: the type of re should be the type that the function returns.
        Also, this statement should be in every block of a function that
        returns a non-nothing value *)
-    match re with None -> () | Some v -> sem_expr v)
-| S_semicolon -> (* done *) ()
+    match re with
+    | None -> ()
+    | Some v ->
+        Types.equal_type (sem_expr v)
+          Types.T_int (* placeholder, needs SymbolTable *))
+| S_semicolon -> ()
 
 and sem_lvalue = function
 (* TODO: search in SymbolTable for its type *)
-| L_id _ -> ()
-| L_string _ -> ()
+| L_id _ -> Types.T_int (* placeholder, needs SymbolTable *)
+| L_string s -> Types.T_array (Types.T_char, String.length s)
 | L_comp (lv, e) ->
-    sem_lvalue lv;
-    (* TODO: e should be of type integer *) sem_expr e
+    Types.equal_type Types.T_int (sem_expr e);
+    let eValue =
+      match e with
+      | E_const_int i -> i
+      | E_lvalue lval -> 1 (* placeholder, needs SymbolTable *)
+      | E_func_call fc -> 1 (* placeholder, needs SymbolTable *)
+      | _ -> assert false
+    in
+    Types.T_array (sem_lvalue lv, eValue)
 
 and sem_expr = function
-| E_const_int ci -> (* TODO: should return Types.T_int *) ()
-| E_const_char cc -> (* TODO: should return Types.T_char *) ()
-| E_lvalue lv -> (* done *) sem_lvalue lv
-| E_func_call fc -> (* done *) sem_funcCall fc
-| E_sgn_expr (s, e) -> (* TODO: check for the type to be integer *) sem_expr e
+(* done *)
+| E_const_int ci -> Types.T_int
+| E_const_char cc -> Types.T_char
+| E_lvalue lv -> sem_lvalue lv
+| E_func_call fc -> sem_funcCall fc
+| E_sgn_expr (s, e) ->
+    Types.equal_type Types.T_int (sem_expr e);
+    Types.T_int
 | E_op_expr_expr (e1, ao, e2) ->
-    () (* TODO: types of e{1,2} should be integer *)
-| E_expr_parenthesized e -> (* done *) sem_expr e
+    Types.equal_type Types.T_int (sem_expr e1);
+    Types.equal_type Types.T_int (sem_expr e2);
+    Types.T_int
+| E_expr_parenthesized e -> sem_expr e
 
 and sem_cond = function
-| C_not_cond (bo, c) -> (* done *) sem_cond c
-| C_cond_cond (c1, bo, c2) ->
-    (* done *)
-    sem_cond c1;
-    sem_cond c2
+(* done *)
+| C_not_cond (bo, c) -> sem_cond c
+| C_cond_cond (c1, bo, c2) -> assert (sem_cond c1 = sem_cond c2)
 | C_expr_expr (e1, bo, e2) ->
-    ()
-    (* TODO: check for the types of e1, e2 to be the same. Return type bool *)
-| C_cond_parenthesized c -> (* done *) sem_cond c
+    let typ1, typ2 = (sem_expr e1, sem_expr e2) in
+    Types.equal_type typ1 typ2
+| C_cond_parenthesized c -> sem_cond c
 
 and sem_funcCall = function
-| _ -> (* TODO: check the number and types of arguments given *) ()
+| _ ->
+    (* TODO: check the number and types of arguments given *)
+    Types.T_func None (* placeholder, needs SymbolTable *)
 
 and sem_on asts =
   Symbol.create_symbol_table 100;

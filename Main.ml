@@ -8,5 +8,5 @@ let main =
     SemAst.sem_on asts;
     exit 0
   with Parsing.Parse_error ->
-    Printf.eprintf "syntax error\n";
+    Printf.eprintf "Syntax error\n";
     exit 1
