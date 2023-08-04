@@ -5,7 +5,7 @@ module HT = Hashtbl.Make (struct
   let hash = Hashtbl.hash
 end)
 
-type passing_params =
+type param_passing =
 | BY_VALUE
 | BY_REFERENCE
 
@@ -38,7 +38,7 @@ return_type : Types.t_type;
 
 and entry_parameter = {
 parameter_type : Types.t_type;
-passing : passing_params;
+passing : param_passing;
 }
 
 let current_scope = ref { parent = None; symbol_entries = [] }
@@ -55,3 +55,30 @@ let symbolTable = ref (HT.create 0)
 let create_symbol_table numOfBuckets =
   symbolTable := HT.create numOfBuckets;
   current_scope := { parent = None; symbol_entries = [] }
+
+let enter_entry ident eKind =
+  let e = { id = ident; scope = !current_scope; kind = eKind } in
+  HT.add !symbolTable ident e;
+  !current_scope.symbol_entries <- e :: !current_scope.symbol_entries
+
+let enter_variable id typ arrSize =
+  (* TODO: test*)
+  let kind =
+    ENTRY_variable { variable_type = typ; variable_array_size = arrSize }
+  in
+  enter_entry id kind
+
+let enter_function id (paramList : (Types.t_type * param_passing) list) retTyp =
+  (* TODO: test*)
+  let rec convert_list paramList =
+    match paramList with
+    | [] -> []
+    | (t, pp) :: tail ->
+        { parameter_type = t; passing = pp } :: convert_list tail
+  in
+  let getV = function None -> failwith "no value" | Some v -> v in
+  let kind =
+    ENTRY_function
+      { parameters_list = convert_list paramList; return_type = getV retTyp }
+  in
+  enter_entry id kind

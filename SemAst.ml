@@ -29,7 +29,8 @@ and sem_fparDef = function
 (* and sem_retType = () *)
 
 and sem_localDefList = function
-(* done *)
+(* TODO: open a new scope for this particular function.
+      All the variable/function declarations will be entered in this scope. *)
 | [] -> ()
 | ldl -> List.iter sem_localDef ldl
 
@@ -93,7 +94,6 @@ and sem_lvalue = function
     (* TODO: e should be of type integer *) sem_expr e
 
 and sem_expr = function
-(*  *)
 | E_const_int ci -> (* TODO: should return Types.T_int *) ()
 | E_const_char cc -> (* TODO: should return Types.T_char *) ()
 | E_lvalue lv -> (* done *) sem_lvalue lv
