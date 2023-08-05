@@ -3,6 +3,8 @@ open Symbol
 
 let rec sem_funcDef = function
 | { header = h; local_def_list = l; block = b } ->
+    (* TODO: must add procedure that checks if the block has a return statement.
+       That statement must return the expected type, declared in the header. *)
     sem_header h;
     sem_localDefList l;
     sem_block b
@@ -53,13 +55,18 @@ and sem_block = function
 
 and sem_stmt = function
 | S_assignment (lv, e) -> (
-    let lv_t = sem_lvalue lv in
-    match lv_t with
-    | Types.T_array (T_char, _) ->
-        failwith "Assignment to string literal is not possible.\n"
+    match sem_lvalue lv with
+    | Types.T_array (_, _) ->
+        failwith "Explicit assignment to array is not possible.\n"
     | _ -> Types.equal_type (sem_lvalue lv) (sem_expr e))
 | S_block b -> sem_block b
-| S_func_call fc -> Types.equal_type (T_func None) (sem_funcCall fc)
+| S_func_call fc -> (
+    match sem_funcCall fc with
+    | Types.T_func None -> ()
+    | T_func (Some _) ->
+        Printf.eprintf "The return value of the function %s is not used.\n"
+          fc.id
+    | _ -> ())
 | S_if (c, s) ->
     sem_cond c;
     sem_stmt s
@@ -83,25 +90,41 @@ and sem_stmt = function
 
 and sem_lvalue = function
 (* TODO: search in SymbolTable for its type *)
-| L_id _ -> Types.T_int (* placeholder, needs SymbolTable *)
+| L_id id -> (
+    (* done *)
+    match look_up_entry id with
+    | Some e -> (
+        match e.kind with
+        | ENTRY_variable ev -> ev.variable_type
+        | ENTRY_parameter ep -> ep.parameter_type
+        | ENTRY_none | ENTRY_function _ -> assert false)
+    | None -> failwith "Undefined variable.\n")
 | L_string s -> Types.T_array (Types.T_char, String.length s)
 | L_comp (lv, e) ->
+    (* TODO: the type of the expression must be integer and its value must be
+       at most n - 1, if n is the size of the array. *)
     Types.equal_type Types.T_int (sem_expr e);
-    let eValue =
-      match e with
-      | E_const_int i -> i
-      | E_lvalue lval -> 1 (* placeholder, needs SymbolTable *)
-      | E_func_call fc -> 1 (* placeholder, needs SymbolTable *)
-      | _ -> assert false
-    in
-    Types.T_array (sem_lvalue lv, eValue)
+    (match lv with L_id _ | L_string _ | L_comp (_, _) -> ());
+    (* let eValue =
+         match e with
+         | E_const_int i ->
+             if i >= array_size then failwith "Segmentation fault.\n"
+         | E_lvalue _ | E_func_call _ -> ()
+         | _ -> assert false
+       in *)
+    sem_lvalue lv
 
 and sem_expr = function
 (* done *)
 | E_const_int ci -> Types.T_int
 | E_const_char cc -> Types.T_char
 | E_lvalue lv -> sem_lvalue lv
-| E_func_call fc -> sem_funcCall fc
+| E_func_call fc -> (
+    match sem_funcCall fc with
+    | Types.T_func None ->
+        failwith "A function of type void is being used as an expression.\n"
+    | Types.T_func (Some t) -> t
+    | _ -> assert false)
 | E_sgn_expr (s, e) ->
     Types.equal_type Types.T_int (sem_expr e);
     Types.T_int
@@ -121,9 +144,30 @@ and sem_cond = function
 | C_cond_parenthesized c -> sem_cond c
 
 and sem_funcCall = function
-| _ ->
-    (* TODO: check the number and types of arguments given *)
-    Types.T_func None (* placeholder, needs SymbolTable *)
+| { id = ident; expr_list = el } ->
+    let el_types = List.map sem_expr el in
+    let getV = function None -> failwith "no value" | Some v -> v in
+    let e = getV (look_up_entry ident) in
+    let pl_types =
+      match e.kind with
+      | ENTRY_function ef ->
+          let rec getEntryTypesList = function
+          | [] -> []
+          | { parameter_type = pt; _ } :: t -> pt :: getEntryTypesList t
+          in
+          getEntryTypesList ef.parameters_list
+      | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ -> assert false
+    in
+    let bool_from_unit f x y =
+      f x y;
+      true
+    in
+    if List.equal (bool_from_unit Types.equal_type) el_types pl_types then
+      match e.kind with
+      | ENTRY_function ef -> ef.return_type
+      | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ -> assert false
+    else
+      failwith "The arguments' types don't match.\n"
 
 and sem_on asts =
   Symbol.create_symbol_table 100;

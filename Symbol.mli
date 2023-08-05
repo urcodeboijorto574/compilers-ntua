@@ -31,6 +31,7 @@ return_type : Types.t_type;
 
 and entry_parameter = {
 parameter_type : Types.t_type;
+mutable parameter_array_size : int option;
 passing : param_passing;
 }
 
@@ -58,10 +59,16 @@ val enter_variable : string -> Types.t_type -> int option -> unit
 (** [enter_variable] *)
 
 val enter_function :
-  string -> (Types.t_type * param_passing) list -> Types.t_type option -> unit
+  string ->
+  (Types.t_type * int option * param_passing) list ->
+  Types.t_type option ->
+  unit
 (** [enter_function] takes 3 arguments:
     - the 1st argument is the name of the function of type [string],
     - the 2nd argument is a list of pairs. The 2 fields of each pair are:
       · the type of the parameter
       · the type of passing of the parameter.
     - the 3rd argument is the return type of the function of type [Types.t_type option] *)
+
+val look_up_entry : string -> entry option
+(** [look_up_entry] takes the name of an identifier and returns the entry found. *)

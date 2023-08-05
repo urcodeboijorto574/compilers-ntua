@@ -38,6 +38,7 @@ return_type : Types.t_type;
 
 and entry_parameter = {
 parameter_type : Types.t_type;
+mutable parameter_array_size : int option;
 passing : param_passing;
 }
 
@@ -68,17 +69,24 @@ let enter_variable id typ arrSize =
   in
   enter_entry id kind
 
-let enter_function id (paramList : (Types.t_type * param_passing) list) retTyp =
+let enter_function id
+    (paramList : (Types.t_type * int option * param_passing) list) retTyp =
   (* TODO: test*)
-  let rec convert_list paramList =
-    match paramList with
-    | [] -> []
-    | (t, pp) :: tail ->
-        { parameter_type = t; passing = pp } :: convert_list tail
+  let paramL =
+    let rec convert_list paramList =
+      match paramList with
+      | [] -> []
+      | (t, arrSz, pp) :: tail ->
+          { parameter_type = t; parameter_array_size = arrSz; passing = pp }
+          :: convert_list tail
+    in
+    convert_list paramList
   in
   let getV = function None -> failwith "no value" | Some v -> v in
   let kind =
-    ENTRY_function
-      { parameters_list = convert_list paramList; return_type = getV retTyp }
+    ENTRY_function { parameters_list = paramL; return_type = getV retTyp }
   in
   enter_entry id kind
+
+let look_up_entry id =
+  try Some (HT.find !symbolTable id) with Not_found -> None
