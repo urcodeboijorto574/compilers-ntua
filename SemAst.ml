@@ -21,10 +21,21 @@ and sem_header = function
              | Nothing -> None
              | RetDataType ConstInt -> Some Types.T_int
              | RetDataType ConstChar -> Some Types.T_char))
-    | Some _ ->
-        ()
-        (* TODO: check if the signatures between the
-           declaration and the definition match. *))
+    | Some ent ->
+        if
+          ent.id <> ident
+          or ((match ent.kind with
+              | ENTRY_function ef -> ef.return_type
+              | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ ->
+                  assert false)
+             <>
+             match rt with
+             | Nothing -> Types.T_func None
+             | RetDataType ConstInt -> Types.T_func Types.T_int
+             | RetDataType ConstChar -> Types.T_func Types.T_char)
+          or ent.scope <> !current_scope
+        then
+          failwith "Function's signature is not stable")
 
 and sem_fparDefList = function
 | [] -> []

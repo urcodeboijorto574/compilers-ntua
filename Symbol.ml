@@ -63,7 +63,6 @@ let enter_entry ident eKind =
   !current_scope.symbol_entries <- e :: !current_scope.symbol_entries
 
 let enter_variable id typ arrSize =
-  (* TODO: test*)
   let kind =
     ENTRY_variable { variable_type = typ; variable_array_size = arrSize }
   in
@@ -72,7 +71,6 @@ let enter_variable id typ arrSize =
 let enter_function id
     (paramList : (int * (Types.t_type * int list * param_passing)) list) retTyp
     =
-  (* TODO: test*)
   let paramL =
     let rec convert_list paramList =
       match paramList with
