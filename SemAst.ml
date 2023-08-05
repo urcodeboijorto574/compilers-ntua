@@ -4,32 +4,38 @@ open Symbol
 let rec sem_funcDef = function
 | { header = h; local_def_list = l; block = b } ->
     (* TODO: must add procedure that checks if the block has a return statement.
-       That statement must return the expected type, declared in the header. *)
+       That statement must return a value of the type declared in the header. *)
     sem_header h;
     sem_localDefList l;
     sem_block b
 
 and sem_header = function
-(* TODO: insert to SymbolTable the identifier and the return type
-   of the function, as well as the number and types of parameters and their
-   types of passing *)
-| { id; fpar_def_list = fpdl; ret_type = rt } -> sem_fparDefList fpdl
+| { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
+    enter_function ident (sem_fparDefList fpdl)
+      (T_func
+         (match rt with
+         | Nothing -> None
+         | RetDataType ConstInt -> Some Types.T_int
+         | RetDataType ConstChar -> Some Types.T_char))
 
-and sem_fparDefList = function
-(* TODO: insert to SymbolTable the number and types of the parameters, and the
-   type of passing *)
-| [] -> ()
-| fpdl -> List.iter sem_fparDef fpdl
+and sem_fparDefList :
+    fparDef list -> (int * (Types.t_type * int list * param_passing)) list =
+  function
+| [] -> []
+| h :: t -> sem_fparDef h :: sem_fparDefList t
 
-and sem_fparDef = function
-(* TODO: insert all elements in SymbolTable *)
-| { ref; id_list; fpar_type = fpt } -> ()
+and sem_fparDef : fparDef -> int * (Types.t_type * int list * param_passing) =
+  function
+| { ref = r; id_list = il; fpar_type = fpt } ->
+    let t =
+      match fpt.data_type with
+      | ConstInt -> Types.T_int
+      | ConstChar -> Types.T_char
+    in
+    ( List.length il,
+      (t, fpt.array_dimensions, if r = true then BY_REFERENCE else BY_VALUE) )
 
-and sem_localDefList = function
-(* TODO: open a new scope for this particular function.
-   All the variable/function declarations will be entered in this scope. *)
-| [] -> ()
-| ldl -> List.iter sem_localDef ldl
+and sem_localDefList = function [] -> () | ldl -> List.iter sem_localDef ldl
 
 and sem_localDef = function
 | L_FuncDef fd -> sem_funcDef fd
@@ -76,12 +82,7 @@ and sem_stmt = function
 | S_while (c, s) ->
     sem_cond c;
     sem_stmt s
-| S_return re -> (
-    match re with
-    | None -> ()
-    | Some v ->
-        Types.equal_type (sem_expr v)
-          Types.T_int (* placeholder, needs SymbolTable *))
+| S_return re -> () (* this check is happening in sem_funcDef *)
 | S_semicolon -> ()
 
 and sem_lvalue = function
@@ -92,7 +93,7 @@ and sem_lvalue = function
         | ENTRY_variable ev -> ev.variable_type
         | ENTRY_parameter ep -> ep.parameter_type
         | ENTRY_none | ENTRY_function _ -> assert false)
-    | None -> failwith "Undefined variable.\n")
+    | None -> failwith "Undefined variable")
 | L_string s -> Types.T_array Types.T_char
 | L_comp (lv, e) ->
     (* (Its value must be at most n - 1, if n is the size of the array). *)
@@ -106,7 +107,7 @@ and sem_expr = function
 | E_func_call fc -> (
     match sem_funcCall fc with
     | Types.T_func None ->
-        failwith "A function of type void is being used as an expression.\n"
+        failwith "A function of type void is being used as an expression"
     | Types.T_func (Some t) -> t
     | Types.T_int | Types.T_char | Types.T_array _ -> assert false)
 | E_sgn_expr (s, e) ->
@@ -150,7 +151,7 @@ and sem_funcCall = function
       | ENTRY_function ef -> ef.return_type
       | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ -> assert false
     else
-      failwith "The arguments' types don't match.\n"
+      failwith "The arguments' types don't match"
 
 and sem_on asts =
   Symbol.create_symbol_table 100;

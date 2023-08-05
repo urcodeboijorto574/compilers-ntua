@@ -46,7 +46,7 @@
 %type <string list> id_list
 %type <fparType> fpar_type
 %type <dataType> data_type
-%type <int list> array_dimension
+%type <int list> array_dimensions
 %type <localDef list> local_def_list
 %type <localDef> local_def
 %type <funcDecl> func_decl
@@ -90,16 +90,16 @@ id_list:
 | T_comma T_identifier id_list { $2 :: $3 }
 
 fpar_type:
-  data_type array_dimension { newFparType($1, $2, true) }
-| data_type T_left_sqr T_right_sqr array_dimension { newFparType($1, $4, false) }
+  data_type array_dimensions { newFparType($1, $2, true) }
+| data_type T_left_sqr T_right_sqr array_dimensions { newFparType($1, $4, false) }
 
 data_type:
   T_int { ConstInt }
 | T_char { ConstChar }
 
-array_dimension:
+array_dimensions:
   (* nothing *) { [] }
-| T_left_sqr T_integer T_right_sqr array_dimension { $2 :: $4 }
+| T_left_sqr T_integer T_right_sqr array_dimensions { $2 :: $4 }
 
 local_def_list:
   (* nothing *)  { [] }
@@ -117,7 +117,7 @@ var_def:
   T_var T_identifier id_list T_colon var_type T_semicolon { newVarDef($2 :: $3, $5) }
 
 var_type:
-  data_type array_dimension { newVarType($1, $2) }
+  data_type array_dimensions { newVarType($1, $2) }
 
 block:
   T_left_br stmt_list T_right_br { Block($2) }

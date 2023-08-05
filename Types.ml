@@ -9,4 +9,4 @@ let rec equal_type t1 t2 =
   | T_array t1', T_array t2' -> equal_type t1' t2'
   | T_func None, T_func None -> ()
   | T_func (Some t1'), T_func (Some t2') -> equal_type t1' t2'
-  | _ -> if t1 <> t2 then Printf.eprintf "Type error\n"
+  | _ -> if t1 <> t2 then failwith "Type error"

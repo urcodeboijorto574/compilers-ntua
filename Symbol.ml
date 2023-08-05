@@ -28,7 +28,7 @@ and entry_kind =
 
 and entry_variable = {
 variable_type : Types.t_type;
-variable_array_size : int option;
+variable_array_size : int list;
 }
 
 and entry_function = {
@@ -38,7 +38,7 @@ return_type : Types.t_type;
 
 and entry_parameter = {
 parameter_type : Types.t_type;
-mutable parameter_array_size : int option;
+mutable parameter_array_size : int list;
 passing : param_passing;
 }
 
@@ -70,21 +70,22 @@ let enter_variable id typ arrSize =
   enter_entry id kind
 
 let enter_function id
-    (paramList : (Types.t_type * int option * param_passing) list) retTyp =
+    (paramList : (int * (Types.t_type * int list * param_passing)) list) retTyp
+    =
   (* TODO: test*)
   let paramL =
     let rec convert_list paramList =
       match paramList with
       | [] -> []
-      | (t, arrSz, pp) :: tail ->
+      | (0, (t, arrSz, pp)) :: tail -> convert_list tail
+      | (n, (t, arrSz, pp)) :: tail ->
           { parameter_type = t; parameter_array_size = arrSz; passing = pp }
-          :: convert_list tail
+          :: convert_list ((n - 1, (t, arrSz, pp)) :: tail)
     in
     convert_list paramList
   in
-  let getV = function None -> failwith "no value" | Some v -> v in
   let kind =
-    ENTRY_function { parameters_list = paramL; return_type = getV retTyp }
+    ENTRY_function { parameters_list = paramL; return_type = retTyp }
   in
   enter_entry id kind
 

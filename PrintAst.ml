@@ -53,14 +53,14 @@ and print_dataType dataType =
   | ConstChar -> Printf.printf "DataType(char)"
 
 and print_varType varType =
-  let rec help array_dimension =
-    match array_dimension with
+  let rec help array_dimensions =
+    match array_dimensions with
     | [] -> Printf.printf ""
     | ad -> List.iter (Printf.printf "[%d]") ad
   in
   Printf.printf "VarType(";
   print_dataType varType.data_type;
-  help varType.array_dimension;
+  help varType.array_dimensions;
   Printf.printf ")"
 
 and print_fparType fparType =
@@ -70,8 +70,8 @@ and print_fparType fparType =
   Printf.printf "FparType(";
   print_dataType fparType.data_type;
   fixedSize;
-  if fparType.array_dimension <> [] then
-    List.iter (fun x -> Printf.printf "[%d]" x) fparType.array_dimension;
+  if fparType.array_dimensions <> [] then
+    List.iter (fun x -> Printf.printf "[%d]" x) fparType.array_dimensions;
   Printf.printf ")"
 
 and print_localDef localDef =

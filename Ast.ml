@@ -46,7 +46,7 @@ fpar_type : fparType;
 
 and fparType = {
 data_type : dataType;
-array_dimension : int list;
+array_dimensions : int list;
 fixed_size : bool;
 }
 
@@ -68,7 +68,7 @@ var_type : varType;
 
 and varType = {
 data_type : dataType;
-array_dimension : int list;
+array_dimensions : int list;
 }
 
 and block = Block of stmt list
@@ -114,8 +114,8 @@ and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
 and newFparDef (a, b, c) = { ref = a; id_list = b; fpar_type = c }
 
 and newFparType (a, b, c) =
-  { data_type = a; array_dimension = b; fixed_size = c }
+  { data_type = a; array_dimensions = b; fixed_size = c }
 
 and newVarDef (a, b) = { id_list = a; var_type = b }
-and newVarType (a, b) = { data_type = a; array_dimension = b }
+and newVarType (a, b) = { data_type = a; array_dimensions = b }
 and newFuncCall (a, b) = { id = a; expr_list = b }
