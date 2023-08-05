@@ -6,32 +6,33 @@ let rec sem_funcDef = function
     (* TODO: must add procedure that checks if the block has a return statement.
        That statement must return a value of the type declared in the header. *)
     sem_header h;
+    Symbol.open_scope ();
     sem_localDefList l;
-    sem_block b
+    sem_block b;
+    Symbol.close_scope ()
 
 and sem_header = function
-| { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
-    enter_function ident (sem_fparDefList fpdl)
-      (T_func
-         (match rt with
-         | Nothing -> None
-         | RetDataType ConstInt -> Some Types.T_int
-         | RetDataType ConstChar -> Some Types.T_char))
+| { id = ident; fpar_def_list = fpdl; ret_type = rt } -> (
+    match look_up_entry ident with
+    | None ->
+        enter_function ident (sem_fparDefList fpdl)
+          (T_func
+             (match rt with
+             | Nothing -> None
+             | RetDataType ConstInt -> Some Types.T_int
+             | RetDataType ConstChar -> Some Types.T_char))
+    | Some _ ->
+        ()
+        (* TODO: check if the signatures between the
+           declaration and the definition match. *))
 
-and sem_fparDefList :
-    fparDef list -> (int * (Types.t_type * int list * param_passing)) list =
-  function
+and sem_fparDefList = function
 | [] -> []
 | h :: t -> sem_fparDef h :: sem_fparDefList t
 
-and sem_fparDef : fparDef -> int * (Types.t_type * int list * param_passing) =
-  function
+and sem_fparDef = function
 | { ref = r; id_list = il; fpar_type = fpt } ->
-    let t =
-      match fpt.data_type with
-      | ConstInt -> Types.T_int
-      | ConstChar -> Types.T_char
-    in
+    let t = if fpt.data_type = ConstInt then Types.T_int else Types.T_char in
     ( List.length il,
       (t, fpt.array_dimensions, if r = true then BY_REFERENCE else BY_VALUE) )
 
@@ -45,9 +46,22 @@ and sem_localDef = function
 and sem_funcDecl = function FuncDecl_Header h -> sem_header h
 
 and sem_varDef = function
-(* TODO: insert to SymbolTable the variable's name, its type and the size
-   of memory it needs, if it's an array *)
-| { id_list = idl; var_type = vt } -> ()
+| { id_list = idl; var_type = vt } ->
+    let vTyp =
+      match vt.data_type with
+      | ConstInt -> Types.T_int
+      | ConstChar -> Types.T_char
+    in
+    let typ =
+      let rec getArrayType len accum =
+        match len with
+        | 0 -> accum
+        | len -> getArrayType (len - 1) (Types.T_array accum)
+      in
+      getArrayType (List.length vt.array_dimensions) vTyp
+    in
+    let helper i = enter_variable i typ vt.array_dimensions in
+    List.iter helper idl
 
 and sem_block = function
 (* TODO: if a function has a return type,

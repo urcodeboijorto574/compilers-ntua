@@ -51,14 +51,9 @@ val close_scope : unit -> unit
 (** [close_scope] closes the current scope and makes the parent scope the
     current scope. *)
 
-(*
-   val enter_entry : string -> entry_kind -> unit
-   (** [enter_entry] takes the identifier of type [string] and the [entry_kind] of the entry. *)
-*)
-
 val enter_variable : string -> Types.t_type -> int list -> unit
 (** [enter_variable] takes the variable's name [string], its type [Types.t_type]
-    and the array_size [int option], if the variable is an array. [unit] is
+    and the array_size [int], if the variable is an array. [unit] is
     returned.*)
 
 val enter_function :
