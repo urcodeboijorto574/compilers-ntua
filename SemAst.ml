@@ -3,12 +3,28 @@ open Symbol
 
 let rec sem_funcDef = function
 | { header = h; local_def_list = l; block = b } ->
-    (* TODO: must add procedure that checks if the block has a return statement.
-       That statement must return a value of the type declared in the header. *)
     sem_header h;
     Symbol.open_scope ();
     sem_localDefList l;
     sem_block b;
+    (let retTyp =
+       match h.ret_type with
+       | Nothing -> None
+       | RetDataType ConstInt -> Some Types.T_int
+       | RetDataType ConstChar -> Some Types.T_char
+     in
+     let rec type_of_ret_stmt = function
+     | Block [] -> failwith "Block should return a value"
+     | Block (h :: t) -> (
+         match h with
+         | S_return None -> None
+         | S_return (Some e) -> Some (sem_expr e)
+         | S_assignment _ | S_block _ | S_func_call _ | S_if _ | S_if_else _
+          |S_while _ | S_semicolon ->
+             type_of_ret_stmt (Block t))
+     in
+     if type_of_ret_stmt b <> retTyp then
+       failwith "Return statement doesn't return the expected type");
     Symbol.close_scope ()
 
 and sem_header = function
@@ -24,16 +40,16 @@ and sem_header = function
     | Some ent ->
         if
           ent.id <> ident
-          or ((match ent.kind with
+          || ((match ent.kind with
               | ENTRY_function ef -> ef.return_type
               | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ ->
                   assert false)
              <>
              match rt with
              | Nothing -> Types.T_func None
-             | RetDataType ConstInt -> Types.T_func Types.T_int
-             | RetDataType ConstChar -> Types.T_func Types.T_char)
-          or ent.scope <> !current_scope
+             | RetDataType ConstInt -> Types.T_func (Some Types.T_int)
+             | RetDataType ConstChar -> Types.T_func (Some Types.T_char))
+          || ent.scope <> !current_scope
         then
           failwith "Function's signature is not stable")
 
@@ -74,15 +90,7 @@ and sem_varDef = function
     let helper i = enter_variable i typ vt.array_dimensions in
     List.iter helper idl
 
-and sem_block = function
-(* TODO: if a function has a return type,
-   then its block must contain the statement 'return'
-   with the corresponding type returned.
-   The return type of sem_block will be Types.t_type option.
-   This will help distinguish whether the block has a return statement
-   with and expression or not. *)
-| Block [] -> ()
-| Block b -> List.iter sem_stmt b
+and sem_block = function Block [] -> () | Block b -> List.iter sem_stmt b
 
 and sem_stmt = function
 | S_assignment (lv, e) -> (
