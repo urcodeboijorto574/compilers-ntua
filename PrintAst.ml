@@ -225,12 +225,12 @@ and print_expr expr =
 and print_cond cond =
   let help cond =
     match cond with
-    | C_not_cond (binop, c) ->
+    | C_not_cond (logop, c) ->
         Printf.printf "not(";
         print_cond c;
         Printf.printf ")"
-    | C_cond_cond (c1, binop, c2) -> (
-        match binop with
+    | C_cond_cond (c1, logop, c2) -> (
+        match logop with
         | O_and ->
             print_cond c1;
             Printf.printf " and ";
@@ -239,11 +239,9 @@ and print_cond cond =
             print_cond c1;
             Printf.printf " or ";
             print_cond c2
-        | O_equal | O_less | O_greater | O_less_eq | O_greater_eq
-         |O_not_equal | O_not ->
-            ())
-    | C_expr_expr (e1, binop, e2) -> (
-        match binop with
+        | O_not -> ())
+    | C_expr_expr (e1, compop, e2) -> (
+        match compop with
         | O_equal ->
             print_expr e1;
             Printf.printf " = ";
@@ -267,8 +265,7 @@ and print_cond cond =
         | O_greater_eq ->
             print_expr e1;
             Printf.printf " >= ";
-            print_expr e2
-        | O_and | O_or | O_not -> ())
+            print_expr e2)
     | C_cond_parenthesized c ->
         Printf.printf "(";
         print_cond c;

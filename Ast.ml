@@ -9,16 +9,18 @@ and sign =
 | O_plus
 | O_minus
 
-and binOperator =
+and logOperator =
 | O_and
 | O_or
+| O_not
+
+and compOperator =
 | O_equal
 | O_less
 | O_greater
 | O_less_eq
 | O_greater_eq
 | O_not_equal
-| O_not
 
 and funcDef = {
 header : header;
@@ -101,9 +103,9 @@ expr_list : expr list;
 }
 
 and cond =
-| C_not_cond of binOperator * cond
-| C_cond_cond of cond * binOperator * cond
-| C_expr_expr of expr * binOperator * expr
+| C_not_cond of logOperator * cond
+| C_cond_cond of cond * logOperator * cond
+| C_expr_expr of expr * compOperator * expr
 | C_cond_parenthesized of cond
 
 (* Functions to construct the records above *)

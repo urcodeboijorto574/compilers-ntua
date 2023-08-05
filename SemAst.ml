@@ -23,13 +23,9 @@ and sem_fparDef = function
 (* TODO: insert ever element in SymbolTable *)
 | { ref; id_list; fpar_type = fpt } -> ()
 
-(* and sem_fparType = () *)
-(* and sem_dataType = () *)
-(* and sem_retType = () *)
-
 and sem_localDefList = function
 (* TODO: open a new scope for this particular function.
-      All the variable/function declarations will be entered in this scope. *)
+   All the variable/function declarations will be entered in this scope. *)
 | [] -> ()
 | ldl -> List.iter sem_localDef ldl
 
@@ -117,9 +113,9 @@ and sem_expr = function
 
 and sem_cond = function
 (* done *)
-| C_not_cond (bo, c) -> sem_cond c
-| C_cond_cond (c1, bo, c2) -> assert (sem_cond c1 = sem_cond c2)
-| C_expr_expr (e1, bo, e2) ->
+| C_not_cond (lo, c) -> sem_cond c
+| C_cond_cond (c1, lo, c2) -> assert (sem_cond c1 = sem_cond c2)
+| C_expr_expr (e1, co, e2) ->
     let typ1, typ2 = (sem_expr e1, sem_expr e2) in
     Types.equal_type typ1 typ2
 | C_cond_parenthesized c -> sem_cond c
