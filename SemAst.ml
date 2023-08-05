@@ -16,13 +16,13 @@ and sem_header = function
 | { id; fpar_def_list = fpdl; ret_type = rt } -> sem_fparDefList fpdl
 
 and sem_fparDefList = function
-(* TODO: insert to ST the number and types of the parameters, and the type
-   of passing *)
+(* TODO: insert to SymbolTable the number and types of the parameters, and the
+   type of passing *)
 | [] -> ()
 | fpdl -> List.iter sem_fparDef fpdl
 
 and sem_fparDef = function
-(* TODO: insert ever element in SymbolTable *)
+(* TODO: insert all elements in SymbolTable *)
 | { ref; id_list; fpar_type = fpt } -> ()
 
 and sem_localDefList = function
@@ -56,17 +56,16 @@ and sem_block = function
 and sem_stmt = function
 | S_assignment (lv, e) -> (
     match sem_lvalue lv with
-    | Types.T_array (_, _) ->
-        failwith "Explicit assignment to array is not possible.\n"
-    | _ -> Types.equal_type (sem_lvalue lv) (sem_expr e))
+    | Types.T_array t -> Types.equal_type t (sem_expr e)
+    | t -> Types.equal_type t (sem_expr e))
 | S_block b -> sem_block b
 | S_func_call fc -> (
     match sem_funcCall fc with
     | Types.T_func None -> ()
-    | T_func (Some _) ->
+    | Types.T_func (Some _) ->
         Printf.eprintf "The return value of the function %s is not used.\n"
           fc.id
-    | _ -> ())
+    | Types.T_int | Types.T_char | Types.T_array _ -> ())
 | S_if (c, s) ->
     sem_cond c;
     sem_stmt s
@@ -78,9 +77,6 @@ and sem_stmt = function
     sem_cond c;
     sem_stmt s
 | S_return re -> (
-    (* TODO: the type of re should be the type that the function returns.
-       Also, this statement should be in every block of a function that
-       returns a non-nothing value *)
     match re with
     | None -> ()
     | Some v ->
@@ -89,9 +85,7 @@ and sem_stmt = function
 | S_semicolon -> ()
 
 and sem_lvalue = function
-(* TODO: search in SymbolTable for its type *)
 | L_id id -> (
-    (* done *)
     match look_up_entry id with
     | Some e -> (
         match e.kind with
@@ -99,23 +93,13 @@ and sem_lvalue = function
         | ENTRY_parameter ep -> ep.parameter_type
         | ENTRY_none | ENTRY_function _ -> assert false)
     | None -> failwith "Undefined variable.\n")
-| L_string s -> Types.T_array (Types.T_char, String.length s)
+| L_string s -> Types.T_array Types.T_char
 | L_comp (lv, e) ->
-    (* TODO: the type of the expression must be integer and its value must be
-       at most n - 1, if n is the size of the array. *)
+    (* (Its value must be at most n - 1, if n is the size of the array). *)
     Types.equal_type Types.T_int (sem_expr e);
-    (match lv with L_id _ | L_string _ | L_comp (_, _) -> ());
-    (* let eValue =
-         match e with
-         | E_const_int i ->
-             if i >= array_size then failwith "Segmentation fault.\n"
-         | E_lvalue _ | E_func_call _ -> ()
-         | _ -> assert false
-       in *)
-    sem_lvalue lv
+    Types.T_array (sem_lvalue lv)
 
 and sem_expr = function
-(* done *)
 | E_const_int ci -> Types.T_int
 | E_const_char cc -> Types.T_char
 | E_lvalue lv -> sem_lvalue lv
@@ -124,7 +108,7 @@ and sem_expr = function
     | Types.T_func None ->
         failwith "A function of type void is being used as an expression.\n"
     | Types.T_func (Some t) -> t
-    | _ -> assert false)
+    | Types.T_int | Types.T_char | Types.T_array _ -> assert false)
 | E_sgn_expr (s, e) ->
     Types.equal_type Types.T_int (sem_expr e);
     Types.T_int
@@ -135,7 +119,6 @@ and sem_expr = function
 | E_expr_parenthesized e -> sem_expr e
 
 and sem_cond = function
-(* done *)
 | C_not_cond (lo, c) -> sem_cond c
 | C_cond_cond (c1, lo, c2) -> assert (sem_cond c1 = sem_cond c2)
 | C_expr_expr (e1, co, e2) ->
