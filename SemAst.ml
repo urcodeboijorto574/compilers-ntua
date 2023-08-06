@@ -4,6 +4,7 @@ open Symbol
 let rec sem_funcDef = function
 | { header = h; local_def_list = l; block = b } ->
     sem_header h;
+    Printf.printf "Opening new scope for '%s' function\n" h.id;
     Symbol.open_scope ();
     sem_localDefList l;
     sem_block b;
@@ -23,8 +24,20 @@ let rec sem_funcDef = function
           |S_while _ | S_semicolon ->
              type_of_ret_stmt (Block t))
      in
-     if type_of_ret_stmt b <> retTyp then
-       failwith "Return statement doesn't return the expected type");
+     let trs = type_of_ret_stmt b in
+     if trs <> retTyp then (
+       let rec to_str = function
+       | None -> "nothing"
+       | Some Types.T_int -> "int"
+       | Some Types.T_char -> "char"
+       | Some (Types.T_func t) -> to_str t
+       | Some (Types.T_array t) ->
+           String.concat " " [ to_str (Some t); "array" ]
+       in
+       Printf.eprintf "Expected type %s but got in return %s\n" (to_str retTyp)
+         (to_str trs);
+       failwith "Return statement doesn't return the expected type"));
+    Printf.printf "Closing scope for '%s' function's declarations.\n" h.id;
     Symbol.close_scope ()
 
 and sem_header = function
@@ -50,8 +63,9 @@ and sem_header = function
              | RetDataType ConstInt -> Types.T_func (Some Types.T_int)
              | RetDataType ConstChar -> Types.T_func (Some Types.T_char))
           || ent.scope <> !current_scope
-        then
-          failwith "Function's signature is defined more than once")
+        then (
+          Printf.eprintf "Function %s is defined more than once.\n" ident;
+          failwith "Function's signature is defined more than once"))
 
 and sem_fparDefList = function
 | [] -> []
@@ -126,7 +140,9 @@ and sem_lvalue = function
         | ENTRY_variable ev -> ev.variable_type
         | ENTRY_parameter ep -> ep.parameter_type
         | ENTRY_none | ENTRY_function _ -> assert false)
-    | None -> failwith "Undefined variable")
+    | None ->
+        Printf.eprintf "Undefined variable %s is being used.\n" id;
+        failwith "Undefined variable")
 | L_string s -> Types.T_array Types.T_char
 | L_comp (lv, e) ->
     (* (Its value must be at most n - 1, if n is the size of the array). *)
@@ -140,7 +156,8 @@ and sem_expr = function
 | E_func_call fc -> (
     match sem_funcCall fc with
     | Types.T_func None ->
-        failwith "A function of type void is being used as an expression"
+        Printf.eprintf "Function %s returns nothing." fc.id;
+        failwith "A function of type nothing is being used as an expression"
     | Types.T_func (Some t) -> t
     | Types.T_int | Types.T_char | Types.T_array _ -> assert false)
 | E_sgn_expr (s, e) ->
@@ -183,8 +200,9 @@ and sem_funcCall = function
       match e.kind with
       | ENTRY_function ef -> ef.return_type
       | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ -> assert false
-    else
-      failwith "The arguments' types don't match"
+    else (
+      Printf.eprintf "Arguments' types of function %s don't match" ident;
+      failwith "The arguments' types don't match")
 
 and sem_on asts =
   Symbol.create_symbol_table 100;
