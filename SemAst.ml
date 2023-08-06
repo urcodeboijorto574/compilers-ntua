@@ -14,7 +14,7 @@ let rec sem_funcDef = function
        | RetDataType ConstChar -> Some Types.T_char
      in
      let rec type_of_ret_stmt = function
-     | Block [] -> failwith "Block should return a value"
+     | Block [] -> None
      | Block (h :: t) -> (
          match h with
          | S_return None -> None
@@ -51,7 +51,7 @@ and sem_header = function
              | RetDataType ConstChar -> Types.T_func (Some Types.T_char))
           || ent.scope <> !current_scope
         then
-          failwith "Function's signature is not stable")
+          failwith "Function's signature is defined more than once")
 
 and sem_fparDefList = function
 | [] -> []
