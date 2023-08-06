@@ -88,4 +88,16 @@ let enter_function id
   enter_entry id kind
 
 let look_up_entry id =
-  try Some (HT.find !symbolTable id) with Not_found -> None
+  let f : entry -> bool = function
+  | { id = ident; scope = s; kind = k } -> id = ident
+  in
+  let rec helper (id : string) : scope option -> entry option = function
+  | None -> raise Not_found
+  | Some s -> (
+      try Some (List.find f s.scope_entries) with Not_found -> raise Not_found)
+  in
+  try helper id (Some !current_scope)
+  with Not_found ->
+    (try match HT.find !symbolTable id with e -> Some e
+     with Not_found -> None);
+    None
