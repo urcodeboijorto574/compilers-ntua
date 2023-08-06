@@ -4,7 +4,7 @@ type param_passing =
 
 and scope = {
 parent : scope option;
-mutable symbol_entries : entry list;
+mutable scope_entries : entry list;
 }
 
 and entry = {

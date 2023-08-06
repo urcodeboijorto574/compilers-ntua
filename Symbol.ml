@@ -11,7 +11,7 @@ type param_passing =
 
 and scope = {
 parent : scope option;
-mutable symbol_entries : entry list;
+mutable scope_entries : entry list;
 }
 
 and entry = {
@@ -42,10 +42,10 @@ mutable parameter_array_size : int list;
 passing : param_passing;
 }
 
-let current_scope = ref { parent = None; symbol_entries = [] }
+let current_scope = ref { parent = None; scope_entries = [] }
 
 let open_scope () =
-  current_scope := { parent = Some !current_scope; symbol_entries = [] }
+  current_scope := { parent = Some !current_scope; scope_entries = [] }
 
 and close_scope () =
   let getV = function None -> failwith "no value" | Some v -> v in
@@ -55,12 +55,12 @@ let symbolTable = ref (HT.create 0)
 
 let create_symbol_table numOfBuckets =
   symbolTable := HT.create numOfBuckets;
-  current_scope := { parent = None; symbol_entries = [] }
+  current_scope := { parent = None; scope_entries = [] }
 
 let enter_entry ident eKind =
   let e = { id = ident; scope = !current_scope; kind = eKind } in
   HT.add !symbolTable ident e;
-  !current_scope.symbol_entries <- e :: !current_scope.symbol_entries
+  !current_scope.scope_entries <- e :: !current_scope.scope_entries
 
 let enter_variable id typ arrSize =
   let kind =
