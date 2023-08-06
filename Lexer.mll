@@ -5,6 +5,9 @@
   let multi_line_string_error_msg () =
     Printf.eprintf "String must close in the same line it starts. Line %d.\n" !num_lines;
     incr num_lines
+
+  (* TODO: delete this variable when... *)
+  let num_parens = ref 0
 }
 
 let digit = ['0'-'9']
@@ -68,6 +71,23 @@ rule lexer = parse
 | "$$"  { multi_comments lexbuf }
 | '$'   { comment lexbuf }
 
+(*  This section should be deleted when these functions can be imlemented.
+    This section's sole purpose is to not impede the semantic analysis.
+    TODO: this section, the 'num_parens' variable and the parsing rule 'skip'
+    must be deleted when the standard library of grace is added. *)
+| "writeString(" { skip lexbuf }
+| "writeInteger(" { skip lexbuf }
+| "writeChar(" { skip lexbuf }
+| "readInteger()" { T_integer 42 }
+| "readChar(" { T_chr '*' }
+| "readString(" { skip lexbuf }
+| "ascii(" { skipint lexbuf }
+| "chr(" { skipchar lexbuf }
+| "strlen(" { skipint lexbuf }
+| "strcmp(" { skipint lexbuf }
+| "strcpy(" { skip lexbuf }
+| "strcat(" { skip lexbuf }
+
 | identifier  { T_identifier (Lexing.lexeme lexbuf) }
 | integer     { T_integer (int_of_string (Lexing.lexeme lexbuf)) }
 
@@ -95,6 +115,25 @@ and strings = parse
 | char_string* '\"' { lexer lexbuf }
 | char_string* '\n' { incr num_lines; strings lexbuf }
 | char_string* eof  { incr num_lines; T_eof}
+
+(* TODO: delete this rule when... *)
+and skip = parse
+| '(' { incr num_parens; skip lexbuf }
+| ')' { if !num_parens = 0 then lexer lexbuf
+        else (decr num_parens; skip lexbuf) }
+| _ { skip lexbuf }
+
+and skipint = parse
+| '(' { incr num_parens; skipint lexbuf }
+| ')' { if !num_parens = 0 then T_integer 42
+        else (decr num_parens; skipint lexbuf) }
+| _ { skipint lexbuf }
+
+and skipchar = parse
+| '(' { incr num_parens; skipchar lexbuf }
+| ')' { if !num_parens = 0 then T_chr '*'
+        else (decr num_parens; skipchar lexbuf) }
+| _ { skipchar lexbuf }
 
 {
   let string_of_token = function
