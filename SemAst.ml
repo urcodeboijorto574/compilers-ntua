@@ -3,9 +3,10 @@ open Symbol
 
 let rec sem_funcDef = function
 | { header = h; local_def_list = l; block = b } ->
-    sem_header h;
     Printf.printf "Opening new scope for '%s' function\n" h.id;
+    Symbol.add_scope_name h.id;
     Symbol.open_scope ();
+    sem_header h;
     sem_localDefList l;
     sem_block b;
     (let retTyp =
@@ -38,6 +39,7 @@ let rec sem_funcDef = function
          (to_str trs);
        failwith "Return statement doesn't return the expected type"));
     Printf.printf "Closing scope for '%s' function's declarations.\n" h.id;
+    Symbol.rem_scope_name ();
     Symbol.close_scope ()
 
 and sem_header = function
@@ -73,6 +75,20 @@ and sem_fparDefList = function
 
 and sem_fparDef = function
 | { ref = r; id_list = il; fpar_type = fpt } ->
+    let pTyp =
+      match fpt.data_type with
+      | ConstInt -> Types.T_int
+      | ConstChar -> Types.T_char
+    in
+    let typ =
+      let rec getArrayType len accum =
+        match len with
+        | 0 -> accum
+        | len -> getArrayType (len - 1) (Types.T_array accum)
+      in
+      getArrayType (List.length fpt.array_dimensions) pTyp
+    in
+    List.iter (fun i -> enter_parameter i typ fpt.array_dimensions r) il;
     let t = if fpt.data_type = ConstInt then Types.T_int else Types.T_char in
     ( List.length il,
       (t, fpt.array_dimensions, if r = true then BY_REFERENCE else BY_VALUE) )

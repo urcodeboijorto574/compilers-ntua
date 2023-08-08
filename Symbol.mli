@@ -72,6 +72,16 @@ val enter_function :
     - the 3rd argument is the return type of the function of type
       [Types.t_type option] *)
 
+val enter_parameter : string -> Types.t_type -> int list -> bool -> unit
+(** [enter_parameter] takes the parameter's name [string], its type
+    [Types.t_type], the array_size [int], if the parameter is an array and
+    whether or not is is passed by reference or by value ([true] if it's passed
+    by reference). [unit] is returned. *)
+
 val look_up_entry : string -> entry option
 (** [look_up_entry] takes the name of an identifier and returns the entry found.
     *)
+
+val scope_name : string list ref
+val add_scope_name : string -> unit
+val rem_scope_name : unit -> unit

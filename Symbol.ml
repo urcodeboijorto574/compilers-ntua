@@ -60,6 +60,7 @@ let create_symbol_table numOfBuckets =
 let enter_entry ident eKind =
   let e = { id = ident; scope = !current_scope; kind = eKind } in
   HT.add !symbolTable ident e;
+  Printf.printf "entering entry %s in current scope\n" e.id;
   !current_scope.scope_entries <- e :: !current_scope.scope_entries
 
 let enter_variable id typ arrSize =
@@ -87,17 +88,36 @@ let enter_function id
   in
   enter_entry id kind
 
-let look_up_entry id =
-  let f : entry -> bool = function
-  | { id = ident; scope = s; kind = k } -> id = ident
+let enter_parameter id typ arrSize isRef =
+  let kind =
+    ENTRY_parameter
+      {
+        parameter_type = typ;
+        parameter_array_size = arrSize;
+        passing = (if isRef then BY_REFERENCE else BY_VALUE);
+      }
   in
-  let rec helper (id : string) : scope option -> entry option = function
-  | None -> raise Not_found
-  | Some s -> (
-      try Some (List.find f s.scope_entries) with Not_found -> raise Not_found)
+  enter_entry id kind
+
+let scope_name = ref [ "Init" ]
+
+let look_up_entry (id : string) =
+  Printf.printf "\tLooking for name %s...\n" id;
+  let rec look_up_entry_helper sc =
+    (Printf.printf "Scope '%s':\n\t[ " (List.hd !scope_name);
+     let rec printEntriesList = function
+     | [] -> Printf.printf "]\n"
+     | h :: t ->
+         Printf.printf "%s " h.id;
+         printEntriesList t
+     in
+     printEntriesList sc.scope_entries);
+    let isTarget e = e.id = id in
+    try Some (List.find isTarget sc.scope_entries)
+    with Not_found -> (
+      match sc.parent with None -> None | Some s -> look_up_entry_helper s)
   in
-  try helper id (Some !current_scope)
-  with Not_found ->
-    (try match HT.find !symbolTable id with e -> Some e
-     with Not_found -> None);
-    None
+  look_up_entry_helper !current_scope
+
+let add_scope_name str = scope_name := str :: !scope_name
+let rem_scope_name () = scope_name := List.tl !scope_name
