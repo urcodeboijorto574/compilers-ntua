@@ -3,10 +3,8 @@ open Symbol
 
 let rec sem_funcDef = function
 | { header = h; local_def_list = l; block = b } ->
-    Printf.printf "Opening new scope for '%s' function\n" h.id;
-    Symbol.add_scope_name h.id;
-    Symbol.open_scope ();
-    sem_header h;
+    sem_header true h;
+    (* here I will add all the parameters in the current_scope (opened in sem_header) *)
     sem_localDefList l;
     sem_block b;
     (let retTyp =
@@ -42,9 +40,9 @@ let rec sem_funcDef = function
     Symbol.rem_scope_name ();
     Symbol.close_scope ()
 
-and sem_header = function
-| { id = ident; fpar_def_list = fpdl; ret_type = rt } -> (
-    match look_up_entry ident with
+and sem_header isFromFuncDef = function
+| { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
+    (match look_up_entry ident with
     | None ->
         enter_function ident (sem_fparDefList fpdl)
           (T_func
@@ -66,8 +64,42 @@ and sem_header = function
              | RetDataType ConstChar -> Types.T_func (Some Types.T_char))
           || ent.scope <> !current_scope
         then (
-          Printf.eprintf "Function %s is defined more than once.\n" ident;
-          failwith "Function's signature is defined more than once"))
+          Printf.eprintf "Function %s differs between declarations.\n" ident;
+          failwith "Function's signature differs between declarations")
+        else if not isFromFuncDef then
+          Printf.printf "Function %s is declared unnecessarily\n" ident);
+    if isFromFuncDef then (
+      Printf.printf "Opening new scope for '%s' function\n" ident;
+      Symbol.add_scope_name ident;
+      Symbol.open_scope ();
+      (* here I'll add the parameters in the currently opened scope *)
+      let add_fparDef_to_scope : fparDef -> unit = function
+      | { ref = r; id_list = idl; fpar_type = fpt } ->
+          let rec add_param_names_to_scope : string list -> unit = function
+          | [] -> ()
+          | h :: t ->
+              !current_scope.scope_entries <-
+                {
+                  id = h;
+                  scope = !current_scope;
+                  kind =
+                    ENTRY_parameter
+                      {
+                        parameter_type =
+                          (match fpt.data_type with
+                          | ConstInt -> Types.T_int
+                          | ConstChar -> Types.T_char);
+                        parameter_array_size = fpt.array_dimensions;
+                        passing =
+                          (if r then Symbol.BY_REFERENCE else Symbol.BY_VALUE);
+                      };
+                }
+                :: !current_scope.scope_entries;
+              add_param_names_to_scope t
+          in
+          add_param_names_to_scope idl
+      in
+      List.iter add_fparDef_to_scope fpdl)
 
 and sem_fparDefList = function
 | [] -> []
@@ -88,7 +120,6 @@ and sem_fparDef = function
       in
       getArrayType (List.length fpt.array_dimensions) pTyp
     in
-    List.iter (fun i -> enter_parameter i typ fpt.array_dimensions r) il;
     let t = if fpt.data_type = ConstInt then Types.T_int else Types.T_char in
     ( List.length il,
       (t, fpt.array_dimensions, if r = true then BY_REFERENCE else BY_VALUE) )
@@ -100,7 +131,7 @@ and sem_localDef = function
 | L_FuncDecl fd -> sem_funcDecl fd
 | L_varDef vd -> sem_varDef vd
 
-and sem_funcDecl = function FuncDecl_Header h -> sem_header h
+and sem_funcDecl = function FuncDecl_Header h -> sem_header false h
 
 and sem_varDef = function
 | { id_list = idl; var_type = vt } ->
@@ -125,8 +156,15 @@ and sem_block = function Block [] -> () | Block b -> List.iter sem_stmt b
 and sem_stmt = function
 | S_assignment (lv, e) -> (
     match sem_lvalue lv with
-    | Types.T_array t -> Types.equal_type t (sem_expr e)
-    | t -> Types.equal_type t (sem_expr e))
+    | Types.T_array t ->
+        Printf.printf
+          "\t... checking the types of an lvalue (elem of array) and an \
+           expression (assignment)\n";
+        Types.equal_type t (sem_expr e)
+    | t ->
+        Printf.printf
+          "\t... checking the types of an lvalue and an expression (assignment)\n";
+        Types.equal_type t (sem_expr e))
 | S_block b -> sem_block b
 | S_func_call fc -> (
     match sem_funcCall fc with
@@ -162,6 +200,9 @@ and sem_lvalue = function
 | L_string s -> Types.T_array Types.T_char
 | L_comp (lv, e) ->
     (* (Its value must be at most n - 1, if n is the size of the array). *)
+    Printf.printf
+      "\t... checking the types of the variable inside brackets (position in \
+       array must be int)\n";
     Types.equal_type Types.T_int (sem_expr e);
     Types.T_array (sem_lvalue lv)
 
@@ -177,9 +218,12 @@ and sem_expr = function
     | Types.T_func (Some t) -> t
     | Types.T_int | Types.T_char | Types.T_array _ -> assert false)
 | E_sgn_expr (s, e) ->
+    Printf.printf "\t... checking a signed expression (must be int)\n";
     Types.equal_type Types.T_int (sem_expr e);
     Types.T_int
 | E_op_expr_expr (e1, ao, e2) ->
+    Printf.printf
+      "\t... checking whether the arguments of an arithmOperator are of type int\n";
     Types.equal_type Types.T_int (sem_expr e1);
     Types.equal_type Types.T_int (sem_expr e2);
     Types.T_int
@@ -190,13 +234,21 @@ and sem_cond = function
 | C_cond_cond (c1, lo, c2) -> assert (sem_cond c1 = sem_cond c2)
 | C_expr_expr (e1, co, e2) ->
     let typ1, typ2 = (sem_expr e1, sem_expr e2) in
+    Printf.printf
+      "\t... checking whether the arguments of a compOperator are of the same \
+       type\n";
     Types.equal_type typ1 typ2
 | C_cond_parenthesized c -> sem_cond c
 
 and sem_funcCall = function
 | { id = ident; expr_list = el } ->
     let el_types = List.map sem_expr el in
-    let getV = function None -> failwith "no value" | Some v -> v in
+    let getV = function
+    | None ->
+        Printf.printf "ident is '%s'\n" ident;
+        failwith "no value"
+    | Some v -> v
+    in
     let e = getV (look_up_entry ident) in
     let pl_types =
       match e.kind with
@@ -209,6 +261,9 @@ and sem_funcCall = function
       | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ -> assert false
     in
     let bool_from_unit f x y =
+      Printf.printf
+        "\t... checking whether the arguments of a funcCall are indeed the \
+         declared types\n";
       f x y;
       true
     in

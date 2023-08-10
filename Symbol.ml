@@ -48,7 +48,10 @@ let open_scope () =
   current_scope := { parent = Some !current_scope; scope_entries = [] }
 
 and close_scope () =
-  let getV = function None -> failwith "no value" | Some v -> v in
+  let getV = function
+  | None -> failwith "Can't close initial scope"
+  | Some v -> v
+  in
   current_scope := getV !current_scope.parent
 
 let symbolTable = ref (HT.create 0)
@@ -69,10 +72,10 @@ let enter_variable id typ arrSize =
   in
   enter_entry id kind
 
-let enter_function id
+let enter_function (id : string)
     (paramList : (int * (Types.t_type * int list * param_passing)) list) retTyp
     =
-  let paramL =
+  let paramL : entry_parameter list =
     let rec convert_list paramList =
       match paramList with
       | [] -> []
@@ -88,22 +91,22 @@ let enter_function id
   in
   enter_entry id kind
 
-let enter_parameter id typ arrSize isRef =
-  let kind =
-    ENTRY_parameter
-      {
-        parameter_type = typ;
-        parameter_array_size = arrSize;
-        passing = (if isRef then BY_REFERENCE else BY_VALUE);
-      }
-  in
-  enter_entry id kind
+(* let enter_parameter id typ arrSize isRef =
+   let kind =
+     ENTRY_parameter
+       {
+         parameter_type = typ;
+         parameter_array_size = arrSize;
+         passing = (if isRef then BY_REFERENCE else BY_VALUE);
+       }
+   in
+   enter_entry id kind *)
 
 let scope_name = ref [ "Init" ]
 
 let look_up_entry (id : string) =
   Printf.printf "\tLooking for name %s...\n" id;
-  let rec look_up_entry_helper sc =
+  let rec look_up_entry_helper (sc : scope) =
     (Printf.printf "Scope '%s':\n\t[ " (List.hd !scope_name);
      let rec printEntriesList = function
      | [] -> Printf.printf "]\n"

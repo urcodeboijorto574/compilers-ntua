@@ -1,4 +1,4 @@
-fun main () : nothing
+fun main (temp : char[]) : nothing
 
    var r : char[20];
 
@@ -11,10 +11,11 @@ fun main () : nothing
          r[i] <- s[l-i-1];
          i <- i+1;
       }
-      r[i] <- '\0';
+      $ r[i] <- '\0';
    }
 
 { $ main
-   reverse("\n!dlrow olleH");
+   $ reverse("\n!dlrow olleH");
+   reverse(temp);
    writeString(r);
 } $ main

@@ -4,7 +4,7 @@ let main =
     let asts = Parser.program Lexer.lexer lexbuf in
     Printf.printf "Syntactic analysis:\n";
     PrintAst.print_on asts;
-    Printf.printf "Successful parsing.\n";
+    Printf.printf "\nSuccessful parsing.\n";
     Printf.printf "\n";
     Printf.printf "Semantic analysis:\n";
     SemAst.sem_on asts;
