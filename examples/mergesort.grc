@@ -5,7 +5,7 @@ $$ This is a mergeSort program written in Grace.
 $$
 
 fun main() : nothing
-    
+
     fun mergeSort(ref array: int[]; begin, end : int) : nothing
         var mid : int;
 
@@ -55,7 +55,7 @@ fun main() : nothing
     {
         if (begin >= end) then
             return; $ Returns recursively
-    
+
         mid <- begin + (end - begin) div 2;
         mergeSort(array, begin, mid);
         mergeSort(array, mid + 1, end);
@@ -68,7 +68,7 @@ fun main() : nothing
 {
     writeString("Give number of elements (less than 10):\n");
     N <- readInteger();
- 
+
     writeString("Give the integers:\n");
     i<-0;
     while i#N do{

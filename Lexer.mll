@@ -12,18 +12,18 @@
 
 let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']
-(** [digit_hex] are the letters/digits that can be written in hex escape character. *)
 let digit_hex = ['a'-'f' 'A'-'F' '0'-'9']
+(** [digit_hex] are the letters/digits that can be written in hex escape character. *)
 let char_hex = "\\x" digit_hex digit_hex
 let white  = [' ' '\t' '\r']
 let char_common = [^ '\\' '\'' '"']
 let char_escape = '\\' ['n' 't' 'r' '0' '\\' '\'' '"'] | char_hex
+let char_not_escape = '\\' [^ 'n' 't' 'r' '0' '\\' '\'' '"' 'x']
 (** [char_not_escape] are the characters that, if written next to a front-slash,
     the front-slash is considered redundant. For example '\a', '\1' and '\@'. *)
-let char_not_escape = '\\' [^ 'n' 't' 'r' '0' '\\' '\'' '"' 'x']
 let char_const = char_common | char_escape
-(** [char_string] are the characters that can exist inside a string. *)
 let char_string = char_common # ['"' '\n' '\\'] | char_escape
+(** [char_string] are the characters that can exist inside a string. *)
 let identifier = letter (letter | digit | '_')*
 let integer = digit+
 let character = '\'' char_const '\''
@@ -136,6 +136,7 @@ and skipchar = parse
 | _ { skipchar lexbuf }
 
 {
+  (*
   let string_of_token = function
   | T_eof         ->  "T_eof"
   | T_and         ->  "T_and"
@@ -178,4 +179,5 @@ and skipchar = parse
   | T_integer _   ->  "T_integer"
   | T_identifier _  -> "T_identifier"
   | T_chr _       -> "T_chr"
+  *)
 }

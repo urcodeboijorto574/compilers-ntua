@@ -4,7 +4,6 @@ open Symbol
 let rec sem_funcDef = function
 | { header = h; local_def_list = l; block = b } ->
     sem_header true h;
-    (* here I will add all the parameters in the current_scope (opened in sem_header) *)
     sem_localDefList l;
     sem_block b;
     (let retTyp =
@@ -33,8 +32,8 @@ let rec sem_funcDef = function
        | Some (Types.T_array t) ->
            String.concat " " [ to_str (Some t); "array" ]
        in
-       Printf.eprintf "Expected type %s but got in return %s\n" (to_str retTyp)
-         (to_str trs);
+       Printf.eprintf "In function '%s': Expected type %s but got %s instead.\n"
+         h.id (to_str retTyp) (to_str trs);
        failwith "Return statement doesn't return the expected type"));
     Printf.printf "Closing scope for '%s' function's declarations.\n" h.id;
     Symbol.rem_scope_name ();
@@ -105,24 +104,25 @@ and sem_fparDefList = function
 | [] -> []
 | h :: t -> sem_fparDef h :: sem_fparDefList t
 
-and sem_fparDef = function
+and sem_fparDef :
+    fparDef -> int * (Types.t_type * int list * Symbol.param_passing) = function
 | { ref = r; id_list = il; fpar_type = fpt } ->
-    let pTyp =
-      match fpt.data_type with
-      | ConstInt -> Types.T_int
-      | ConstChar -> Types.T_char
-    in
     let typ =
       let rec getArrayType len accum =
         match len with
-        | 0 -> accum
+        | 0 -> if fpt.fixed_size then accum else Types.T_array accum
         | len -> getArrayType (len - 1) (Types.T_array accum)
+      in
+      let pTyp =
+        match fpt.data_type with
+        | ConstInt -> Types.T_int
+        | ConstChar -> Types.T_char
       in
       getArrayType (List.length fpt.array_dimensions) pTyp
     in
-    let t = if fpt.data_type = ConstInt then Types.T_int else Types.T_char in
     ( List.length il,
-      (t, fpt.array_dimensions, if r = true then BY_REFERENCE else BY_VALUE) )
+      (typ, fpt.array_dimensions, if r = true then BY_REFERENCE else BY_VALUE)
+    )
 
 and sem_localDefList = function [] -> () | ldl -> List.iter sem_localDef ldl
 
@@ -158,9 +158,11 @@ and sem_stmt = function
     match sem_lvalue lv with
     | Types.T_array t ->
         Printf.printf
-          "\t... checking the types of an lvalue (elem of array) and an \
-           expression (assignment)\n";
-        Types.equal_type t (sem_expr e)
+          "Assignment to an l-value of type array is not possible.\n";
+        failwith "Assignment to array" (* Types.equal_type t (sem_expr e) *)
+    | Types.T_func _ ->
+        Printf.printf "Assignment to a function call is not possible.\n";
+        failwith "Assignment to function"
     | t ->
         Printf.printf
           "\t... checking the types of an lvalue and an expression (assignment)\n";
@@ -204,7 +206,13 @@ and sem_lvalue = function
       "\t... checking the types of the variable inside brackets (position in \
        array must be int)\n";
     Types.equal_type Types.T_int (sem_expr e);
-    Types.T_array (sem_lvalue lv)
+    let getT = function
+    | Types.T_array t -> t
+    | _ ->
+        Printf.printf "A variable of type non-array is used as an array.\n";
+        failwith "Variable used as an array"
+    in
+    getT (sem_lvalue lv)
 
 and sem_expr = function
 | E_const_int ci -> Types.T_int
@@ -245,8 +253,8 @@ and sem_funcCall = function
     let el_types = List.map sem_expr el in
     let getV = function
     | None ->
-        Printf.printf "ident is '%s'\n" ident;
-        failwith "no value"
+        Printf.printf "Function %s is called, but never declared\n" ident;
+        failwith "Undeclared function called"
     | Some v -> v
     in
     let e = getV (look_up_entry ident) in

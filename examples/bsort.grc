@@ -1,7 +1,7 @@
-fun main () : nothing
+fun main (temp : char[]) : nothing
 
    fun bsort (n : int; ref x : int[]) : nothing
-   
+
       fun swap (ref x, y : int) : nothing
          var t : int;
       {
@@ -9,9 +9,9 @@ fun main () : nothing
          x <- y;
          y <- t;
       }
-   
+
       var changed, i : int;
-      
+
    { $ bsort
       changed <- 1;
       while changed > 0 do {
@@ -39,10 +39,10 @@ fun main () : nothing
       }
       writeString("\n");
    }
-   
+
    var seed, i : int;
    var x       : int[16];
-   
+
 { $ main
    seed <- 65;
    i <- 0;
@@ -51,7 +51,7 @@ fun main () : nothing
       x[i] <- seed;
       i <- i+1;
    }
-   writeArray("Initial array: ", 16, x);
+   $ writeArray("Initial array: ", 16, x);
    bsort(16, x);
-   writeArray("Sorted  array: ", 16, x);
+   $ writeArray("Sorted  array: ", 16, x);
 } $ main

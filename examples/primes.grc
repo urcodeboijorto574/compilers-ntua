@@ -1,5 +1,5 @@
 fun main () : nothing
-   
+
    fun prime (n : int) : int
       var i : int;
    {
@@ -17,9 +17,9 @@ fun main () : nothing
          return 1;
       }
    }
-   
+
    var limit, number, counter : int;
-   
+
 { $ main
    writeString("Please, give me the upper limit: ");
    limit <- readInteger();
