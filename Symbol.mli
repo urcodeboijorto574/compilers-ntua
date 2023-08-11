@@ -1,38 +1,38 @@
 type param_passing =
-| BY_VALUE
-| BY_REFERENCE
+  | BY_VALUE
+  | BY_REFERENCE
 
 and scope = {
-parent : scope option;
-mutable scope_entries : entry list;
+  parent : scope option;
+  mutable scope_entries : entry list;
 }
 
 and entry = {
-id : string;
-scope : scope;
-mutable kind : entry_kind;
+  id : string;
+  scope : scope;
+  mutable kind : entry_kind;
 }
 
 and entry_kind =
-| ENTRY_none
-| ENTRY_variable of entry_variable
-| ENTRY_function of entry_function
-| ENTRY_parameter of entry_parameter
+  | ENTRY_none
+  | ENTRY_variable of entry_variable
+  | ENTRY_function of entry_function
+  | ENTRY_parameter of entry_parameter
 
 and entry_variable = {
-variable_type : Types.t_type;
-variable_array_size : int list;
+  variable_type : Types.t_type;
+  variable_array_size : int list;
 }
 
 and entry_function = {
-parameters_list : entry_parameter list;
-return_type : Types.t_type;
+  parameters_list : entry_parameter list;
+  return_type : Types.t_type;
 }
 
 and entry_parameter = {
-parameter_type : Types.t_type;
-mutable parameter_array_size : int list;
-passing : param_passing;
+  parameter_type : Types.t_type;
+  mutable parameter_array_size : int list;
+  passing : param_passing;
 }
 
 (** [create_symbol_table] takes an integer as an argument and creates a
@@ -79,8 +79,7 @@ val enter_function :
        whether or not is is passed by reference or by value ([true] if it's passed
        by reference) and inserts it in the SymbolTable. [unit] is returned. *) *)
 
-(** [look_up_entry] takes the name of an identifier and returns the entry found.
-    *)
+(** [look_up_entry] takes the name of an identifier and returns the entry found. *)
 val look_up_entry : string -> entry option
 
 (* The functions below are written just for testing purposes.

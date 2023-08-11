@@ -6,40 +6,40 @@ module HT = Hashtbl.Make (struct
 end)
 
 type param_passing =
-| BY_VALUE
-| BY_REFERENCE
+  | BY_VALUE
+  | BY_REFERENCE
 
 and scope = {
-parent : scope option;
-mutable scope_entries : entry list;
+  parent : scope option;
+  mutable scope_entries : entry list;
 }
 
 and entry = {
-id : string;
-scope : scope;
-mutable kind : entry_kind;
+  id : string;
+  scope : scope;
+  mutable kind : entry_kind;
 }
 
 and entry_kind =
-| ENTRY_none
-| ENTRY_variable of entry_variable
-| ENTRY_function of entry_function
-| ENTRY_parameter of entry_parameter
+  | ENTRY_none
+  | ENTRY_variable of entry_variable
+  | ENTRY_function of entry_function
+  | ENTRY_parameter of entry_parameter
 
 and entry_variable = {
-variable_type : Types.t_type;
-variable_array_size : int list;
+  variable_type : Types.t_type;
+  variable_array_size : int list;
 }
 
 and entry_function = {
-parameters_list : entry_parameter list;
-return_type : Types.t_type;
+  parameters_list : entry_parameter list;
+  return_type : Types.t_type;
 }
 
 and entry_parameter = {
-parameter_type : Types.t_type;
-mutable parameter_array_size : int list;
-passing : param_passing;
+  parameter_type : Types.t_type;
+  mutable parameter_array_size : int list;
+  passing : param_passing;
 }
 
 let current_scope = ref { parent = None; scope_entries = [] }
@@ -49,8 +49,8 @@ let open_scope () =
 
 and close_scope () =
   let getV = function
-  | None -> failwith "Can't close initial scope"
-  | Some v -> v
+    | None -> failwith "Can't close initial scope"
+    | Some v -> v
   in
   current_scope := getV !current_scope.parent
 
@@ -109,10 +109,10 @@ let look_up_entry (id : string) =
   let rec look_up_entry_helper (sc : scope) =
     (Printf.printf "Scope '%s':\n\t[ " (List.hd !scope_name);
      let rec printEntriesList = function
-     | [] -> Printf.printf "]\n"
-     | h :: t ->
-         Printf.printf "%s " h.id;
-         printEntriesList t
+       | [] -> Printf.printf "]\n"
+       | h :: t ->
+           Printf.printf "%s " h.id;
+           printEntriesList t
      in
      printEntriesList sc.scope_entries);
     let isTarget e = e.id = id in

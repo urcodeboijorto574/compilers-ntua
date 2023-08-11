@@ -1,112 +1,112 @@
 type arithmOperator =
-| O_plus
-| O_minus
-| O_mul
-| O_div
-| O_mod
+  | O_plus
+  | O_minus
+  | O_mul
+  | O_div
+  | O_mod
 
 and sign =
-| O_plus
-| O_minus
+  | O_plus
+  | O_minus
 
 and logOperator =
-| O_and
-| O_or
-| O_not
+  | O_and
+  | O_or
+  | O_not
 
 and compOperator =
-| O_equal
-| O_less
-| O_greater
-| O_less_eq
-| O_greater_eq
-| O_not_equal
+  | O_equal
+  | O_less
+  | O_greater
+  | O_less_eq
+  | O_greater_eq
+  | O_not_equal
 
 and funcDef = {
-header : header;
-local_def_list : localDef list;
-block : block;
+  header : header;
+  local_def_list : localDef list;
+  block : block;
 }
 
 and header = {
-id : string;
-fpar_def_list : fparDef list;
-ret_type : retType;
+  id : string;
+  fpar_def_list : fparDef list;
+  ret_type : retType;
 }
 
 and retType =
-| RetDataType of dataType
-| Nothing
+  | RetDataType of dataType
+  | Nothing
 
 and fparDef = {
-ref : bool;
-id_list : string list;
-fpar_type : fparType;
+  ref : bool;
+  id_list : string list;
+  fpar_type : fparType;
 }
 
 and fparType = {
-data_type : dataType;
-array_dimensions : int list;
-fixed_size : bool;
+  data_type : dataType;
+  array_dimensions : int list;
+  fixed_size : bool;
 }
 
 and dataType =
-| ConstInt
-| ConstChar
+  | ConstInt
+  | ConstChar
 
 and localDef =
-| L_FuncDef of funcDef
-| L_FuncDecl of funcDecl
-| L_varDef of varDef
+  | L_FuncDef of funcDef
+  | L_FuncDecl of funcDecl
+  | L_varDef of varDef
 
 and funcDecl = FuncDecl_Header of header
 
 and varDef = {
-id_list : string list;
-var_type : varType;
+  id_list : string list;
+  var_type : varType;
 }
 
 and varType = {
-data_type : dataType;
-array_dimensions : int list;
+  data_type : dataType;
+  array_dimensions : int list;
 }
 
 and block = Block of stmt list
 
 and stmt =
-| S_assignment of lvalue * expr
-| S_block of block
-| S_func_call of funcCall
-| S_if of cond * stmt
-| S_if_else of cond * stmt * stmt
-| S_while of cond * stmt
-| S_return of expr option
-| S_semicolon
+  | S_assignment of lvalue * expr
+  | S_block of block
+  | S_func_call of funcCall
+  | S_if of cond * stmt
+  | S_if_else of cond * stmt * stmt
+  | S_while of cond * stmt
+  | S_return of expr option
+  | S_semicolon
 
 and lvalue =
-| L_id of string
-| L_string of string
-| L_comp of lvalue * expr
+  | L_id of string
+  | L_string of string
+  | L_comp of lvalue * expr
 
 and expr =
-| E_const_int of int
-| E_const_char of char
-| E_lvalue of lvalue
-| E_func_call of funcCall
-| E_sgn_expr of sign * expr
-| E_op_expr_expr of expr * arithmOperator * expr
-| E_expr_parenthesized of expr
+  | E_const_int of int
+  | E_const_char of char
+  | E_lvalue of lvalue
+  | E_func_call of funcCall
+  | E_sgn_expr of sign * expr
+  | E_op_expr_expr of expr * arithmOperator * expr
+  | E_expr_parenthesized of expr
 
 and funcCall = {
-id : string;
-expr_list : expr list;
+  id : string;
+  expr_list : expr list;
 }
 
 and cond =
-| C_not_cond of logOperator * cond
-| C_cond_cond of cond * logOperator * cond
-| C_expr_expr of expr * compOperator * expr
-| C_cond_parenthesized of cond
+  | C_not_cond of logOperator * cond
+  | C_cond_cond of cond * logOperator * cond
+  | C_expr_expr of expr * compOperator * expr
+  | C_cond_parenthesized of cond
 
 (* Functions to construct the records above *)
 let newFuncDef (a, b, c) = { header = a; local_def_list = b; block = c }

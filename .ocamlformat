@@ -11,7 +11,7 @@ exp-grouping = preserve
 
 extension-indent = 2
 field-space = loose
-function-indent = 0
+function-indent = 2
 function-indent-nested = always
 
 if-then-else = fit-or-vertical
@@ -20,4 +20,4 @@ indicate-nested-or-patterns = space
 let-and = sparse
 
 type-decl = sparse
-type-decl-indent = 0
+type-decl-indent = 2
