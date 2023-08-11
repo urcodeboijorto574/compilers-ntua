@@ -14,45 +14,30 @@ let rec sem_funcDef = function
         | RetDataType ConstInt -> Some Types.T_int
         | RetDataType ConstChar -> Some Types.T_char
       in
-      (* [type_or_ret_stmt b] is what a return statement inside a block [b] is
+      (* [type_of_block b] is what a return statement inside a block [b] is
          returning with a return statement *)
       let rec type_of_block : block -> Types.t_type option = function
       | Block [] -> None
       | Block (h :: t) -> (
-          let rec type_of_if_else x y : Types.t_type option =
-            let rec type_of_stmt : stmt -> Types.t_type option = function
-            | S_block b -> type_of_block b
-            | S_return x -> (
-                match x with None -> None | Some e -> Some (sem_expr e))
-            | S_if_else (_, s1', s2') ->
-                let a = type_of_stmt s1' in
-                let b = type_of_stmt s2' in
-                if a = b then
-                  a
-                else if a <> retTyp then
-                  a
-                else
-                  b
-            | _ -> None
-            in
-            let type_of_s1 = type_of_stmt x in
-            let type_of_s2 = type_of_stmt y in
-            if type_of_s1 = type_of_s2 then
-              type_of_s1
-            else if type_of_s1 = retTyp then
-              type_of_s2
-            else
-              type_of_s1
-          in
-          match h with
-          | S_return None -> None
-          | S_return (Some e) -> Some (sem_expr e)
-          | S_block b ->
-              let result = type_of_block b in
-              if result <> None then result else type_of_block (Block t)
-          | S_if_else (_, s1, s2) -> type_of_if_else s1 s2
+          let rec type_of_stmt : stmt -> Types.t_type option = function
+          | S_block b -> type_of_block b
+          | S_return x -> (
+              match x with None -> None | Some e -> Some (sem_expr e))
+          | S_if_else (_, s1, s2) ->
+              let type_of_s1 = type_of_stmt s1 in
+              let type_of_s2 = type_of_stmt s2 in
+              if type_of_s1 = type_of_s2 then
+                type_of_s1
+              else if type_of_s1 <> retTyp then
+                type_of_s1
+              else
+                type_of_s2
           | S_assignment _ | S_func_call _ | S_if _ | S_while _ | S_semicolon ->
-              type_of_block (Block t))
+              None
+          in
+          match type_of_stmt h with
+          | Some t -> Some t
+          | None -> type_of_block (Block t))
       in
       let trs = type_of_block b in
       if trs <> retTyp then (
@@ -121,11 +106,9 @@ and sem_header isFromFuncDef = function
                     ENTRY_parameter
                       {
                         parameter_type =
-                          begin
-                            match fpt.data_type with
-                            | ConstInt -> Types.T_int
-                            | ConstChar -> Types.T_char
-                          end;
+                          (match fpt.data_type with
+                          | ConstInt -> Types.T_int
+                          | ConstChar -> Types.T_char);
                         parameter_array_size = fpt.array_dimensions;
                         passing =
                           (if r then Symbol.BY_REFERENCE else Symbol.BY_VALUE);
