@@ -6,6 +6,9 @@ version = 0.26.0
 
 break-before-in = fit-or-vertical
 
+doc-comments = before
+exp-grouping = preserve
+
 extension-indent = 2
 field-space = loose
 function-indent = 0

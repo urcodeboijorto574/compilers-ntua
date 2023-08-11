@@ -35,32 +35,27 @@ mutable parameter_array_size : int list;
 passing : param_passing;
 }
 
-val create_symbol_table : int -> unit
 (** [create_symbol_table] takes an integer as an argument and creates a
     hashtable with that initial number of buckets. *)
+val create_symbol_table : int -> unit
 
-val current_scope : scope ref
 (** [current_scope] is a variable that stores the current scope during the
     semantic analysis of the AST. *)
+val current_scope : scope ref
 
-val open_scope : unit -> unit
 (** [open_scope] opens a new scope during the semantic analysis of the AST.
     The current scope becomes the parent scope of the new one. *)
+val open_scope : unit -> unit
 
-val close_scope : unit -> unit
 (** [close_scope] closes the current scope and makes the parent scope the
     current scope. *)
+val close_scope : unit -> unit
 
-val enter_variable : string -> Types.t_type -> int list -> unit
 (** [enter_variable] takes the variable's name [string], its type [Types.t_type]
     and the array_size [int], if the variable is an array and inserts it as an
     entry in the SymbolTable. [unit] is returned. *)
+val enter_variable : string -> Types.t_type -> int list -> unit
 
-val enter_function :
-  string ->
-  (int * (Types.t_type * int list * param_passing)) list ->
-  Types.t_type ->
-  unit
 (** [enter_function] takes 3 arguments:
     - the 1st argument is the name of the function of type [string],
     - the 2nd argument is a list of [int * triple]. The integer
@@ -72,6 +67,11 @@ val enter_function :
     - the 3rd argument is the return type of the function of type
       [Types.t_type option],
     Then it inserts the function as an entry in the SymbolTable. *)
+val enter_function :
+  string ->
+  (int * (Types.t_type * int list * param_passing)) list ->
+  Types.t_type ->
+  unit
 
 (* val enter_parameter : string -> Types.t_type -> int list -> bool -> unit
    (** [enter_parameter] takes the parameter's name [string], its type
@@ -79,18 +79,19 @@ val enter_function :
        whether or not is is passed by reference or by value ([true] if it's passed
        by reference) and inserts it in the SymbolTable. [unit] is returned. *) *)
 
-val look_up_entry : string -> entry option
 (** [look_up_entry] takes the name of an identifier and returns the entry found.
     *)
+val look_up_entry : string -> entry option
 
 (* The functions below are written just for testing purposes.
    Could be deleted when the semantic analysis is done. *)
-val scope_name : string list ref
+
 (** [scope_name] contains the function's name whose scope is currently the
     current_scope as its head. *)
+val scope_name : string list ref
 
-val add_scope_name : string -> unit
 (** [add_scope_name] updates the scope_name with the new one. *)
+val add_scope_name : string -> unit
 
-val rem_scope_name : unit -> unit
 (** [rem_scope_name] removes the lastly added scope_name. *)
+val rem_scope_name : unit -> unit

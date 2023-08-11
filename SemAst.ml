@@ -6,67 +6,103 @@ let rec sem_funcDef = function
     sem_header true h;
     sem_localDefList l;
     sem_block b;
-    (let retTyp =
-       match h.ret_type with
-       | Nothing -> None
-       | RetDataType ConstInt -> Some Types.T_int
-       | RetDataType ConstChar -> Some Types.T_char
-     in
-     let rec type_of_ret_stmt = function
-     | Block [] -> None
-     | Block (h :: t) -> (
-         match h with
-         | S_return None -> None
-         | S_return (Some e) -> Some (sem_expr e)
-         | S_assignment _ | S_block _ | S_func_call _ | S_if _ | S_if_else _
-          |S_while _ | S_semicolon ->
-             type_of_ret_stmt (Block t))
-     in
-     let trs = type_of_ret_stmt b in
-     if trs <> retTyp then (
-       let rec to_str = function
-       | None -> "nothing"
-       | Some Types.T_int -> "int"
-       | Some Types.T_char -> "char"
-       | Some (Types.T_func t) -> to_str t
-       | Some (Types.T_array t) ->
-           String.concat " " [ to_str (Some t); "array" ]
-       in
-       Printf.eprintf "In function '%s': Expected type %s but got %s instead.\n"
-         h.id (to_str retTyp) (to_str trs);
-       failwith "Return statement doesn't return the expected type"));
+    begin
+      (*  [retTyp] is what the function should return, based on its header *)
+      let retTyp =
+        match h.ret_type with
+        | Nothing -> None
+        | RetDataType ConstInt -> Some Types.T_int
+        | RetDataType ConstChar -> Some Types.T_char
+      in
+      (* [type_or_ret_stmt b] is what a return statement inside a block [b] is
+         returning with a return statement *)
+      let rec type_of_block : block -> Types.t_type option = function
+      | Block [] -> None
+      | Block (h :: t) -> (
+          let rec type_of_if_else x y : Types.t_type option =
+            let rec type_of_stmt : stmt -> Types.t_type option = function
+            | S_block b -> type_of_block b
+            | S_return x -> (
+                match x with None -> None | Some e -> Some (sem_expr e))
+            | S_if_else (_, s1', s2') ->
+                let a = type_of_stmt s1' in
+                let b = type_of_stmt s2' in
+                if a = b then
+                  a
+                else if a <> retTyp then
+                  a
+                else
+                  b
+            | _ -> None
+            in
+            let type_of_s1 = type_of_stmt x in
+            let type_of_s2 = type_of_stmt y in
+            if type_of_s1 = type_of_s2 then
+              type_of_s1
+            else if type_of_s1 = retTyp then
+              type_of_s2
+            else
+              type_of_s1
+          in
+          match h with
+          | S_return None -> None
+          | S_return (Some e) -> Some (sem_expr e)
+          | S_block b ->
+              let result = type_of_block b in
+              if result <> None then result else type_of_block (Block t)
+          | S_if_else (_, s1, s2) -> type_of_if_else s1 s2
+          | S_assignment _ | S_func_call _ | S_if _ | S_while _ | S_semicolon ->
+              type_of_block (Block t))
+      in
+      let trs = type_of_block b in
+      if trs <> retTyp then (
+        let rec to_str = function
+        | None -> "nothing"
+        | Some Types.T_int -> "int"
+        | Some Types.T_char -> "char"
+        | Some (Types.T_func t) -> to_str t
+        | Some (Types.T_array t) ->
+            String.concat " " [ to_str (Some t); "array" ]
+        in
+        Printf.eprintf
+          "In function '%s': Expected type %s but got %s instead.\n" h.id
+          (to_str retTyp) (to_str trs);
+        failwith "Return statement doesn't return the expected type")
+    end;
     Printf.printf "Closing scope for '%s' function's declarations.\n" h.id;
     Symbol.rem_scope_name ();
     Symbol.close_scope ()
 
 and sem_header isFromFuncDef = function
 | { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
-    (match look_up_entry ident with
-    | None ->
-        enter_function ident (sem_fparDefList fpdl)
-          (T_func
-             (match rt with
-             | Nothing -> None
-             | RetDataType ConstInt -> Some Types.T_int
-             | RetDataType ConstChar -> Some Types.T_char))
-    | Some ent ->
-        if
-          ent.id <> ident
-          || ((match ent.kind with
-              | ENTRY_function ef -> ef.return_type
-              | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ ->
-                  assert false)
-             <>
-             match rt with
-             | Nothing -> Types.T_func None
-             | RetDataType ConstInt -> Types.T_func (Some Types.T_int)
-             | RetDataType ConstChar -> Types.T_func (Some Types.T_char))
-          || ent.scope <> !current_scope
-        then (
-          Printf.eprintf "Function %s differs between declarations.\n" ident;
-          failwith "Function's signature differs between declarations")
-        else if not isFromFuncDef then
-          Printf.printf "Function %s is declared unnecessarily\n" ident);
+    begin
+      match look_up_entry ident with
+      | None ->
+          enter_function ident (sem_fparDefList fpdl)
+            (T_func
+               (match rt with
+               | Nothing -> None
+               | RetDataType ConstInt -> Some Types.T_int
+               | RetDataType ConstChar -> Some Types.T_char))
+      | Some ent ->
+          if
+            ent.id <> ident
+            || ((match ent.kind with
+                | ENTRY_function ef -> ef.return_type
+                | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ ->
+                    assert false)
+               <>
+               match rt with
+               | Nothing -> Types.T_func None
+               | RetDataType ConstInt -> Types.T_func (Some Types.T_int)
+               | RetDataType ConstChar -> Types.T_func (Some Types.T_char))
+            || ent.scope <> !current_scope
+          then (
+            Printf.eprintf "Function %s differs between declarations.\n" ident;
+            failwith "Function's signature differs between declarations")
+          else if not isFromFuncDef then
+            Printf.printf "Function %s is declared unnecessarily\n" ident
+    end;
     if isFromFuncDef then (
       Printf.printf "Opening new scope for '%s' function\n" ident;
       Symbol.add_scope_name ident;
@@ -85,9 +121,11 @@ and sem_header isFromFuncDef = function
                     ENTRY_parameter
                       {
                         parameter_type =
-                          (match fpt.data_type with
-                          | ConstInt -> Types.T_int
-                          | ConstChar -> Types.T_char);
+                          begin
+                            match fpt.data_type with
+                            | ConstInt -> Types.T_int
+                            | ConstChar -> Types.T_char
+                          end;
                         parameter_array_size = fpt.array_dimensions;
                         passing =
                           (if r then Symbol.BY_REFERENCE else Symbol.BY_VALUE);
