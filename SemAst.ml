@@ -239,7 +239,7 @@ and sem_lvalue = function
       in
       getT (sem_lvalue lv)
 
-and sem_expr Ast.expr -> Types.t_type = function
+and sem_expr : Ast.expr -> Types.t_type = function
   | E_const_int ci -> Types.T_int
   | E_const_char cc -> Types.T_char
   | E_lvalue lv -> sem_lvalue lv
@@ -265,7 +265,8 @@ and sem_expr Ast.expr -> Types.t_type = function
 
 and sem_cond : Ast.cond -> unit = function
   | C_not_cond (lo, c) -> sem_cond c
-  | C_cond_cond (c1, lo, c2) -> assert (sem_cond c1 = sem_cond c2) (* TODO: mitsos has a problem here *)
+  | C_cond_cond (c1, lo, c2) ->
+      assert (sem_cond c1 = sem_cond c2) (* TODO: mitsos has a problem here *)
   | C_expr_expr (e1, co, e2) ->
       let typ1, typ2 = (sem_expr e1, sem_expr e2) in
       Printf.printf
