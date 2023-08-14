@@ -51,7 +51,7 @@ fun main (temp : char[]) : nothing
       x[i] <- seed;
       i <- i+1;
    }
-   $ writeArray("Initial array: ", 16, x);
+   writeArray("Initial array: ", 16, x);
    bsort(16, x);
-   $ writeArray("Sorted  array: ", 16, x);
+   writeArray("Sorted  array: ", 16, x);
 } $ main

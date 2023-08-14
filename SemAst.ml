@@ -307,12 +307,13 @@ and sem_expr = function
 and sem_cond = function
   | C_not_cond (lo, c) -> sem_cond c
   | C_cond_cond (c1, lo, c2) ->
-      assert (sem_cond c1 = sem_cond c2) (* TODO: mitsos has a problem here *)
+      sem_cond c1;
+      sem_cond c2
   | C_expr_expr (e1, co, e2) ->
-      let typ1, typ2 = (sem_expr e1, sem_expr e2) in
       Printf.printf
         "\t... checking whether the arguments of a compOperator are of the \
          same type\n";
+      let typ1, typ2 = (sem_expr e1, sem_expr e2) in
       Types.equal_type typ1 typ2
   | C_cond_parenthesized c -> sem_cond c
 
