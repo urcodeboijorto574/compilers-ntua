@@ -20,8 +20,8 @@ let rec sem_funcDef = function
           | RetDataType ConstInt -> Some Types.T_int
           | RetDataType ConstChar -> Some Types.T_char
         in
-        (* [type_of_block b] is what a return statement inside a block [b] is
-           returning with a return statement *)
+        (* [type_of_block b] is the type that a return statement inside a
+           block [b] returns *)
         let rec type_of_block : block -> Types.t_type option = function
           | Block [] -> None
           | Block (h :: t) -> (
@@ -74,26 +74,23 @@ let rec sem_funcDef = function
 and sem_header isFromFuncDef = function
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
       begin
+        let returnTypeOfThisDef =
+          match rt with
+          | Nothing -> Types.T_func None
+          | RetDataType ConstInt -> Types.T_func (Some Types.T_int)
+          | RetDataType ConstChar -> Types.T_func (Some Types.T_char)
+        in
         match look_up_entry ident with
         | None ->
-            enter_function ident (sem_fparDefList fpdl)
-              (T_func
-                 (match rt with
-                 | Nothing -> None
-                 | RetDataType ConstInt -> Some Types.T_int
-                 | RetDataType ConstChar -> Some Types.T_char))
+            enter_function ident (sem_fparDefList fpdl) returnTypeOfThisDef
         | Some ent ->
             if
               ent.id <> ident
-              || ((match ent.kind with
-                  | ENTRY_function ef -> ef.return_type
-                  | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ ->
-                      assert false)
-                 <>
-                 match rt with
-                 | Nothing -> Types.T_func None
-                 | RetDataType ConstInt -> Types.T_func (Some Types.T_int)
-                 | RetDataType ConstChar -> Types.T_func (Some Types.T_char))
+              || (match ent.kind with
+                 | ENTRY_function ef -> ef.return_type
+                 | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ ->
+                     assert false)
+                 <> returnTypeOfThisDef
               || ent.scope <> !current_scope
             then (
               Printf.eprintf "Function %s differs between declarations.\n" ident;
@@ -149,22 +146,24 @@ and sem_fparDefList = function
     Returns [int * (Types.t_type * int list * Symbol.param_passing)]. *)
 and sem_fparDef = function
   | { ref = r; id_list = il; fpar_type = fpt } ->
-      let typ =
-        let rec getArrayType len accum =
-          match len with
-          | 0 -> if fpt.fixed_size then accum else Types.T_array accum
-          | len -> getArrayType (len - 1) (Types.T_array accum)
+      (* [typ] is the 'whole' type of the parameter *)
+      let completeType =
+        let rec createCompleteType n t =
+          match n with
+          | 0 -> t
+          | n -> createCompleteType (n - 1) (Types.T_array t)
         in
-        let pTyp =
+        let dataType =
           match fpt.data_type with
           | ConstInt -> Types.T_int
           | ConstChar -> Types.T_char
         in
-        getArrayType (List.length fpt.array_dimensions) pTyp
+        createCompleteType (List.length fpt.array_dimensions) dataType
       in
       ( List.length il,
-        (typ, fpt.array_dimensions, if r = true then BY_REFERENCE else BY_VALUE)
-      )
+        ( completeType,
+          fpt.array_dimensions,
+          if r = true then BY_REFERENCE else BY_VALUE ) )
 
 (** [sem_localDefList (ldl : Ast.localDef list)] semantically analyses the
     function's local definitions list [ldl].
@@ -190,20 +189,21 @@ and sem_funcDecl = function FuncDecl_Header h -> sem_header false h
     Returns [unit]. *)
 and sem_varDef = function
   | { id_list = idl; var_type = vt } ->
-      let vTyp =
-        match vt.data_type with
-        | ConstInt -> Types.T_int
-        | ConstChar -> Types.T_char
-      in
-      let typ =
-        let rec getArrayType len accum =
-          match len with
-          | 0 -> accum
-          | len -> getArrayType (len - 1) (Types.T_array accum)
+      let wholeType =
+        (* [includeArrayType n t] returns the type [t] encapsulated [n] times with
+           Types.T_array type. *)
+        let rec includeArrayType n t =
+          match n with
+          | 0 -> t
+          | n -> includeArrayType (n - 1) (Types.T_array t)
         in
-        getArrayType (List.length vt.array_dimensions) vTyp
+        includeArrayType
+          (List.length vt.array_dimensions)
+          (match vt.data_type with
+          | ConstInt -> Types.T_int
+          | ConstChar -> Types.T_char)
       in
-      let helper i = enter_variable i typ vt.array_dimensions in
+      let helper i = enter_variable i wholeType vt.array_dimensions in
       List.iter helper idl
 
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
@@ -263,18 +263,18 @@ and sem_lvalue = function
           Printf.eprintf "Undefined variable %s is being used.\n" id;
           failwith "Undefined variable")
   | L_string s -> Types.T_array Types.T_char
-  | L_comp (lv, e) ->
+  | L_comp (lv, e) -> (
       (* (Its value must be at most n - 1, if n is the size of the array). *)
       Printf.printf
-        "\t... checking the types of the variable inside brackets (position in \
-         array must be int)\n";
+        "\t... checking the type of the content inside the brackets (position \
+         in array must be an integer)\n";
       Types.equal_type Types.T_int (sem_expr e);
-      let getT = function
-        | Types.T_array t -> t
-        | Types.T_func _ -> assert false
-        | x -> x
-      in
-      getT (sem_lvalue lv)
+      match sem_lvalue lv with
+      | Types.T_array t -> t
+      | _ ->
+          Printf.eprintf
+            "Iteration cannot happen in non-array type of variables/functions.\n";
+          failwith "Iteration on non-array type of variable")
 
 (** [sem_expr (e : Ast.expr)] returns the type of the expression [e].
     Returns [Types.t_type]. *)
@@ -285,10 +285,13 @@ and sem_expr = function
   | E_func_call fc -> (
       match sem_funcCall fc with
       | Types.T_func None ->
-          Printf.eprintf "Function %s returns nothing." fc.id;
+          Printf.eprintf "Function %s returns nothing.\n" fc.id;
           failwith "A function of type nothing is being used as an expression"
       | Types.T_func (Some t) -> t
-      | Types.T_int | Types.T_char | Types.T_array _ -> assert false)
+      | Types.T_int | Types.T_char | Types.T_array _ ->
+          (* A function must always be inserted in the SymbolTable with type
+             Types.T_func (t : Types.t_type option) *)
+          assert false)
   | E_sgn_expr (s, e) ->
       Printf.printf "\t... checking a signed expression (must be int)\n";
       Types.equal_type Types.T_int (sem_expr e);
@@ -324,15 +327,15 @@ and sem_cond = function
 and sem_funcCall = function
   | { id = ident; expr_list = el } ->
       let el_types = List.map sem_expr el in
-      let getV = function
+      let entr =
+        match look_up_entry ident with
+        | Some e -> e
         | None ->
-            Printf.printf "Function %s is called, but never declared\n" ident;
+            Printf.eprintf "Function %s is called, but never declared\n" ident;
             failwith "Undeclared function called"
-        | Some v -> v
       in
-      let e = getV (look_up_entry ident) in
       let pl_types =
-        match e.kind with
+        match entr.kind with
         | ENTRY_function ef ->
             let rec getEntryTypesList = function
               | [] -> []
@@ -340,16 +343,34 @@ and sem_funcCall = function
             in
             getEntryTypesList ef.parameters_list
         | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ -> assert false
+        (* TODO: check above for the meaning of matching entr.kind with
+           ENTRY_{variable,parameter,none} *)
       in
       let bool_from_unit f x y =
         Printf.printf
-          "\t... checking whether the arguments of a funcCall are indeed the \
-           declared types\n";
+          "\t... checking whether the arguments of funcCall %s are indeed the \
+           declared types\n"
+          ident;
+        let rec isOfType = function
+          | Types.T_array t ->
+              Printf.printf "array of ";
+              isOfType t
+          | Types.T_func None -> Printf.printf "function of nothing\n"
+          | Types.T_func (Some t) ->
+              Printf.printf "function of ";
+              isOfType t
+          | Types.T_int -> Printf.printf "integer\n"
+          | Types.T_char -> Printf.printf "character\n"
+        in
+        Printf.printf "Got expression of type ";
+        isOfType x;
+        Printf.printf "Expected expression of type ";
+        isOfType y;
         f x y;
         true
       in
       if List.equal (bool_from_unit Types.equal_type) el_types pl_types then
-        match e.kind with
+        match entr.kind with
         | ENTRY_function ef -> ef.return_type
         | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ -> assert false
       else (

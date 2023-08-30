@@ -90,8 +90,8 @@ id_list:
 | T_comma T_identifier id_list { $2 :: $3 }
 
 fpar_type:
-  data_type array_dimensions { newFparType($1, $2, true) }
-| data_type T_left_sqr T_right_sqr array_dimensions { newFparType($1, $4, false) }
+  data_type array_dimensions { newFparType($1, $2) }
+| data_type T_left_sqr T_right_sqr array_dimensions { newFparType($1, 0 :: $4) }
 
 data_type:
   T_int { ConstInt }

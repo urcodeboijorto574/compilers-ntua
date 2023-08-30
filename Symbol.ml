@@ -87,7 +87,7 @@ let enter_variable id typ arrSize =
 
 (** [enter_function i pL rt] enters a new function entry in the symbolTable.
     [i] is the function's identifier, [rt] is the return type of the function
-    and [pL] is a list of type [(int * (Types.t_type * int list * param_passing)) 
+    and [pL] is a list of type [(int * (Types.t_type * int list * param_passing))
     list]. Each element of the [pL] signifies the number of parameters in each
     parameter definition, with an exact type, array size and kind of parameter
     passing. *)

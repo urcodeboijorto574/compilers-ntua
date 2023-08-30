@@ -46,8 +46,9 @@ and fparDef = {
 
 and fparType = {
   data_type : dataType;
+  (* [array_dimensions] has 0 as its head when the
+     1st dimension of the array is not of fixed size *)
   array_dimensions : int list;
-  fixed_size : bool;
 }
 
 and dataType =
@@ -112,10 +113,7 @@ and cond =
 let newFuncDef (a, b, c) = { header = a; local_def_list = b; block = c }
 and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
 and newFparDef (a, b, c) = { ref = a; id_list = b; fpar_type = c }
-
-and newFparType (a, b, c) =
-  { data_type = a; array_dimensions = b; fixed_size = c }
-
+and newFparType (a, b) : fparType = { data_type = a; array_dimensions = b }
 and newVarDef (a, b) = { id_list = a; var_type = b }
-and newVarType (a, b) = { data_type = a; array_dimensions = b }
+and newVarType (a, b) : varType = { data_type = a; array_dimensions = b }
 and newFuncCall (a, b) = { id = a; expr_list = b }

@@ -64,14 +64,10 @@ and print_varType varType =
   Printf.printf ")"
 
 and print_fparType fparType =
-  let fixedSize =
-    if fparType.fixed_size = false then Printf.printf "[]" else Printf.printf ""
-  in
   Printf.printf "FparType(";
   print_dataType fparType.data_type;
-  fixedSize;
-  if fparType.array_dimensions <> [] then
-    List.iter (fun x -> Printf.printf "[%d]" x) fparType.array_dimensions;
+  let f = function 0 -> Printf.printf "[]" | x -> Printf.printf "[%d]" x in
+  List.iter f fparType.array_dimensions;
   Printf.printf ")"
 
 and print_localDef localDef =
