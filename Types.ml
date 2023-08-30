@@ -1,7 +1,7 @@
 type t_type =
   | T_int
   | T_char
-  | T_array of t_type
+  | T_array of t_type * int
   | T_func of t_type option
 
 let rec equal_type t1 t2 =

@@ -146,19 +146,23 @@ and sem_fparDefList = function
     Returns [int * (Types.t_type * int list * Symbol.param_passing)]. *)
 and sem_fparDef = function
   | { ref = r; id_list = il; fpar_type = fpt } ->
-      (* [typ] is the 'whole' type of the parameter *)
       let completeType =
-        let rec createCompleteType n t =
-          match n with
-          | 0 -> t
-          | n -> createCompleteType (n - 1) (Types.T_array t)
+        let rec constructArrayType counter len dimList endType =
+          if counter = len then
+            endType
+          else
+            Types.T_array
+              ( constructArrayType (counter + 1) len (List.tl dimList) endType,
+                List.hd dimList )
         in
         let dataType =
           match fpt.data_type with
           | ConstInt -> Types.T_int
           | ConstChar -> Types.T_char
         in
-        createCompleteType (List.length fpt.array_dimensions) dataType
+        constructArrayType 0
+          (List.length fpt.array_dimensions)
+          fpt.array_dimensions pTyp
       in
       ( List.length il,
         ( completeType,
@@ -190,18 +194,22 @@ and sem_funcDecl = function FuncDecl_Header h -> sem_header false h
 and sem_varDef = function
   | { id_list = idl; var_type = vt } ->
       let wholeType =
-        (* [includeArrayType n t] returns the type [t] encapsulated [n] times with
-           Types.T_array type. *)
-        let rec includeArrayType n t =
-          match n with
-          | 0 -> t
-          | n -> includeArrayType (n - 1) (Types.T_array t)
+        let rec constructArrayType counter len dimList endType =
+          if counter = len then
+            endType
+          else
+            Types.T_array
+              ( constructArrayType (counter + 1) len (List.tl dimList) endType,
+                List.hd dimList )
         in
-        includeArrayType
-          (List.length vt.array_dimensions)
-          (match vt.data_type with
+        let vTyp =
+          match vt.data_type with
           | ConstInt -> Types.T_int
-          | ConstChar -> Types.T_char)
+          | ConstChar -> Types.T_char
+        in
+        constructArrayType 0
+          (List.length vt.array_dimensions)
+          vt.array_dimensions vTyp
       in
       let helper i = enter_variable i wholeType vt.array_dimensions in
       List.iter helper idl
