@@ -53,7 +53,7 @@ let rec sem_funcDef = function
             | Some Types.T_int -> "int"
             | Some Types.T_char -> "char"
             | Some (Types.T_func t) -> to_str t
-            | Some (Types.T_array t) ->
+            | Some (Types.T_array (t, _)) ->
                 String.concat " " [ to_str (Some t); "array" ]
           in
           Printf.eprintf
@@ -162,7 +162,7 @@ and sem_fparDef = function
         in
         constructArrayType 0
           (List.length fpt.array_dimensions)
-          fpt.array_dimensions pTyp
+          fpt.array_dimensions dataType
       in
       ( List.length il,
         ( completeType,
@@ -202,14 +202,14 @@ and sem_varDef = function
               ( constructArrayType (counter + 1) len (List.tl dimList) endType,
                 List.hd dimList )
         in
-        let vTyp =
+        let dataType =
           match vt.data_type with
           | ConstInt -> Types.T_int
           | ConstChar -> Types.T_char
         in
         constructArrayType 0
           (List.length vt.array_dimensions)
-          vt.array_dimensions vTyp
+          vt.array_dimensions dataType
       in
       let helper i = enter_variable i wholeType vt.array_dimensions in
       List.iter helper idl
@@ -224,7 +224,7 @@ and sem_block = function Block [] -> () | Block b -> List.iter sem_stmt b
 and sem_stmt = function
   | S_assignment (lv, e) -> (
       match sem_lvalue lv with
-      | Types.T_array t ->
+      | Types.T_array (t, _) ->
           Printf.printf
             "Assignment to an l-value of type array is not possible.\n";
           failwith "Assignment to array" (* Types.equal_type t (sem_expr e) *)
@@ -270,7 +270,7 @@ and sem_lvalue = function
       | None ->
           Printf.eprintf "Undefined variable %s is being used.\n" id;
           failwith "Undefined variable")
-  | L_string s -> Types.T_array Types.T_char
+  | L_string s -> Types.T_array (Types.T_char, 0)
   | L_comp (lv, e) -> (
       (* (Its value must be at most n - 1, if n is the size of the array). *)
       Printf.printf
@@ -278,7 +278,7 @@ and sem_lvalue = function
          in array must be an integer)\n";
       Types.equal_type Types.T_int (sem_expr e);
       match sem_lvalue lv with
-      | Types.T_array t -> t
+      | Types.T_array (t, _) -> t
       | _ ->
           Printf.eprintf
             "Iteration cannot happen in non-array type of variables/functions.\n";
@@ -360,7 +360,7 @@ and sem_funcCall = function
            declared types\n"
           ident;
         let rec isOfType = function
-          | Types.T_array t ->
+          | Types.T_array (t, _) ->
               Printf.printf "array of ";
               isOfType t
           | Types.T_func None -> Printf.printf "function of nothing\n"
