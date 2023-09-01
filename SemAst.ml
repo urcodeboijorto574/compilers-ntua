@@ -13,92 +13,80 @@ let rec sem_funcDef = function
       sem_block b;
       (*  In the section below it is checked if the expected return type is returned. *)
       begin
-        (*  [retTyp] is what the function should return, based on its header *)
-        let retTyp =
-          match h.ret_type with
-          | Nothing -> None
-          | RetDataType ConstInt -> Some Types.T_int
-          | RetDataType ConstChar -> Some Types.T_char
+        let expectedReturnType =
+          Types.(T_func (t_type_of_retType h.ret_type))
         in
-        (* [type_of_block b] is the type that a return statement inside a
-           block [b] returns *)
-        let rec type_of_block : block -> Types.t_type option = function
-          | Block [] -> None
-          | Block (h :: t) -> (
-              let rec type_of_stmt : stmt -> Types.t_type option = function
-                | S_block b -> type_of_block b
-                | S_return x -> (
-                    match x with None -> None | Some e -> Some (sem_expr e))
-                | S_if_else (_, s1, s2) ->
-                    let type_of_s1 = type_of_stmt s1 in
-                    let type_of_s2 = type_of_stmt s2 in
-                    if type_of_s1 = type_of_s2 then
-                      type_of_s1
-                    else if type_of_s1 <> retTyp then
-                      type_of_s1
-                    else
-                      type_of_s2
-                | S_assignment _ | S_func_call _ | S_if _ | S_while _
-                 |S_semicolon ->
-                    None
-              in
-              match type_of_stmt h with
-              | Some t -> Some t
-              | None -> type_of_block (Block t))
-        in
-        let trs = type_of_block b in
-        if trs <> retTyp then (
-          let rec to_str = function
-            | None -> "nothing"
-            | Some Types.T_int -> "int"
-            | Some Types.T_char -> "char"
-            | Some (Types.T_func t) -> to_str t
-            | Some (Types.T_array (t, _)) ->
-                String.concat " " [ to_str (Some t); "array" ]
+        let typeReturnedInBlock =
+          let rec type_of_block : block -> Types.t_type option = function
+            | Block [] -> None
+            | Block (h :: t) -> (
+                let rec type_of_stmt : stmt -> Types.t_type option = function
+                  | S_block b -> type_of_block b
+                  | S_return x -> (
+                      match x with None -> None | Some e -> Some (sem_expr e))
+                  | S_if_else (_, s1, s2) ->
+                      let type_of_s1 = type_of_stmt s1 in
+                      let type_of_s2 = type_of_stmt s2 in
+                      if type_of_s1 = type_of_s2 then
+                        type_of_s1
+                      else if type_of_s1 <> Some expectedReturnType then
+                        type_of_s1
+                      else
+                        type_of_s2
+                  | S_assignment _ | S_func_call _ | S_if _ | S_while _
+                   |S_semicolon ->
+                      None
+                in
+                match type_of_stmt h with
+                | Some t -> Some t
+                | None -> type_of_block (Block t))
           in
+          Types.T_func (type_of_block b)
+        in
+        if expectedReturnType <> typeReturnedInBlock then begin
           Printf.eprintf
             "In function '%s': Expected type %s but got %s instead.\n" h.id
-            (to_str retTyp) (to_str trs);
-          failwith "Return statement doesn't return the expected type")
+            (Types.string_of_type expectedReturnType)
+            (Types.string_of_type typeReturnedInBlock);
+          failwith "Return statement doesn't return the expected type"
+        end
       end;
       Printf.printf "Closing scope for '%s' function's declarations.\n" h.id;
       Symbol.rem_scope_name ();
       Symbol.close_scope ()
 
-(** [sem_header (isFromFuncDef : bool) (h : Ast.header)] takes [isFromFuncDef]
+(** [sem_header (isPartOfAFuncDef : bool) (h : Ast.header)] takes [isPartOfAFuncDef]
     ([true] when the header is part of a function definition and [false] when
     it's part of a function declaration) and the function's header [h].
     If [h] is part of a function definition, then a new scope is opened and the
     function's parameters are inserted in it.
     Returns [unit]. *)
-and sem_header isFromFuncDef = function
+and sem_header isPartOfAFuncDef = function
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
       begin
-        let returnTypeOfThisDef =
-          match rt with
-          | Nothing -> Types.T_func None
-          | RetDataType ConstInt -> Types.T_func (Some Types.T_int)
-          | RetDataType ConstChar -> Types.T_func (Some Types.T_char)
-        in
+        let returnTypeOfThisHeader = Types.(T_func (t_type_of_retType rt)) in
         match look_up_entry ident with
         | None ->
-            enter_function ident (sem_fparDefList fpdl) returnTypeOfThisDef
-        | Some ent ->
+            enter_function ident (sem_fparDefList fpdl) returnTypeOfThisHeader
+        | Some e ->
+            let expectedReturnTypeOfFunction =
+              match e.kind with
+              | ENTRY_function ef -> ef.return_type
+              | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ ->
+                  assert false
+            in
             if
-              ent.id <> ident
-              || (match ent.kind with
-                 | ENTRY_function ef -> ef.return_type
-                 | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ ->
-                     assert false)
-                 <> returnTypeOfThisDef
-              || ent.scope <> !current_scope
+              expectedReturnTypeOfFunction <> returnTypeOfThisHeader
+              || e.scope <> !current_scope
+              || false (* TODO: must also check parameters *)
             then (
-              Printf.eprintf "Function %s differs between declarations.\n" ident;
+              Printf.eprintf "Error: Function %s has multiple signatures.\n"
+                ident;
               failwith "Function's signature differs between declarations")
-            else if not isFromFuncDef then
-              Printf.printf "Function %s is declared unnecessarily\n" ident
+            else if not isPartOfAFuncDef then
+              Printf.printf "Warning: Redeclaration of function '%s'" ident
       end;
-      if isFromFuncDef then (
+      if isPartOfAFuncDef then begin
         Printf.printf "Opening new scope for '%s' function\n" ident;
         Symbol.add_scope_name ident;
         Symbol.open_scope ();
@@ -116,10 +104,8 @@ and sem_header isFromFuncDef = function
                           ENTRY_parameter
                             {
                               parameter_type =
-                                (match fpt.data_type with
-                                | ConstInt -> Types.T_int
-                                | ConstChar -> Types.T_char);
-                              parameter_array_size = fpt.array_dimensions;
+                                Types.construct_array_type fpt.array_dimensions
+                                  (Types.t_type_of_dataType fpt.data_type);
                               passing =
                                 (if r then
                                    Symbol.BY_REFERENCE
@@ -132,7 +118,8 @@ and sem_header isFromFuncDef = function
               in
               add_param_names_to_scope idl
         in
-        List.iter add_fparDef_to_scope fpdl)
+        List.iter add_fparDef_to_scope fpdl
+      end
 
 (** [sem_fparDefList (fpdl : Ast.fparDef list)] semantically analyses the
     function's parameter definitions [fpdl].
@@ -147,22 +134,8 @@ and sem_fparDefList = function
 and sem_fparDef = function
   | { ref = r; id_list = il; fpar_type = fpt } ->
       let completeType =
-        let rec constructArrayType counter len dimList endType =
-          if counter = len then
-            endType
-          else
-            Types.T_array
-              ( constructArrayType (counter + 1) len (List.tl dimList) endType,
-                List.hd dimList )
-        in
-        let dataType =
-          match fpt.data_type with
-          | ConstInt -> Types.T_int
-          | ConstChar -> Types.T_char
-        in
-        constructArrayType 0
-          (List.length fpt.array_dimensions)
-          fpt.array_dimensions dataType
+        let dataType = Types.t_type_of_dataType fpt.data_type in
+        Types.construct_array_type fpt.array_dimensions dataType
       in
       ( List.length il,
         ( completeType,
@@ -194,22 +167,8 @@ and sem_funcDecl = function FuncDecl_Header h -> sem_header false h
 and sem_varDef = function
   | { id_list = idl; var_type = vt } ->
       let wholeType =
-        let rec constructArrayType counter len dimList endType =
-          if counter = len then
-            endType
-          else
-            Types.T_array
-              ( constructArrayType (counter + 1) len (List.tl dimList) endType,
-                List.hd dimList )
-        in
-        let dataType =
-          match vt.data_type with
-          | ConstInt -> Types.T_int
-          | ConstChar -> Types.T_char
-        in
-        constructArrayType 0
-          (List.length vt.array_dimensions)
-          vt.array_dimensions dataType
+        let dataType = Types.t_type_of_dataType vt.data_type in
+        Types.construct_array_type vt.array_dimensions dataType
       in
       let helper i = enter_variable i wholeType vt.array_dimensions in
       List.iter helper idl
@@ -224,7 +183,7 @@ and sem_block = function Block [] -> () | Block b -> List.iter sem_stmt b
 and sem_stmt = function
   | S_assignment (lv, e) -> (
       match sem_lvalue lv with
-      | Types.T_array (t, _) ->
+      | Types.T_array _ ->
           Printf.printf
             "Assignment to an l-value of type array is not possible.\n";
           failwith "Assignment to array" (* Types.equal_type t (sem_expr e) *)
@@ -238,12 +197,13 @@ and sem_stmt = function
           Types.equal_type t (sem_expr e))
   | S_block b -> sem_block b
   | S_func_call fc -> (
+      let open Types in
       match sem_funcCall fc with
-      | Types.T_func None -> ()
-      | Types.T_func (Some _) ->
-          Printf.eprintf "The return value of the function %s is not used.\n"
-            fc.id
-      | Types.T_int | Types.T_char | Types.T_array _ -> assert false)
+      | T_func None -> ()
+      | T_func (Some _) ->
+          Printf.eprintf
+            "Warning: The return value of the function %s is not used.\n" fc.id
+      | T_int | T_char | T_array _ -> assert false)
   | S_if (c, s) ->
       sem_cond c;
       sem_stmt s
@@ -263,9 +223,26 @@ and sem_lvalue = function
   | L_id id -> (
       match look_up_entry id with
       | Some e -> (
+          Printf.printf "Entry for %s found. Information:\n" id;
+          Printf.printf "\tid: %s, scope: %s" id e.scope.name;
+          let entryType =
+            match e.kind with
+            | ENTRY_variable ev -> ev.variable_type
+            | ENTRY_parameter ep -> ep.parameter_type
+            | ENTRY_function ef -> ef.return_type
+            | ENTRY_none -> assert false
+          in
+          Printf.printf ", type: %s\n" (Types.string_of_type entryType);
+          let print_type t =
+            Printf.printf "<<%s>> type\n" (Types.string_of_type t)
+          in
           match e.kind with
-          | ENTRY_variable ev -> ev.variable_type
-          | ENTRY_parameter ep -> ep.parameter_type
+          | ENTRY_variable ev ->
+              print_type ev.variable_type;
+              ev.variable_type
+          | ENTRY_parameter ep ->
+              print_type ep.parameter_type;
+              ep.parameter_type
           | ENTRY_none | ENTRY_function _ -> assert false)
       | None ->
           Printf.eprintf "Undefined variable %s is being used.\n" id;
@@ -276,9 +253,11 @@ and sem_lvalue = function
       Printf.printf
         "\t... checking the type of the content inside the brackets (position \
          in array must be an integer)\n";
-      Types.equal_type Types.T_int (sem_expr e);
+      Types.(equal_type T_int (sem_expr e));
       match sem_lvalue lv with
-      | Types.T_array (t, _) -> t
+      | Types.T_array (t, _) ->
+          Printf.printf "<<%s>> type\n" (Types.string_of_type t);
+          t
       | _ ->
           Printf.eprintf
             "Iteration cannot happen in non-array type of variables/functions.\n";
@@ -289,7 +268,16 @@ and sem_lvalue = function
 and sem_expr = function
   | E_const_int ci -> Types.T_int
   | E_const_char cc -> Types.T_char
-  | E_lvalue lv -> sem_lvalue lv
+  | E_lvalue lv ->
+      let lvalue_type = sem_lvalue lv in
+      begin
+        match lv with
+        | L_comp _ ->
+            Printf.printf "Composite l-value is of type '%s'"
+              (Types.string_of_type lvalue_type)
+        | _ -> ()
+      end;
+      lvalue_type
   | E_func_call fc -> (
       match sem_funcCall fc with
       | Types.T_func None ->
@@ -334,7 +322,7 @@ and sem_cond = function
     Returns [Types.t_type]. *)
 and sem_funcCall = function
   | { id = ident; expr_list = el } ->
-      let el_types = List.map sem_expr el in
+      let exprTypesList = List.map sem_expr el in
       let entr =
         match look_up_entry ident with
         | Some e -> e
@@ -342,7 +330,7 @@ and sem_funcCall = function
             Printf.eprintf "Function %s is called, but never declared\n" ident;
             failwith "Undeclared function called"
       in
-      let pl_types =
+      let paramTypesList =
         match entr.kind with
         | ENTRY_function ef ->
             let rec getEntryTypesList = function
@@ -359,25 +347,16 @@ and sem_funcCall = function
           "\t... checking whether the arguments of funcCall %s are indeed the \
            declared types\n"
           ident;
-        let rec isOfType = function
-          | Types.T_array (t, _) ->
-              Printf.printf "array of ";
-              isOfType t
-          | Types.T_func None -> Printf.printf "function of nothing\n"
-          | Types.T_func (Some t) ->
-              Printf.printf "function of ";
-              isOfType t
-          | Types.T_int -> Printf.printf "integer\n"
-          | Types.T_char -> Printf.printf "character\n"
-        in
-        Printf.printf "Got expression of type ";
-        isOfType x;
-        Printf.printf "Expected expression of type ";
-        isOfType y;
+        Printf.printf "Got expression of type %s\n" (Types.string_of_type x);
+        Printf.printf "Expected type %s\n" (Types.string_of_type y);
         f x y;
         true
       in
-      if List.equal (bool_from_unit Types.equal_type) el_types pl_types then
+      if
+        List.equal
+          (bool_from_unit Types.equal_type)
+          exprTypesList paramTypesList
+      then
         match entr.kind with
         | ENTRY_function ef -> ef.return_type
         | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ -> assert false
