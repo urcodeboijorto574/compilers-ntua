@@ -32,42 +32,48 @@ and entry_parameter = {
   passing : param_passing;
 }
 
-(** [create_symbol_table] takes an integer as an argument and creates a
-    hashtable with that initial number of buckets. *)
-val create_symbol_table : int -> unit
-
 (** [current_scope] is a variable that stores the current scope during the
     semantic analysis of the AST. *)
 val current_scope : scope ref
 
 (** [open_scope] opens a new scope during the semantic analysis of the AST.
-    The current scope becomes the parent scope of the new one. *)
+    The current scope becomes the parent scope of the new one. Takes one
+    arguement of type [string], that is the name of the function in which the
+    scope belongs. *)
 val open_scope : string -> unit
 
 (** [close_scope] closes the current scope and makes the parent scope the
     current scope. *)
 val close_scope : unit -> unit
 
-(** [enter_variable] takes the variable's name [string] and its type [Types.t_type]
-    and inserts it as an entry in the SymbolTable. [unit] is returned. *)
+(** [create_symbol_table n] initializes the symbolTable as a Hashtbl with [n]
+    number of buckets. It also initializes the [current_scope]. *)
+val create_symbol_table : int -> unit
+
+(** [enter_variable i t] takes an identifier [i] and a type [t] and creates a
+    new [entry_variable] that is then entered in the symbolTable. *)
 val enter_variable : string -> Types.t_type -> unit
 
-(** [enter_function id fparDefList rt] takes 3 arguments:
-    - [id] is the name of the function of type [string].
-    - [fparDefList] is a list of tuples with 3 elements each. The 1st element
-      corresponds to the number of parameters in a single parameter definition.
-      The 2nd element is the type of the parameters of type [Types.t_type]. The
-      3rd element is the way the parameters are passed of type [Symbol.param_passing].
-    - [rt] is the return type of the function of type [Types.t_type option].
-    Then it inserts the function as an entry in the SymbolTable. *)
+(** [enter_parameter i t isRef] enters a parameter in the symbolTable.
+    [i] is the parameter's identifier, [t] is the parameter's type and [isRef]
+    [true] if the parameter is passed by reference or [false] if by value. *)
+val enter_parameter : string -> Types.t_type -> bool -> unit
+
+(** [enter_function i pL rt] enters a new function entry in the symbolTable.
+    [i] is the function's identifier, [rt] is the return type of the function
+    and [pL] is a list of type [(int * Types.t_type * param_passing)
+    list]. Each element of the [pL] is a tuple with 3 fields.
+    The first field signifies the number of parameters in each
+    parameter definition, the second the type, and the third the kind of
+    parameter passing. *)
 val enter_function :
   string -> (int * Types.t_type * param_passing) list -> Types.t_type -> unit
 
-(* val enter_parameter : string -> Types.t_type -> int list -> bool -> unit
-   (** [enter_parameter] takes the parameter's name [string], its type
-       [Types.t_type], the array_size [int], if the parameter is an array and
-       whether or not is is passed by reference or by value ([true] if it's passed
-       by reference) and inserts it in the SymbolTable. [unit] is returned. *) *)
-
-(** [look_up_entry] takes the name of an identifier and returns the entry found. *)
+(** [look_up_entry_temp id] searches in the symbolTable an entry with [id] as
+    the key. TODO: must be deleted after debugging completes *)
 val look_up_entry_temp : string -> entry option
+
+(** [look_up_entry id] searches in the symbolTable an entry with [id] as the key.
+    It returns the entry found. If no entry is found, [Not_found] exception is
+    thrown. *)
+val look_up_entry : string -> entry
