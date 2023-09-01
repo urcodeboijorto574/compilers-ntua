@@ -65,7 +65,7 @@ and sem_header isPartOfAFuncDef = function
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
       begin
         let returnTypeOfThisHeader = Types.(T_func (t_type_of_retType rt)) in
-        match look_up_entry ident with
+        match look_up_entry_temp ident with
         | None ->
             enter_function ident (sem_fparDefList fpdl) returnTypeOfThisHeader
         | Some e ->
@@ -221,7 +221,7 @@ and sem_stmt = function
     Returns [Types.t_type]. *)
 and sem_lvalue = function
   | L_id id -> (
-      match look_up_entry id with
+      match look_up_entry_temp id with
       | Some e -> (
           Printf.printf "Entry for %s found. Information:\n" id;
           Printf.printf "\tid: %s, scope: %s" id e.scope.name;
@@ -324,7 +324,7 @@ and sem_funcCall = function
   | { id = ident; expr_list = el } ->
       let exprTypesList = List.map sem_expr el in
       let entr =
-        match look_up_entry ident with
+        match look_up_entry_temp ident with
         | Some e -> e
         | None ->
             Printf.eprintf "Function %s is called, but never declared\n" ident;

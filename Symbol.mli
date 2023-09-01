@@ -79,8 +79,8 @@ val enter_function :
        whether or not is is passed by reference or by value ([true] if it's passed
        by reference) and inserts it in the SymbolTable. [unit] is returned. *) *)
 
-(** [look_up_entry] takes the name of an identifier and returns the entry found. *)
-val look_up_entry : string -> entry option
+(** [look_up_entry_temp] takes the name of an identifier and returns the entry found. *)
+val look_up_entry_temp : string -> entry option
 
 (* The functions below are written just for testing purposes.
    Could be deleted when the semantic analysis is done. *)

@@ -123,7 +123,9 @@ let enter_function (id : string)
 
 let scope_name = ref [ "Init" ]
 
-let look_up_entry (id : string) =
+(** [look_up_entry_temp] is a premature look_up function to search in the
+    symbolTable. It exists only for debugging purpospes. *)
+let look_up_entry_temp (id : string) =
   Printf.printf "\tLooking for name %s...\n" id;
   let rec look_up_entry_helper (sc : scope) =
     (Printf.printf "Scope '%s':\n\t[ " (List.hd !scope_name);
