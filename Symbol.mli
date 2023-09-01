@@ -20,10 +20,7 @@ and entry_kind =
   | ENTRY_function of entry_function
   | ENTRY_parameter of entry_parameter
 
-and entry_variable = {
-  variable_type : Types.t_type;
-  variable_array_size : int list;
-}
+and entry_variable = { variable_type : Types.t_type }
 
 and entry_function = {
   parameters_list : entry_parameter list;
@@ -32,7 +29,6 @@ and entry_function = {
 
 and entry_parameter = {
   parameter_type : Types.t_type;
-  mutable parameter_array_size : int list;
   passing : param_passing;
 }
 
@@ -52,27 +48,20 @@ val open_scope : string -> unit
     current scope. *)
 val close_scope : unit -> unit
 
-(** [enter_variable] takes the variable's name [string], its type [Types.t_type]
-    and the array_size [int], if the variable is an array and inserts it as an
-    entry in the SymbolTable. [unit] is returned. *)
-val enter_variable : string -> Types.t_type -> int list -> unit
+(** [enter_variable] takes the variable's name [string] and its type [Types.t_type]
+    and inserts it as an entry in the SymbolTable. [unit] is returned. *)
+val enter_variable : string -> Types.t_type -> unit
 
-(** [enter_function] takes 3 arguments:
-    - the 1st argument is the name of the function of type [string],
-    - the 2nd argument is a list of [int * triple]. The integer
-      corresponds to the number of parameters with the same passing type
-      and type. The 3 fields of each triple are:
-      · the type of the parameter
-      · the array dimensions
-      · the type of passing of the parameter.
-    - the 3rd argument is the return type of the function of type
-      [Types.t_type option],
+(** [enter_function id fparDefList rt] takes 3 arguments:
+    - [id] is the name of the function of type [string].
+    - [fparDefList] is a list of tuples with 3 elements each. The 1st element
+      corresponds to the number of parameters in a single parameter definition.
+      The 2nd element is the type of the parameters of type [Types.t_type]. The
+      3rd element is the way the parameters are passed of type [Symbol.param_passing].
+    - [rt] is the return type of the function of type [Types.t_type option].
     Then it inserts the function as an entry in the SymbolTable. *)
 val enter_function :
-  string ->
-  (int * (Types.t_type * int list * param_passing)) list ->
-  Types.t_type ->
-  unit
+  string -> (int * Types.t_type * param_passing) list -> Types.t_type -> unit
 
 (* val enter_parameter : string -> Types.t_type -> int list -> bool -> unit
    (** [enter_parameter] takes the parameter's name [string], its type

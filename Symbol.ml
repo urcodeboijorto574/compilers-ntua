@@ -27,10 +27,7 @@ and entry_kind =
   | ENTRY_function of entry_function
   | ENTRY_parameter of entry_parameter
 
-and entry_variable = {
-  variable_type : Types.t_type;
-  variable_array_size : int list;
-}
+and entry_variable = { variable_type : Types.t_type }
 
 and entry_function = {
   parameters_list : entry_parameter list;
@@ -39,7 +36,6 @@ and entry_function = {
 
 and entry_parameter = {
   parameter_type : Types.t_type;
-  mutable parameter_array_size : int list;
   passing : param_passing;
 }
 
@@ -75,32 +71,43 @@ let enter_entry ident eKind =
   Printf.printf "entering entry %s in current scope\n" e.id;
   !current_scope.scope_entries <- e :: !current_scope.scope_entries
 
-(** [enter_variable i t aS] takes an identifier [i], a type [t] and an array
-    size [aS] and creates a new [entry_variable] that will be entered in the
-    symbolTable via the [enter_entry] function. *)
-let enter_variable id typ arrSize =
+(** [enter_variable i t] takes an identifier [i] and a type [t] and creates a
+    new [entry_variable] that will be entered in the symbolTable via the
+    [enter_entry] function. *)
+let enter_variable id typ =
+  let kind = ENTRY_variable { variable_type = typ } in
+  enter_entry id kind
+
+(** [enter_parameter id t isRef] takes an identifier [id], a type [t] and
+    [isRef : bool] that marks whether the parameter passing is by reference, in
+    which case [true], or by value, [false].
+    Returns [unit]. *)
+let enter_parameter id typ isRef =
   let kind =
-    ENTRY_variable { variable_type = typ; variable_array_size = arrSize }
+    ENTRY_parameter
+      {
+        parameter_type = typ;
+        passing = (if isRef then BY_REFERENCE else BY_VALUE);
+      }
   in
   enter_entry id kind
 
 (** [enter_function i pL rt] enters a new function entry in the symbolTable.
     [i] is the function's identifier, [rt] is the return type of the function
-    and [pL] is a list of type [(int * (Types.t_type * int list * param_passing))
+    and [pL] is a list of type [(int * Types.t_type * param_passing)
     list]. Each element of the [pL] signifies the number of parameters in each
     parameter definition, with an exact type, array size and kind of parameter
     passing. *)
 let enter_function (id : string)
-    (paramList : (int * (Types.t_type * int list * param_passing)) list) retTyp
-    =
+    (paramList : (int * Types.t_type * param_passing) list) retTyp =
   let paramL : entry_parameter list =
     let rec convert_list paramList =
       match paramList with
       | [] -> []
-      | (0, (t, arrSz, pp)) :: tail -> convert_list tail
-      | (n, (t, arrSz, pp)) :: tail ->
-          { parameter_type = t; parameter_array_size = arrSz; passing = pp }
-          :: convert_list ((n - 1, (t, arrSz, pp)) :: tail)
+      | (0, t, pp) :: tail -> convert_list tail
+      | (n, t, pp) :: tail ->
+          { parameter_type = t; passing = pp }
+          :: convert_list ((n - 1, t, pp) :: tail)
     in
     convert_list paramList
   in

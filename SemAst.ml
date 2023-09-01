@@ -122,24 +122,21 @@ and sem_header isPartOfAFuncDef = function
 
 (** [sem_fparDefList (fpdl : Ast.fparDef list)] semantically analyses the
     function's parameter definitions [fpdl].
-    Returns [(int * (Types.t_type * int list * Symbol.param_passing)) list]. *)
+    Returns [(int * Types.t_type * Symbol.param_passing) list]. *)
 and sem_fparDefList = function
   | [] -> []
   | h :: t -> sem_fparDef h :: sem_fparDefList t
 
 (** [sem_fparDef (fpd : Ast.fparDef)] semantically analyses the function's
     parameter definition [fpd].
-    Returns [int * (Types.t_type * int list * Symbol.param_passing)]. *)
+    Returns [int * Types.t_type * Symbol.param_passing]. *)
 and sem_fparDef = function
   | { ref = r; id_list = il; fpar_type = fpt } ->
       let completeType =
         let dataType = Types.t_type_of_dataType fpt.data_type in
         Types.construct_array_type fpt.array_dimensions dataType
       in
-      ( List.length il,
-        ( completeType,
-          fpt.array_dimensions,
-          if r = true then BY_REFERENCE else BY_VALUE ) )
+      (List.length il, completeType, if r then BY_REFERENCE else BY_VALUE)
 
 (** [sem_localDefList (ldl : Ast.localDef list)] semantically analyses the
     function's local definitions list [ldl].
@@ -169,7 +166,7 @@ and sem_varDef = function
         let dataType = Types.t_type_of_dataType vt.data_type in
         Types.construct_array_type vt.array_dimensions dataType
       in
-      let helper i = enter_variable i wholeType vt.array_dimensions in
+      let helper i = enter_variable i wholeType in
       List.iter helper idl
 
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
