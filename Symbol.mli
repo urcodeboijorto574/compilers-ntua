@@ -15,7 +15,6 @@ and entry = {
 }
 
 and entry_kind =
-  | ENTRY_none
   | ENTRY_variable of entry_variable
   | ENTRY_function of entry_function
   | ENTRY_parameter of entry_parameter

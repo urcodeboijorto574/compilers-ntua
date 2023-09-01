@@ -71,8 +71,7 @@ and sem_header isPartOfAFuncDef = function
             let expectedReturnTypeOfFunction =
               match e.kind with
               | ENTRY_function ef -> ef.return_type
-              | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ ->
-                  assert false
+              | ENTRY_variable _ | ENTRY_parameter _ -> assert false
             in
             if
               expectedReturnTypeOfFunction <> returnTypeOfThisHeader
@@ -226,7 +225,6 @@ and sem_lvalue = function
             | ENTRY_variable ev -> ev.variable_type
             | ENTRY_parameter ep -> ep.parameter_type
             | ENTRY_function ef -> ef.return_type
-            | ENTRY_none -> assert false
           in
           Printf.printf ", type: %s\n" (Types.string_of_type entryType);
           let print_type t =
@@ -239,7 +237,7 @@ and sem_lvalue = function
           | ENTRY_parameter ep ->
               print_type ep.parameter_type;
               ep.parameter_type
-          | ENTRY_none | ENTRY_function _ -> assert false)
+          | ENTRY_function _ -> assert false)
       | None ->
           Printf.eprintf "Undefined variable %s is being used.\n" id;
           failwith "Undefined variable")
@@ -334,7 +332,7 @@ and sem_funcCall = function
               | { parameter_type = pt; _ } :: t -> pt :: getEntryTypesList t
             in
             getEntryTypesList ef.parameters_list
-        | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ -> assert false
+        | ENTRY_variable _ | ENTRY_parameter _ -> assert false
         (* TODO: check above for the meaning of matching entr.kind with
            ENTRY_{variable,parameter,none} *)
       in
@@ -355,7 +353,7 @@ and sem_funcCall = function
       then
         match entr.kind with
         | ENTRY_function ef -> ef.return_type
-        | ENTRY_none | ENTRY_variable _ | ENTRY_parameter _ -> assert false
+        | ENTRY_variable _ | ENTRY_parameter _ -> assert false
       else (
         Printf.eprintf "Arguments' types of function %s don't match" ident;
         failwith "The arguments' types don't match")
