@@ -10,6 +10,7 @@ type param_passing =
   | BY_REFERENCE
 
 and scope = {
+  name : string;
   parent : scope option;
   mutable scope_entries : entry list;
 }
@@ -43,20 +44,18 @@ and entry_parameter = {
 }
 
 (** [current_scope] is of type [scope ref]. *)
-let current_scope = ref { parent = None; scope_entries = [] }
+let current_scope = ref { name = ""; parent = None; scope_entries = [] }
 
 (** [open_scope ()] updates the [current_scope] variable to a new one with
     [parent] the previous scope and an empty list for [scope_entries]. *)
-let open_scope () =
-  current_scope := { parent = Some !current_scope; scope_entries = [] }
+let open_scope str =
+  current_scope :=
+    { name = str; parent = Some !current_scope; scope_entries = [] }
 
 (** [close_scope ()] updates the [current_scope] variable to the scope
     saved as its [parent]. *)
 and close_scope () =
-  let getV = function
-    | None -> failwith "Can't close initial scope"
-    | Some v -> v
-  in
+  let getV = function None -> failwith "Initial scope closed" | Some v -> v in
   current_scope := getV !current_scope.parent
 
 (** [symbolTable] is a Hashtbl ref that stores the current image of the SymbolTable. *)
@@ -66,7 +65,7 @@ let symbolTable = ref (HT.create 0)
     number of buckets. It also initializes the [current_scope]. *)
 let create_symbol_table numOfBuckets =
   symbolTable := HT.create numOfBuckets;
-  current_scope := { parent = None; scope_entries = [] }
+  current_scope := { name = ""; parent = None; scope_entries = [] }
 
 (** [enter_entry i e] takes an identifier [i] and an entry kind [e] and creates
     and adds a new entry in the symbolTable. *)
@@ -110,32 +109,22 @@ let enter_function (id : string)
   in
   enter_entry id kind
 
-(* let enter_parameter id typ arrSize isRef =
-   let kind =
-     ENTRY_parameter
-       {
-         parameter_type = typ;
-         parameter_array_size = arrSize;
-         passing = (if isRef then BY_REFERENCE else BY_VALUE);
-       }
-   in
-   enter_entry id kind *)
-
-let scope_name = ref [ "Init" ]
-
 (** [look_up_entry_temp] is a premature look_up function to search in the
     symbolTable. It exists only for debugging purpospes. *)
 let look_up_entry_temp (id : string) =
   Printf.printf "\tLooking for name %s...\n" id;
   let rec look_up_entry_helper (sc : scope) =
-    (Printf.printf "Scope '%s':\n\t[ " (List.hd !scope_name);
-     let rec printEntriesList = function
-       | [] -> Printf.printf "]\n"
-       | h :: t ->
-           Printf.printf "%s " h.id;
-           printEntriesList t
-     in
-     printEntriesList sc.scope_entries);
+    begin
+      (* Print debug messages *)
+      Printf.printf "Scope '%s':\n\t[ " sc.name;
+      let rec print_entries_list = function
+        | [] -> Printf.printf "]\n"
+        | h :: t ->
+            Printf.printf "%s " h.id;
+            print_entries_list t
+      in
+      print_entries_list sc.scope_entries
+    end;
     let isTarget e = e.id = id in
     try Some (List.find isTarget sc.scope_entries)
     with Not_found -> (
@@ -143,5 +132,10 @@ let look_up_entry_temp (id : string) =
   in
   look_up_entry_helper !current_scope
 
-let add_scope_name str = scope_name := str :: !scope_name
-let rem_scope_name () = scope_name := List.tl !scope_name
+(** [look_up_entry id] takes an [id : string] and checks if this name has been
+    stored in the symbolTable.
+    Returns [entry]. *)
+let look_up_entry (id : string) =
+  Printf.printf "\t Looking for name %s...\n" id;
+  try HT.find !symbolTable id
+  with Not_found -> failwith "(TODO) Undefined variable name"

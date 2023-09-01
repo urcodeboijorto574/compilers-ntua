@@ -3,6 +3,7 @@ type param_passing =
   | BY_REFERENCE
 
 and scope = {
+  name : string;
   parent : scope option;
   mutable scope_entries : entry list;
 }
@@ -45,7 +46,7 @@ val current_scope : scope ref
 
 (** [open_scope] opens a new scope during the semantic analysis of the AST.
     The current scope becomes the parent scope of the new one. *)
-val open_scope : unit -> unit
+val open_scope : string -> unit
 
 (** [close_scope] closes the current scope and makes the parent scope the
     current scope. *)
@@ -79,18 +80,5 @@ val enter_function :
        whether or not is is passed by reference or by value ([true] if it's passed
        by reference) and inserts it in the SymbolTable. [unit] is returned. *) *)
 
-(** [look_up_entry_temp] takes the name of an identifier and returns the entry found. *)
+(** [look_up_entry] takes the name of an identifier and returns the entry found. *)
 val look_up_entry_temp : string -> entry option
-
-(* The functions below are written just for testing purposes.
-   Could be deleted when the semantic analysis is done. *)
-
-(** [scope_name] contains the function's name whose scope is currently the
-    current_scope as its head. *)
-val scope_name : string list ref
-
-(** [add_scope_name] updates the scope_name with the new one. *)
-val add_scope_name : string -> unit
-
-(** [rem_scope_name] removes the lastly added scope_name. *)
-val rem_scope_name : unit -> unit

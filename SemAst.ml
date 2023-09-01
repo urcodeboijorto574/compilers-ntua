@@ -52,7 +52,6 @@ let rec sem_funcDef = function
         end
       end;
       Printf.printf "Closing scope for '%s' function's declarations.\n" h.id;
-      Symbol.rem_scope_name ();
       Symbol.close_scope ()
 
 (** [sem_header (isPartOfAFuncDef : bool) (h : Ast.header)] takes [isPartOfAFuncDef]
@@ -88,9 +87,9 @@ and sem_header isPartOfAFuncDef = function
       end;
       if isPartOfAFuncDef then begin
         Printf.printf "Opening new scope for '%s' function\n" ident;
-        Symbol.add_scope_name ident;
-        Symbol.open_scope ();
-        (* here I'll add the parameters in the currently opened scope *)
+        Symbol.open_scope ident;
+
+        (* Add parameters in the currently opened scope *)
         let add_fparDef_to_scope : fparDef -> unit = function
           | { ref = r; id_list = idl; fpar_type = fpt } ->
               let rec add_param_names_to_scope : string list -> unit = function
