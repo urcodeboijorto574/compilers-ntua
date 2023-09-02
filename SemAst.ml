@@ -1,6 +1,10 @@
 open Ast
 open Symbol
 
+(** [isMainProgram] is a variable that has [true] if the main function
+    of a program is currently analysed and [false] if not. *)
+let isMainProgram = ref true
+
 (** [sem_funcDef (fd : Ast.funcDef)] semantically analyses the function definition [fd].
     After semantically analysing the header, local definitions list and the block,
     it is checked if in the function's block a value of the expected type is
@@ -9,6 +13,7 @@ open Symbol
 let rec sem_funcDef = function
   | { header = h; local_def_list = l; block = b } ->
       sem_header true h;
+      isMainProgram := false;
       sem_localDefList l;
       sem_block b;
       (*  In the section below it is checked if the expected return type is returned. *)
@@ -62,6 +67,15 @@ let rec sem_funcDef = function
     Returns [unit]. *)
 and sem_header isPartOfAFuncDef = function
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
+      (* Checks only for main function of the program *)
+      begin
+        if !isMainProgram && rt <> Nothing then (
+          Printf.eprintf "Error: Main function must return 'nothing' type\n";
+          failwith "Main function should return nothing")
+        else if !isMainProgram && fpdl <> [] then (
+          Printf.eprintf "Error: Main function shouldn't have parameters\n";
+          failwith "Main function shouldn't have parameters")
+      end;
       begin
         let returnTypeOfThisHeader = Types.(T_func (t_type_of_retType rt)) in
         match look_up_entry_temp ident with
