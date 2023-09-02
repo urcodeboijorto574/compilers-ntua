@@ -345,8 +345,6 @@ and sem_funcCall = function
             in
             getEntryTypesList ef.parameters_list
         | ENTRY_variable _ | ENTRY_parameter _ -> assert false
-        (* TODO: check above for the meaning of matching entr.kind with
-           ENTRY_{variable,parameter,none} *)
       in
       let bool_from_unit f x y =
         Printf.printf
