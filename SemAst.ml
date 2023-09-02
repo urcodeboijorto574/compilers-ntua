@@ -145,6 +145,12 @@ and sem_fparDefList = function
     Returns [int * Types.t_type * Symbol.param_passing]. *)
 and sem_fparDef = function
   | { ref = r; id_list = il; fpar_type = fpt } ->
+      let paramIsArray = fpt.array_dimensions <> [] in
+      let passedByValue = not r in
+      if paramIsArray && passedByValue then (
+        Printf.eprintf
+          "Error: arrrays should always be passed as parameters by reference.\n";
+        failwith "Array passed as a parameter by value");
       let completeType =
         let dataType = Types.t_type_of_dataType fpt.data_type in
         Types.construct_array_type fpt.array_dimensions dataType
