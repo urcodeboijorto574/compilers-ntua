@@ -201,14 +201,17 @@ and sem_stmt = function
       | T_int | T_char | T_array _ -> assert false)
   | S_if (c, s) ->
       sem_cond c;
-      sem_stmt s
+      sem_stmt s;
+      Ast.check_condition c
   | S_if_else (c, s1, s2) ->
       sem_cond c;
       sem_stmt s1;
-      sem_stmt s2
+      sem_stmt s2;
+      Ast.check_condition c
   | S_while (c, s) ->
       sem_cond c;
-      sem_stmt s
+      sem_stmt s;
+      Ast.check_condition c
   | S_return re -> () (* this check is happening in sem_funcDef *)
   | S_semicolon -> ()
 
@@ -252,30 +255,7 @@ and sem_lvalue = function
       | Types.T_array (t, n) ->
           (* Check for segmentation fault if the expression has a constant value. *)
           begin
-            let rec get_const_value = function
-              | E_const_int ci -> Some ci
-              | E_sgn_expr (sign, e) -> (
-                  match sign with
-                  | O_plus -> get_const_value e
-                  | O_minus -> (
-                      match get_const_value e with
-                      | None -> None
-                      | Some i -> Some (-1 * i)))
-              | E_op_expr_expr (e1, ao, e2) -> (
-                  match (get_const_value e1, get_const_value e2) with
-                  | Some i1, Some i2 ->
-                      Some
-                        (match ao with
-                        | O_plus -> i1 + i2
-                        | O_minus -> i1 - i2
-                        | O_mul -> i1 * i2
-                        | O_div -> i1 / i2
-                        | O_mod -> i1 mod i2)
-                  | _ -> None)
-              | E_expr_parenthesized e -> get_const_value e
-              | E_const_char _ | E_lvalue _ | E_func_call _ -> None
-            in
-            match get_const_value e with
+            match Ast.get_const_expr_value e with
             | None -> ()
             | Some index ->
                 if index < 0 || index >= n then (

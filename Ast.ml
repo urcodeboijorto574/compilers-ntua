@@ -117,3 +117,67 @@ and newFparType (a, b) : fparType = { data_type = a; array_dimensions = b }
 and newVarDef (a, b) = { id_list = a; var_type = b }
 and newVarType (a, b) : varType = { data_type = a; array_dimensions = b }
 and newFuncCall (a, b) = { id = a; expr_list = b }
+
+(* Helper functions for checks *)
+
+(** [get_const_expr_value e] checks whether an expression [e] has a constant
+    integer value or not. Returns [int option]. *)
+let rec get_const_expr_value = function
+  | E_const_int ci -> Some ci
+  | E_sgn_expr (sign, e) -> (
+      match sign with
+      | O_plus -> get_const_expr_value e
+      | O_minus -> (
+          match get_const_expr_value e with
+          | None -> None
+          | Some i -> Some (-1 * i)))
+  | E_op_expr_expr (e1, ao, e2) -> (
+      match (get_const_expr_value e1, get_const_expr_value e2) with
+      | Some i1, Some i2 ->
+          Some
+            (match ao with
+            | O_plus -> i1 + i2
+            | O_minus -> i1 - i2
+            | O_mul -> i1 * i2
+            | O_div -> i1 / i2
+            | O_mod -> i1 mod i2)
+      | _ -> None)
+  | E_expr_parenthesized e -> get_const_expr_value e
+  | E_const_char _ | E_lvalue _ | E_func_call _ -> None
+
+(** [get_const_cond_value c] checks whether a condition [c] has a constant
+      value or not. Returns [bool option]. *)
+let rec get_const_cond_value = function
+  | C_not_cond (lo, c) -> (
+      match get_const_cond_value c with None -> None | Some v -> Some (not v))
+  | C_cond_cond (c1, lo, c2) -> (
+      match (get_const_cond_value c1, get_const_cond_value c2) with
+      | Some v1, Some v2 ->
+          Some
+            (match lo with
+            | O_and -> v1 && v2
+            | O_or -> v1 || v2
+            | O_not -> assert false)
+      | _ -> None)
+  | C_expr_expr (e1, co, e2) -> (
+      match (get_const_expr_value e1, get_const_expr_value e2) with
+      | Some i1, Some i2 ->
+          Some
+            (match co with
+            | O_equal -> i1 = i2
+            | O_less -> i1 < i2
+            | O_greater -> i1 > i2
+            | O_less_eq -> i1 <= i2
+            | O_greater_eq -> i1 >= i2
+            | O_not_equal -> i1 <> i2)
+      | _ -> None)
+  | C_cond_parenthesized c -> get_const_cond_value c
+
+(** [check_condition c] prints a warning in standard error output if c
+      has a constant value. Returns [unit]. *)
+let check_condition c =
+  match get_const_cond_value c with
+  | None -> ()
+  | Some v ->
+      let string_of_v = if v then "true" else "false" in
+      Printf.eprintf "Warning: Condition is always %s.\n" string_of_v

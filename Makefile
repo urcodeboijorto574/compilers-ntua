@@ -18,7 +18,7 @@ OCAMLDEP=ocamldep
 %.cmo %.cmi: %.ml
 	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
 
-grace$(EXE): Types.cmo Symbol.cmo PrintAst.cmo SemAst.cmo Ast.cmo Lexer.cmo Parser.cmo Main.cmo
+grace$(EXE): Types.cmo Symbol.cmo PrintAst.cmo Ast.cmo SemAst.cmo Lexer.cmo Parser.cmo Main.cmo
 	$(OCAMLC) $(OCAMLC_FLAGS) -o $@ $^
 
 Lexer.ml: Lexer.mll
