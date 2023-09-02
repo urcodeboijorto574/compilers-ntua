@@ -150,15 +150,24 @@ let rec get_const_expr_value = function
 let rec get_const_cond_value = function
   | C_not_cond (lo, c) -> (
       match get_const_cond_value c with None -> None | Some v -> Some (not v))
-  | C_cond_cond (c1, lo, c2) -> (
-      match (get_const_cond_value c1, get_const_cond_value c2) with
-      | Some v1, Some v2 ->
-          Some
-            (match lo with
-            | O_and -> v1 && v2
-            | O_or -> v1 || v2
-            | O_not -> assert false)
-      | _ -> None)
+  | C_cond_cond (c1, lo, c2) -> begin
+      match get_const_cond_value c1 with
+      | Some v1 ->
+          if lo = O_or && v1 then
+            Some true
+          else if lo = O_and && not v1 then
+            Some false
+          else
+            Some (get_const_cond_value c2)
+      | None -> (
+          (* TODO: Clarification needed here:
+             This section should be ignored if the evaluation of the
+             first condition should always happen, whether the second
+             condition is hard-wired or not *)
+          match get_const_cond_value c2 with
+          | Some true -> if lo = O_or then Some true else None
+          | Some false -> if lo = O_and then Some false else None)
+    end
   | C_expr_expr (e1, co, e2) -> (
       match (get_const_expr_value e1, get_const_expr_value e2) with
       | Some i1, Some i2 ->
