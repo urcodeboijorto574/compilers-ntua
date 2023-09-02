@@ -158,7 +158,7 @@ let rec get_const_cond_value = function
           else if lo = O_and && not v1 then
             Some false
           else
-            Some (get_const_cond_value c2)
+            get_const_cond_value c2
       | None -> (
           (* TODO: Clarification needed here:
              This section should be ignored if the evaluation of the
@@ -166,7 +166,8 @@ let rec get_const_cond_value = function
              condition is hard-wired or not *)
           match get_const_cond_value c2 with
           | Some true -> if lo = O_or then Some true else None
-          | Some false -> if lo = O_and then Some false else None)
+          | Some false -> if lo = O_and then Some false else None
+          | None -> None)
     end
   | C_expr_expr (e1, co, e2) -> (
       match (get_const_expr_value e1, get_const_expr_value e2) with
