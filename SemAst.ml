@@ -67,7 +67,7 @@ let rec sem_funcDef = function
     Returns [unit]. *)
 and sem_header isPartOfAFuncDef = function
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
-      (* Checks only for main function of the program *)
+      (* Checks for main function of the program *)
       begin
         if !isMainProgram && rt <> Nothing then (
           Printf.eprintf "Error: Main function must return 'nothing' type\n";
@@ -76,6 +76,7 @@ and sem_header isPartOfAFuncDef = function
           Printf.eprintf "Error: Main function shouldn't have parameters\n";
           failwith "Main function shouldn't have parameters")
       end;
+      (* Checks the returned and expected type *)
       begin
         let returnTypeOfThisHeader = Types.(T_func (t_type_of_retType rt)) in
         match look_up_entry_temp ident with
@@ -348,7 +349,6 @@ and sem_cond = function
     Returns [Types.t_type]. *)
 and sem_funcCall = function
   | { id = ident; expr_list = el } ->
-      let exprTypesList = List.map sem_expr el in
       let entr =
         match look_up_entry_temp ident with
         | Some e -> e
@@ -356,6 +356,11 @@ and sem_funcCall = function
             Printf.eprintf "Function %s is called, but never declared\n" ident;
             failwith "Undeclared function called"
       in
+      (* [exprTypesList] is a list of [Types.t_type] and the nth element
+         is the type of the nth argument of the function call *)
+      let exprTypesList = List.map sem_expr el in
+      (* [paramTypesList] is a list of [Types.t_type] and the nth element
+         is the type of the nth parameter of the function *)
       let paramTypesList =
         match entr.kind with
         | ENTRY_function ef ->
@@ -366,7 +371,50 @@ and sem_funcCall = function
             getEntryTypesList ef.parameters_list
         | ENTRY_variable _ | ENTRY_parameter _ -> assert false
       in
-      let bool_from_unit f x y =
+      (* [paramByRefList] is a list of [bool] and the nth element is [true] if
+         the nth parameter of the function is passed by reference, and [false]
+         otherwise. *)
+      let paramByRefList =
+        match entr.kind with
+        | ENTRY_function ef ->
+            let rec getRefList = function
+              | [] -> []
+              | { passing = p; _ } :: t ->
+                  (p = Symbol.BY_REFERENCE) :: getRefList t
+            in
+            getRefList ef.parameters_list
+        | ENTRY_variable _ | ENTRY_parameter _ -> assert false
+      in
+      (* Check if the number of arguments is the expected one *)
+      if List.length exprTypesList <> List.length paramTypesList then (
+        Printf.eprintf
+          "Function called without the expected number of parameters.\n";
+        failwith "Unexpected number of parameters in function call");
+      (* Check if the parameters passed by reference are l-values *)
+      begin
+        (* [f] checks if the nth expression of the [expressionList] is an
+           l-value if the nth element of the [byRefList] is [true].
+           Returns [unit] if all checks pass. *)
+        let rec f expressionList byRefList =
+          match (expressionList, byRefList) with
+          | e :: exprTail, r :: refTail ->
+              if r then (
+                match e with
+                | E_lvalue _ -> ()
+                | E_const_int _ | E_const_char _ | E_func_call _
+                 |E_sgn_expr _ | E_op_expr_expr _ | E_expr_parenthesized _ ->
+                    Printf.eprintf
+                      "Expression passed by reference isn't an l-value.\n";
+                    failwith "Parameter passed by reference must be an l-value")
+              else
+                f exprTail refTail
+          | [], [] -> ()
+          | _ ->
+              failwith "Unexpected number of parameters given in function call"
+        in
+        f el paramByRefList
+      end;
+      let bool_of_unit_func f x y =
         Printf.printf
           "\t... checking whether the arguments of funcCall %s are indeed the \
            declared types\n"
@@ -378,7 +426,7 @@ and sem_funcCall = function
       in
       if
         List.equal
-          (bool_from_unit Types.equal_type)
+          (bool_of_unit_func Types.equal_type)
           exprTypesList paramTypesList
       then
         match entr.kind with
