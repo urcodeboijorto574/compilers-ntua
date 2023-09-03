@@ -50,7 +50,8 @@ let rec sem_funcDef = function
         in
         if expectedReturnType <> typeReturnedInBlock then begin
           Printf.eprintf
-            "In function '%s': Expected type %s but got %s instead.\n" h.id
+            "Error: In function '%s': Expected type %s but got %s instead.\n"
+            h.id
             (Types.string_of_type expectedReturnType)
             (Types.string_of_type typeReturnedInBlock);
           failwith "Return statement doesn't return the expected type"
@@ -200,11 +201,12 @@ and sem_stmt = function
   | S_assignment (lv, e) -> (
       match sem_lvalue lv with
       | Types.T_array _ ->
-          Printf.printf
-            "Assignment to an l-value of type array is not possible.\n";
+          Printf.eprintf
+            "Error: Assignment to an l-value of type array is not possible.\n";
           failwith "Assignment to array" (* Types.equal_type t (sem_expr e) *)
       | Types.T_func _ ->
-          Printf.printf "Assignment to a function call is not possible.\n";
+          Printf.eprintf
+            "Error: Assignment to a function call is not possible.\n";
           failwith "Assignment to function"
       | t ->
           Printf.printf
@@ -263,7 +265,7 @@ and sem_lvalue = function
               ep.parameter_type
           | ENTRY_function _ -> assert false)
       | None ->
-          Printf.eprintf "Undefined variable %s is being used.\n" id;
+          Printf.eprintf "Error: Undefined variable %s is being used.\n" id;
           failwith "Undefined variable")
   | L_string s -> Types.T_array (Types.T_char, 0)
   | L_comp (lv, e) -> (
@@ -287,7 +289,8 @@ and sem_lvalue = function
           t
       | _ ->
           Printf.eprintf
-            "Iteration cannot happen in non-array type of variables/functions.\n";
+            "Error: Iteration cannot happen in non-array type of \
+             variables/functions.\n";
           failwith "Iteration on non-array type of variable")
 
 (** [sem_expr (e : Ast.expr)] returns the type of the expression [e].
@@ -308,7 +311,7 @@ and sem_expr = function
   | E_func_call fc -> (
       match sem_funcCall fc with
       | Types.T_func None ->
-          Printf.eprintf "Function %s returns nothing.\n" fc.id;
+          Printf.eprintf "Error: Function %s returns nothing.\n" fc.id;
           failwith "A function of type nothing is being used as an expression"
       | Types.T_func (Some t) -> t
       | Types.T_int | Types.T_char | Types.T_array _ ->
@@ -353,7 +356,8 @@ and sem_funcCall = function
         match look_up_entry_temp ident with
         | Some e -> e
         | None ->
-            Printf.eprintf "Function %s is called, but never declared\n" ident;
+            Printf.eprintf "Error: Function %s is called, but never declared\n"
+              ident;
             failwith "Undeclared function called"
       in
       (* [exprTypesList] is a list of [Types.t_type] and the nth element
@@ -388,7 +392,7 @@ and sem_funcCall = function
       (* Check if the number of arguments is the expected one *)
       if List.length exprTypesList <> List.length paramTypesList then (
         Printf.eprintf
-          "Function called without the expected number of parameters.\n";
+          "Error: Function called without the expected number of parameters.\n";
         failwith "Unexpected number of parameters in function call");
       (* Check if the parameters passed by reference are l-values *)
       begin
@@ -404,7 +408,7 @@ and sem_funcCall = function
                 | E_const_int _ | E_const_char _ | E_func_call _
                  |E_sgn_expr _ | E_op_expr_expr _ | E_expr_parenthesized _ ->
                     Printf.eprintf
-                      "Expression passed by reference isn't an l-value.\n";
+                      "Error: Expression passed by reference isn't an l-value.\n";
                     failwith "Parameter passed by reference must be an l-value")
               else
                 f exprTail refTail
@@ -433,7 +437,8 @@ and sem_funcCall = function
         | ENTRY_function ef -> ef.return_type
         | ENTRY_variable _ | ENTRY_parameter _ -> assert false
       else (
-        Printf.eprintf "Arguments' types of function %s don't match" ident;
+        Printf.eprintf "Error: Arguments' types of function %s don't match"
+          ident;
         failwith "The arguments' types don't match")
 
 (** [sem_on (ast : Ast.funcDef)] semantically analyses the root of the ast [ast]
