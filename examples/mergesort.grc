@@ -1,4 +1,5 @@
-$$ This is a mergeSort program written in Grace.
+$$ 
+    This is a mergeSort program written in Grace.
     It is not necessary able to return.
     But it should follow all the grammatical and sematic rules.
     Be cautious with the size N of the array
