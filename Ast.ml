@@ -120,8 +120,6 @@ and newFuncCall (a, b) = { id = a; expr_list = b }
 
 (* Helper functions for checks *)
 
-(** [get_const_expr_value e] checks whether an expression [e] has a constant
-    integer value or not. Returns [int option]. *)
 let rec get_const_expr_value = function
   | E_const_int ci -> Some ci
   | E_sgn_expr (sign, e) -> (
@@ -145,8 +143,6 @@ let rec get_const_expr_value = function
   | E_expr_parenthesized e -> get_const_expr_value e
   | E_const_char _ | E_lvalue _ | E_func_call _ -> None
 
-(** [get_const_cond_value c] checks whether a condition [c] has a constant
-      value or not. Returns [bool option]. *)
 let rec get_const_cond_value = function
   | C_not_cond (lo, c) -> (
       match get_const_cond_value c with None -> None | Some v -> Some (not v))
@@ -183,8 +179,6 @@ let rec get_const_cond_value = function
       | _ -> None)
   | C_cond_parenthesized c -> get_const_cond_value c
 
-(** [check_condition c] prints a warning in standard error output if c
-      has a constant value. Returns [unit]. *)
 let check_condition c =
   match get_const_cond_value c with
   | None -> ()

@@ -31,7 +31,7 @@ Parser.ml Parser.mli: Parser.mly
 
 -include .depend
 
-depend: Types.ml Types.mli Symbol.ml Symbol.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli Ast.ml Lexer.ml Lexer.mli Parser.ml Parser.mli Main.ml
+depend: Types.ml Types.mli Symbol.ml Symbol.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli Ast.ml Ast.mli Lexer.ml Lexer.mli Parser.ml Parser.mli Main.ml
 	$(OCAMLDEP) $^ > .depend
 
 clean:

@@ -1,4 +1,4 @@
-fun main (temp : char[]) : nothing
+fun main () : nothing
 
    fun bsort (n : int; ref x : int[]) : nothing
 
