@@ -100,7 +100,7 @@ let enter_function (id : string)
   enter_entry id kind
 
 let look_up_entry_temp (id : string) =
-  Printf.printf "\tLooking for name %s...\n" id;
+  Printf.printf "Looking for name %s...\n" id;
   let rec look_up_entry_helper (sc : scope) =
     begin
       (* Print debug messages *)
@@ -121,6 +121,6 @@ let look_up_entry_temp (id : string) =
   look_up_entry_helper !current_scope
 
 let look_up_entry (id : string) =
-  Printf.printf "\t Looking for name %s...\n" id;
+  Printf.printf "Looking for name %s...\n" id;
   try HT.find !symbolTable id
   with Not_found -> failwith "(TODO) Undefined variable name"

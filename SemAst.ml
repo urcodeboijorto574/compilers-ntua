@@ -91,7 +91,7 @@ and sem_header isPartOfAFuncDef = function
             in
             if
               expectedReturnTypeOfFunction <> returnTypeOfThisHeader
-              || e.scope <> !current_scope
+              || e.scope.name <> !current_scope.name
               || false (* TODO: must also check parameters *)
             then (
               Printf.eprintf "Error: Function %s has multiple signatures.\n"
@@ -210,8 +210,7 @@ and sem_stmt = function
           failwith "Assignment to function"
       | t ->
           Printf.printf
-            "\t... checking the types of an lvalue and an expression \
-             (assignment)\n";
+            "... checking the types of an lvalue and an expression (assignment)\n";
           Types.equal_type t (sem_expr e))
   | S_block b -> sem_block b
   | S_func_call fc -> (
@@ -271,8 +270,8 @@ and sem_lvalue = function
   | L_comp (lv, e) -> (
       (* (Its value must be at most n - 1, if n is the size of the array). *)
       Printf.printf
-        "\t... checking the type of the content inside the brackets (position \
-         in array must be an integer)\n";
+        "... checking the type of the content inside the brackets (position in \
+         array must be an integer)\n";
       Types.(equal_type T_int (sem_expr e));
       match sem_lvalue lv with
       | Types.T_array (t, n) ->
@@ -319,13 +318,12 @@ and sem_expr = function
              Types.T_func (t : Types.t_type option) *)
           assert false)
   | E_sgn_expr (s, e) ->
-      Printf.printf "\t... checking a signed expression (must be int)\n";
+      Printf.printf "... checking a signed expression (must be int)\n";
       Types.equal_type Types.T_int (sem_expr e);
       Types.T_int
   | E_op_expr_expr (e1, ao, e2) ->
       Printf.printf
-        "\t... checking whether the arguments of an arithmOperator are of type \
-         int\n";
+        "... checking whether the arguments of an arithmOperator are of type int\n";
       Types.equal_type Types.T_int (sem_expr e1);
       Types.equal_type Types.T_int (sem_expr e2);
       Types.T_int
@@ -340,8 +338,8 @@ and sem_cond = function
       sem_cond c2
   | C_expr_expr (e1, co, e2) ->
       Printf.printf
-        "\t... checking whether the arguments of a compOperator are of the \
-         same type\n";
+        "... checking whether the arguments of a compOperator are of the same \
+         type\n";
       let typ1, typ2 = (sem_expr e1, sem_expr e2) in
       Types.equal_type typ1 typ2
   | C_cond_parenthesized c -> sem_cond c
@@ -420,7 +418,7 @@ and sem_funcCall = function
       end;
       let bool_of_unit_func f x y =
         Printf.printf
-          "\t... checking whether the arguments of funcCall %s are indeed the \
+          "... checking whether the arguments of funcCall %s are indeed the \
            declared types\n"
           ident;
         Printf.printf "Got expression of type %s\n" (Types.string_of_type x);
