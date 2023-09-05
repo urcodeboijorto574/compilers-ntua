@@ -19,5 +19,7 @@ indicate-nested-or-patterns = space
 
 let-and = sparse
 
+line-endings = crlf
+
 type-decl = sparse
 type-decl-indent = 2

@@ -68,7 +68,6 @@ let rec sem_funcDef = function
     Returns [unit]. *)
 and sem_header isPartOfAFuncDef = function
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
-      (* Checks for main function of the program *)
       begin
         if !isMainProgram && rt <> Nothing then (
           Printf.eprintf "Error: Main function must return 'nothing' type\n";
@@ -77,29 +76,78 @@ and sem_header isPartOfAFuncDef = function
           Printf.eprintf "Error: Main function shouldn't have parameters\n";
           failwith "Main function shouldn't have parameters")
       end;
-      (* Checks the returned and expected type *)
+
+      let returnTypeFromThisHeader = Types.(T_func (t_type_of_retType rt)) in
       begin
-        let returnTypeOfThisHeader = Types.(T_func (t_type_of_retType rt)) in
         match look_up_entry_temp ident with
         | None ->
-            enter_function ident (sem_fparDefList fpdl) returnTypeOfThisHeader
-        | Some e ->
-            let expectedReturnTypeOfFunction =
-              match e.kind with
+            enter_function ident (sem_fparDefList fpdl) returnTypeFromThisHeader
+        | Some entry -> begin
+            let expectedReturnTypeFromSymbolTable =
+              match entry.kind with
               | ENTRY_function ef -> ef.return_type
               | ENTRY_variable _ | ENTRY_parameter _ -> assert false
             in
-            if
-              expectedReturnTypeOfFunction <> returnTypeOfThisHeader
-              || e.scope.name <> !current_scope.name
-              || false (* TODO: must also check parameters *)
-            then (
-              Printf.eprintf "Error: Function %s has multiple signatures.\n"
+            if entry.scope.name <> !current_scope.name then (
+              Printf.eprintf
+                "Error: The name '%s' is used for two functions in different \
+                 scopes.\n"
                 ident;
-              failwith "Function's signature differs between declarations")
+              failwith "Function overloading is not permitted")
+            else if
+              expectedReturnTypeFromSymbolTable <> returnTypeFromThisHeader
+            then (
+              Printf.eprintf
+                "Error: Function %s's return type differs between declarations.\n"
+                ident;
+              failwith "Function's return type differs between declarations")
+            else if
+              (* TODO: in the section below it is checked whether the type of
+                 parameters are the same between declarations. However, the
+                 names of the parameters are not checked. This can be decided
+                 after consideration. *)
+              begin
+                let paramListFromSymbolTable : Symbol.entry_parameter list =
+                  match entry.kind with
+                  | ENTRY_function funcEntry -> funcEntry.parameters_list
+                  | ENTRY_variable _ | ENTRY_parameter _ -> assert false
+                in
+                let paramListFromThisHeader : (int * Types.t_type * bool) list =
+                  let rec helper_function :
+                      fparDef list -> (int * Types.t_type * bool) list =
+                    function
+                    | [] -> []
+                    | { ref = r; id_list = il; fpar_type = fpt } :: tail ->
+                        let wholeType =
+                          Types.construct_array_type fpt.array_dimensions
+                            (Types.t_type_of_dataType fpt.data_type)
+                        in
+                        (List.length il, wholeType, r) :: helper_function tail
+                  in
+                  helper_function fpdl
+                in
+                let lists_are_equal paramListEntry paramListHeader =
+                  let compareElements x y =
+                    match y with
+                    | _, t, r ->
+                        x.parameter_type = t
+                        && x.passing = Symbol.BY_REFERENCE == r
+                  in
+                  List.for_all2 compareElements paramListEntry
+                    paramListFromThisHeader
+                in
+                lists_are_equal paramListFromSymbolTable paramListFromThisHeader
+              end
+            then (
+              Printf.eprintf
+                "Error: Function %s's parameters differ between declarations.\n"
+                ident;
+              failwith "Function's parameters differ between declarations")
             else if not isPartOfAFuncDef then
               Printf.printf "Warning: Redeclaration of function '%s'" ident
+          end
       end;
+
       if isPartOfAFuncDef then begin
         Printf.printf "Opening new scope for '%s' function\n" ident;
         Symbol.open_scope ident;
