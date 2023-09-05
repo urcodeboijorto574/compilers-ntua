@@ -16,47 +16,41 @@ let rec sem_funcDef = function
       isMainProgram := false;
       sem_localDefList l;
       sem_block b;
-      (*  In the section below it is checked if the expected return type is returned. *)
-      begin
-        let expectedReturnType =
-          Types.(T_func (t_type_of_retType h.ret_type))
+
+      let expectedReturnType = Types.(T_func (t_type_of_retType h.ret_type)) in
+      let typeReturnedInBlock =
+        let rec type_of_block : block -> Types.t_type option = function
+          | Block [] -> None
+          | Block (headStmt :: tailStmt) -> (
+              let rec type_of_stmt : stmt -> Types.t_type option = function
+                | S_block b -> type_of_block b
+                | S_return x -> (
+                    match x with None -> None | Some e -> Some (sem_expr e))
+                | S_if_else (_, s1, s2) ->
+                    let type_of_s1 = type_of_stmt s1 in
+                    let type_of_s2 = type_of_stmt s2 in
+                    if type_of_s1 = type_of_s2 then
+                      type_of_s1
+                    else if type_of_s1 <> Some expectedReturnType then
+                      type_of_s1
+                    else
+                      type_of_s2
+                | S_assignment _ | S_func_call _ | S_if _ | S_while _
+                 |S_semicolon ->
+                    None
+              in
+              match type_of_stmt headStmt with
+              | Some t -> Some t
+              | None -> type_of_block (Block tailStmt))
         in
-        let typeReturnedInBlock =
-          let rec type_of_block : block -> Types.t_type option = function
-            | Block [] -> None
-            | Block (h :: t) -> (
-                let rec type_of_stmt : stmt -> Types.t_type option = function
-                  | S_block b -> type_of_block b
-                  | S_return x -> (
-                      match x with None -> None | Some e -> Some (sem_expr e))
-                  | S_if_else (_, s1, s2) ->
-                      let type_of_s1 = type_of_stmt s1 in
-                      let type_of_s2 = type_of_stmt s2 in
-                      if type_of_s1 = type_of_s2 then
-                        type_of_s1
-                      else if type_of_s1 <> Some expectedReturnType then
-                        type_of_s1
-                      else
-                        type_of_s2
-                  | S_assignment _ | S_func_call _ | S_if _ | S_while _
-                   |S_semicolon ->
-                      None
-                in
-                match type_of_stmt h with
-                | Some t -> Some t
-                | None -> type_of_block (Block t))
-          in
-          Types.T_func (type_of_block b)
-        in
-        if expectedReturnType <> typeReturnedInBlock then begin
-          Printf.eprintf
-            "Error: In function '%s': Expected type %s but got %s instead.\n"
-            h.id
-            (Types.string_of_type expectedReturnType)
-            (Types.string_of_type typeReturnedInBlock);
-          failwith "Return statement doesn't return the expected type"
-        end
-      end;
+        Types.T_func (type_of_block b)
+      in
+      if expectedReturnType <> typeReturnedInBlock then (
+        Printf.eprintf
+          "Error: In function '%s': Expected type %s but got %s instead.\n" h.id
+          (Types.string_of_type expectedReturnType)
+          (Types.string_of_type typeReturnedInBlock);
+        failwith "Return statement doesn't return the expected type");
       Printf.printf "Closing scope for '%s' function's declarations.\n" h.id;
       Symbol.close_scope ()
 
@@ -68,14 +62,12 @@ let rec sem_funcDef = function
     Returns [unit]. *)
 and sem_header isPartOfAFuncDef = function
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
-      begin
-        if !isMainProgram && rt <> Nothing then (
-          Printf.eprintf "Error: Main function must return 'nothing' type\n";
-          failwith "Main function should return nothing")
-        else if !isMainProgram && fpdl <> [] then (
-          Printf.eprintf "Error: Main function shouldn't have parameters\n";
-          failwith "Main function shouldn't have parameters")
-      end;
+      if !isMainProgram && rt <> Nothing then (
+        Printf.eprintf "Error: Main function must return 'nothing' type\n";
+        failwith "Main function should return nothing")
+      else if !isMainProgram && fpdl <> [] then (
+        Printf.eprintf "Error: Main function shouldn't have parameters\n";
+        failwith "Main function shouldn't have parameters");
 
       let returnTypeFromThisHeader = Types.(T_func (t_type_of_retType rt)) in
       begin
@@ -152,15 +144,14 @@ and sem_header isPartOfAFuncDef = function
         Printf.printf "Opening new scope for '%s' function\n" ident;
         Symbol.open_scope ident;
 
-        (* Add parameters in the currently opened scope *)
         let add_fparDef_to_scope : fparDef -> unit = function
           | { ref = r; id_list = idl; fpar_type = fpt } ->
               let rec add_param_names_to_scope : string list -> unit = function
                 | [] -> ()
-                | h :: t ->
+                | headId :: tailId ->
                     !current_scope.scope_entries <-
                       {
-                        id = h;
+                        id = headId;
                         scope = !current_scope;
                         kind =
                           ENTRY_parameter
@@ -176,7 +167,7 @@ and sem_header isPartOfAFuncDef = function
                             };
                       }
                       :: !current_scope.scope_entries;
-                    add_param_names_to_scope t
+                    add_param_names_to_scope tailId
               in
               add_param_names_to_scope idl
         in
