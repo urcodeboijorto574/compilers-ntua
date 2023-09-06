@@ -15,64 +15,9 @@ let rec sem_funcDef = function
       sem_header true h;
       isMainProgram := false;
       sem_localDefList l;
-      sem_block b;
-
       let expectedReturnType = Types.(T_func (t_type_of_retType h.ret_type)) in
       let typeReturnedInBlock =
-        let rec type_of_block : block -> Types.t_type option = function
-          | Block [] -> None
-          | Block (headStmt :: tailStmt) ->
-              let typeResult =
-                begin
-                  let rec type_of_stmt : stmt -> Types.t_type option = function
-                    | S_block b -> type_of_block b
-                    | S_return x -> (
-                        match x with
-                        | None -> Some T_none
-                        | Some e -> Some (sem_expr e))
-                    | S_if_else (c, s1, s2) -> (
-                        let type_of_s1 = type_of_stmt s1 in
-                        let type_of_s2 = type_of_stmt s2 in
-                        if type_of_s1 = type_of_s2 then
-                          type_of_s1
-                        else if type_of_s1 = None || type_of_s2 = None then
-                          None
-                        else
-                          match Ast.get_const_cond_value c with
-                          | Some constValue ->
-                              Printf.eprintf
-                                "Warning: In an if-then-else statement two \
-                                 different types are returned. However, the \
-                                 type of ";
-                              if constValue then (
-                                Printf.eprintf
-                                  "'else' branch is never returned.\n";
-                                type_of_s1)
-                              else (
-                                Printf.eprintf
-                                  "'then' branch is never returned.\n";
-                                type_of_s2)
-                          | None ->
-                              Printf.eprintf
-                                "Error: In an if-then-else statement two \
-                                 different types are returned.\n";
-                              failwith "Multiple types returned in if-then-else"
-                        )
-                    | S_assignment _ | S_func_call _ | S_if _ | S_while _
-                     |S_semicolon ->
-                        None
-                  in
-                  match type_of_stmt headStmt with
-                  | Some t -> Some t
-                  | None -> type_of_block (Block tailStmt)
-                end
-              in
-              if tailStmt <> [] then
-                Printf.eprintf
-                  "Warning: A section of a block if never reached.\n";
-              typeResult
-        in
-        Types.T_func (match type_of_block b with None -> T_none | Some t -> t)
+        Types.T_func (match sem_block b with None -> T_none | Some t -> t)
       in
       if expectedReturnType <> typeReturnedInBlock then (
         Printf.eprintf
@@ -260,11 +205,22 @@ and sem_varDef = function
 
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
     block [bl].
-    Returns [unit]. *)
-and sem_block = function Block [] -> () | Block b -> List.iter sem_stmt b
+    Returns [Types.t_type option]. *)
+and sem_block = function
+  | Block [] -> None
+  | Block (headStmt :: tailStmt) ->
+      let typeResult =
+        match sem_stmt headStmt with
+        | Some t -> Some t
+        | None -> sem_block (Block tailStmt)
+      in
+      if tailStmt <> [] then
+        Printf.eprintf "Warning: A section of a block if never reached.\n";
+      typeResult
 
-(** [sem_stmt (s : Ast.stmt)] semantically analyses the statement [s].
-    Returns [unit]. *)
+(** [sem_stmt (s : Ast.stmt)] semantically analyses the statement [s] and
+    returns [Some t] if [s] is a return statement or [None] if not.
+    Returns [Types.t_type option]. *)
 and sem_stmt = function
   | S_assignment (lv, e) -> (
       match sem_lvalue lv with
@@ -279,30 +235,65 @@ and sem_stmt = function
       | t ->
           Printf.printf
             "... checking the types of an lvalue and an expression (assignment)\n";
-          Types.equal_type t (sem_expr e))
+          Types.equal_type t (sem_expr e);
+          None)
   | S_block b -> sem_block b
   | S_func_call fc -> (
       let open Types in
       match sem_funcCall fc with
-      | T_func T_none -> ()
-      | T_func _ ->
-          Printf.eprintf
-            "Warning: The return value of the function %s is not used.\n" fc.id
+      | T_func t ->
+          if t <> T_none then
+            Printf.eprintf
+              "Warning: The return value of the function %s is not used.\n"
+              fc.id;
+          None
       | T_none | T_int | T_char | T_array _ -> assert false)
-  | S_if (c, s) ->
+  | S_if (c, s) -> (
       sem_cond c;
-      sem_stmt s;
-      Ast.check_condition c
-  | S_if_else (c, s1, s2) ->
+      let constCondValue = Ast.get_const_cond_value c in
+      let type_of_s = sem_stmt s in
+      match constCondValue with
+      | None | Some false -> None
+      | Some true -> type_of_s)
+  | S_if_else (c, s1, s2) -> (
       sem_cond c;
-      sem_stmt s1;
-      sem_stmt s2;
-      Ast.check_condition c
-  | S_while (c, s) ->
+      let constCondValue = Ast.get_const_cond_value c in
+      let type_of_s1 = sem_stmt s1 in
+      let type_of_s2 = sem_stmt s2 in
+      if type_of_s1 = type_of_s2 then
+        type_of_s1
+      else if type_of_s1 = None || type_of_s2 = None then
+        None
+      else
+        match constCondValue with
+        | Some constValue ->
+            Printf.eprintf
+              "Warning: In an if-then-else statement two different types are \
+               returned. However, the type of ";
+            if constValue then (
+              Printf.eprintf "'else' branch is never returned.\n";
+              type_of_s1)
+            else (
+              Printf.eprintf "'then' branch is never returned.\n";
+              type_of_s2)
+        | None ->
+            Printf.eprintf
+              "Error: In an if-then-else statement two different types are \
+               returned.\n";
+            failwith "Multiple types returned in if-then-else")
+  | S_while (c, s) -> (
       sem_cond c;
-      sem_stmt s;
-      Ast.check_condition c
-  | S_return _ | S_semicolon -> ()
+      let constCondValue = Ast.get_const_cond_value c in
+      let type_of_s = sem_stmt s in
+      match constCondValue with
+      | Some false -> None
+      | Some true ->
+          if type_of_s = None then Printf.eprintf "Warning: Infinite loop.\n";
+          type_of_s
+      | None -> type_of_s)
+  | S_return x -> (
+      match x with None -> Some T_none | Some e -> Some (sem_expr e))
+  | S_semicolon -> None
 
 (** [sem_lvalue (lv : Ast.lvalue)] returns the type of the l-value [lv].
     Returns [Types.t_type]. *)
@@ -376,7 +367,10 @@ and sem_expr = function
       let open Types in
       match sem_funcCall fc with
       | T_func T_none ->
-          Printf.eprintf "Error: Function %s returns nothing and can't be used as an expression.\n" fc.id;
+          Printf.eprintf
+            "Error: Function %s returns nothing and can't be used as an \
+             expression.\n"
+            fc.id;
           failwith "A function of type nothing is being used as an expression"
       | T_func t -> t
       | T_none | T_int | T_char | T_array _ -> assert false)

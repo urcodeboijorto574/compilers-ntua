@@ -125,9 +125,6 @@ val newFuncCall : string * expr list -> funcCall
 val get_const_expr_value : expr -> int option
 
 (** [get_const_cond_value c] checks whether a condition [c] has a constant
-      value or not. Returns [bool option]. *)
+    value. If so, a warning message gets printed in standard error output.
+    Returns [bool option]. *)
 val get_const_cond_value : cond -> bool option
-
-(** [check_condition c] prints a warning in standard error output if c
-      has a constant value. Returns [unit]. *)
-val check_condition : cond -> unit

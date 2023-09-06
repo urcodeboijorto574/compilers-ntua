@@ -143,45 +143,48 @@ let rec get_const_expr_value = function
   | E_expr_parenthesized e -> get_const_expr_value e
   | E_const_char _ | E_lvalue _ | E_func_call _ -> None
 
-let rec get_const_cond_value = function
-  | C_not_cond (lo, c) -> (
-      match get_const_cond_value c with None -> None | Some v -> Some (not v))
-  | C_cond_cond (c1, lo, c2) -> begin
-      match get_const_cond_value c1 with
-      | Some v1 ->
-          if lo = O_or && v1 then
-            Some true
-          else if lo = O_and && not v1 then
-            Some false
-          else
-            get_const_cond_value c2
-      | None -> (
-          (* TODO: Clarification needed here:
-             This section should be ignored if the evaluation of the
-             first condition should always happen, whether the second
-             condition is hard-wired or not *)
-          match get_const_cond_value c2 with
-          | Some true -> if lo = O_or then Some true else None
-          | Some false -> if lo = O_and then Some false else None
-          | None -> None)
-    end
-  | C_expr_expr (e1, co, e2) -> (
-      match (get_const_expr_value e1, get_const_expr_value e2) with
-      | Some i1, Some i2 ->
-          Some
-            (match co with
-            | O_equal -> i1 = i2
-            | O_less -> i1 < i2
-            | O_greater -> i1 > i2
-            | O_less_eq -> i1 <= i2
-            | O_greater_eq -> i1 >= i2
-            | O_not_equal -> i1 <> i2)
-      | _ -> None)
-  | C_cond_parenthesized c -> get_const_cond_value c
-
-let check_condition c =
-  match get_const_cond_value c with
-  | None -> ()
+let get_const_cond_value c =
+  let rec get_const_cond_value_helper = function
+    | C_not_cond (lo, c) -> (
+        match get_const_cond_value_helper c with
+        | None -> None
+        | Some v -> Some (not v))
+    | C_cond_cond (c1, lo, c2) -> begin
+        match get_const_cond_value_helper c1 with
+        | Some v1 ->
+            if lo = O_or && v1 then
+              Some true
+            else if lo = O_and && not v1 then
+              Some false
+            else
+              get_const_cond_value_helper c2
+        | None -> (
+            (* TODO: Clarification needed here:
+               This section should be ignored if the evaluation of the
+               first condition should always happen, whether the second
+               condition is hard-wired or not *)
+            match get_const_cond_value_helper c2 with
+            | Some true -> if lo = O_or then Some true else None
+            | Some false -> if lo = O_and then Some false else None
+            | None -> None)
+      end
+    | C_expr_expr (e1, co, e2) -> (
+        match (get_const_expr_value e1, get_const_expr_value e2) with
+        | Some i1, Some i2 ->
+            Some
+              (match co with
+              | O_equal -> i1 = i2
+              | O_less -> i1 < i2
+              | O_greater -> i1 > i2
+              | O_less_eq -> i1 <= i2
+              | O_greater_eq -> i1 >= i2
+              | O_not_equal -> i1 <> i2)
+        | _ -> None)
+    | C_cond_parenthesized c -> get_const_cond_value_helper c
+  in
+  match get_const_cond_value_helper c with
+  | None -> None
   | Some v ->
       let string_of_v = if v then "true" else "false" in
-      Printf.eprintf "Warning: Condition is always %s.\n" string_of_v
+      Printf.eprintf "Warning: Condition is always %s.\n" string_of_v;
+      Some v
