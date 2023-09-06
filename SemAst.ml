@@ -194,15 +194,24 @@ and sem_varDef = function
     Returns [Types.t_type option]. *)
 and sem_block = function
   | Block [] -> None
-  | Block (headStmt :: tailStmt) ->
-      let typeResult =
-        match sem_stmt headStmt with
-        | Some t -> Some t
-        | None -> sem_block (Block tailStmt)
+  | Block stmtList ->
+      let result = ref None in
+      let rec get_type_of_stmt_list resultIsFound = function
+        | [] -> ()
+        | head :: tail -> (
+            match sem_stmt head with
+            | None -> get_type_of_stmt_list (!result <> None) tail
+            | Some typ ->
+                if tail <> [] && not resultIsFound then
+                  Printf.eprintf
+                    "Warning: A section of a block is never reached.\n";
+                if not resultIsFound then
+                  result := Some typ
+                else
+                  get_type_of_stmt_list resultIsFound tail)
       in
-      if tailStmt <> [] then
-        Printf.eprintf "Warning: A section of a block if never reached.\n";
-      typeResult
+      get_type_of_stmt_list false stmtList;
+      !result
 
 (** [sem_stmt (s : Ast.stmt)] semantically analyses the statement [s] and
     returns [Some t] if [s] is a return statement or [None] if not.
