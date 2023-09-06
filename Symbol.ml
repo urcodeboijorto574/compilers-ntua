@@ -48,7 +48,8 @@ and close_scope () =
   let getV = function None -> failwith "Initial scope closed" | Some v -> v in
   current_scope := getV !current_scope.parent
 
-(** [symbolTable] is a Hashtbl ref that stores the current image of the SymbolTable. *)
+(** [symbolTable] is a Hashtbl ref that stores the current image of the
+    SymbolTable. *)
 let symbolTable = ref (HT.create 0)
 
 let create_symbol_table numOfBuckets =
@@ -64,13 +65,11 @@ let enter_entry ident eKind =
   !current_scope.scope_entries <- e :: !current_scope.scope_entries
 
 let enter_variable id typ =
-  let kind = ENTRY_variable { variable_type = typ } in
-  enter_entry id kind
+  enter_entry id (ENTRY_variable { variable_type = typ })
 
 (** [enter_parameter id t isRef] takes an identifier [id], a type [t] and
     [isRef : bool] that marks whether the parameter passing is by reference, in
-    which case [true], or by value, [false].
-    Returns [unit]. *)
+    which case [true], or by value, [false]. Returns [unit]. *)
 let enter_parameter id typ isRef =
   let kind =
     ENTRY_parameter

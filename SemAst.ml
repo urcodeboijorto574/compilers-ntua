@@ -1,15 +1,14 @@
 open Ast
 open Symbol
 
-(** [isMainProgram] is a variable that has [true] if the main function
-    of a program is currently analysed and [false] if not. *)
+(** [isMainProgram] is a variable that has [true] if the main function of a
+    program is currently analysed and [false] if not. *)
 let isMainProgram = ref true
 
-(** [sem_funcDef (fd : Ast.funcDef)] semantically analyses the function definition [fd].
-    After semantically analysing the header, local definitions list and the block,
-    it is checked if in the function's block a value of the expected type is
-    returned.
-    Returns [unit]. *)
+(** [sem_funcDef (fd : Ast.funcDef)] semantically analyses the function
+    definition [fd]. After semantically analysing the header, local definitions
+    list and the block, it is checked if in the function's block a value of the
+    expected type is returned. Returns [unit]. *)
 let rec sem_funcDef = function
   | { header = h; local_def_list = l; block = b } ->
       sem_header true h;
@@ -28,12 +27,11 @@ let rec sem_funcDef = function
       Printf.printf "Closing scope for '%s' function's declarations.\n" h.id;
       Symbol.close_scope ()
 
-(** [sem_header (isPartOfAFuncDef : bool) (h : Ast.header)] takes [isPartOfAFuncDef]
-    ([true] when the header is part of a function definition and [false] when
-    it's part of a function declaration) and the function's header [h].
-    If [h] is part of a function definition, then a new scope is opened and the
-    function's parameters are inserted in it.
-    Returns [unit]. *)
+(** [sem_header (isPartOfAFuncDef : bool) (h : Ast.header)] takes
+    [isPartOfAFuncDef] ([true] when the header is part of a function definition
+    and [false] when it's part of a function declaration) and the function's
+    header [h]. If [h] is part of a function definition, then a new scope is
+    opened and the function's parameters are inserted in it. Returns [unit]. *)
 and sem_header isPartOfAFuncDef = function
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
       if !isMainProgram && rt <> Nothing then (
@@ -141,15 +139,15 @@ and sem_header isPartOfAFuncDef = function
       end
 
 (** [sem_fparDefList (fpdl : Ast.fparDef list)] semantically analyses the
-    function's parameter definitions [fpdl].
-    Returns [(int * Types.t_type * Symbol.param_passing) list]. *)
+    function's parameter definitions [fpdl]. Returns
+    [(int * Types.t_type * Symbol.param_passing) list]. *)
 and sem_fparDefList = function
   | [] -> []
   | h :: t -> sem_fparDef h :: sem_fparDefList t
 
 (** [sem_fparDef (fpd : Ast.fparDef)] semantically analyses the function's
-    parameter definition [fpd].
-    Returns [int * Types.t_type * Symbol.param_passing]. *)
+    parameter definition [fpd]. Returns
+    [int * Types.t_type * Symbol.param_passing]. *)
 and sem_fparDef = function
   | { ref = r; id_list = il; fpar_type = fpt } ->
       let paramIsArray = fpt.array_dimensions <> [] in
@@ -163,35 +161,29 @@ and sem_fparDef = function
         if r then BY_REFERENCE else BY_VALUE )
 
 (** [sem_localDefList (ldl : Ast.localDef list)] semantically analyses the
-    function's local definitions list [ldl].
-    Returns [unit]. *)
+    function's local definitions list [ldl]. Returns [unit]. *)
 and sem_localDefList = function [] -> () | ldl -> List.iter sem_localDef ldl
 
 (** [sem_localDef (ld : Ast.localDef)] adds in the symbolTable the functions and
-    parameters defined in the local
-    definition [ld].
-    Returns [unit]. *)
+    parameters defined in the local definition [ld]. Returns [unit]. *)
 and sem_localDef = function
   | L_FuncDef fd -> sem_funcDef fd
   | L_FuncDecl fd -> sem_funcDecl fd
   | L_varDef vd -> sem_varDef vd
 
 (** [sem_funcDecl (fd : Ast.funcDef)] semantically analyses the header of the
-    function declaration [fd] (uses the function [sem_header]).
-    Returns [unit]. *)
+    function declaration [fd] (uses the function [sem_header]). Returns [unit]. *)
 and sem_funcDecl = function FuncDecl_Header h -> sem_header false h
 
 (** [sem_varDef (vd : Ast.varDef)] enters in the symbolTable every variable
-    defined in the variable definition [vd].
-    Returns [unit]. *)
+    defined in the variable definition [vd]. Returns [unit]. *)
 and sem_varDef = function
   | { id_list = idl; var_type = vt } ->
       let helper i = enter_variable i (Types.t_type_of_varType vt) in
       List.iter helper idl
 
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
-    block [bl].
-    Returns [Types.t_type option]. *)
+    block [bl]. Returns [Types.t_type option]. *)
 and sem_block = function
   | Block [] -> None
   | Block stmtList ->
@@ -214,8 +206,8 @@ and sem_block = function
       !result
 
 (** [sem_stmt (s : Ast.stmt)] semantically analyses the statement [s] and
-    returns [Some t] if [s] is a return statement or [None] if not.
-    Returns [Types.t_type option]. *)
+    returns [Some t] if [s] is a return statement or [None] if not. Returns
+    [Types.t_type option]. *)
 and sem_stmt = function
   | S_assignment (lv, e) -> (
       match sem_lvalue lv with
@@ -290,8 +282,8 @@ and sem_stmt = function
       match x with None -> Some T_none | Some e -> Some (sem_expr e))
   | S_semicolon -> None
 
-(** [sem_lvalue (lv : Ast.lvalue)] returns the type of the l-value [lv].
-    Returns [Types.t_type]. *)
+(** [sem_lvalue (lv : Ast.lvalue)] returns the type of the l-value [lv]. Returns
+    [Types.t_type]. *)
 and sem_lvalue = function
   | L_id id -> (
       match look_up_entry_temp id with
@@ -343,8 +335,8 @@ and sem_lvalue = function
              variables/functions.\n";
           failwith "Iteration on non-array type of variable")
 
-(** [sem_expr (e : Ast.expr)] returns the type of the expression [e].
-    Returns [Types.t_type]. *)
+(** [sem_expr (e : Ast.expr)] returns the type of the expression [e]. Returns
+    [Types.t_type]. *)
 and sem_expr = function
   | E_const_int ci -> Types.T_int
   | E_const_char cc -> Types.T_char
@@ -381,8 +373,8 @@ and sem_expr = function
       Types.T_int
   | E_expr_parenthesized e -> sem_expr e
 
-(** [sem_cond (c : Ast.cond)] semantically analyses condition [c].
-    Returns [unit]. *)
+(** [sem_cond (c : Ast.cond)] semantically analyses condition [c]. Returns
+    [unit]. *)
 and sem_cond = function
   | C_not_cond (lo, c) -> sem_cond c
   | C_cond_cond (c1, lo, c2) ->
@@ -398,8 +390,7 @@ and sem_cond = function
 
 (** [sem_funcCall (fc : Ast.funcCall)] returns the return type of function call
     [fc]. Additionally, it checks if the types of its arguments match the
-    expected ones defined in the function's header.
-    Returns [Types.t_type]. *)
+    expected ones defined in the function's header. Returns [Types.t_type]. *)
 and sem_funcCall = function
   | { id = ident; expr_list = el } ->
       let entryFound =
@@ -490,8 +481,8 @@ and sem_funcCall = function
         failwith "The arguments' types don't match")
 
 (** [sem_on (ast : Ast.funcDef)] semantically analyses the root of the ast [ast]
-    (produced by the parser). It also initializes the SymbolTable.
-    Returns [unit]. *)
+    (produced by the parser). It also initializes the SymbolTable. Returns
+    [unit]. *)
 and sem_on asts =
   Symbol.create_symbol_table 100;
   sem_funcDef asts

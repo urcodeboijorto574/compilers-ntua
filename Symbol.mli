@@ -35,10 +35,10 @@ and entry_parameter = {
     semantic analysis of the AST. *)
 val current_scope : scope ref
 
-(** [open_scope] opens a new scope during the semantic analysis of the AST.
-    The current scope becomes the parent scope of the new one. Takes one
-    arguement of type [string], that is the name of the function in which the
-    scope belongs. *)
+(** [open_scope] opens a new scope during the semantic analysis of the AST. The
+    current scope becomes the parent scope of the new one. Takes one arguement
+    of type [string], that is the name of the function in which the scope
+    belongs. *)
 val open_scope : string -> unit
 
 (** [close_scope] closes the current scope and makes the parent scope the
@@ -53,18 +53,17 @@ val create_symbol_table : int -> unit
     new [entry_variable] that is then entered in the symbolTable. *)
 val enter_variable : string -> Types.t_type -> unit
 
-(** [enter_parameter i t isRef] enters a parameter in the symbolTable.
-    [i] is the parameter's identifier, [t] is the parameter's type and [isRef]
-    [true] if the parameter is passed by reference or [false] if by value. *)
+(** [enter_parameter i t isRef] enters a parameter in the symbolTable. [i] is
+    the parameter's identifier, [t] is the parameter's type and [isRef] [true]
+    if the parameter is passed by reference or [false] if by value. *)
 val enter_parameter : string -> Types.t_type -> bool -> unit
 
-(** [enter_function i pL rt] enters a new function entry in the symbolTable.
-    [i] is the function's identifier, [rt] is the return type of the function
-    and [pL] is a list of type [(int * Types.t_type * param_passing)
-    list]. Each element of the [pL] is a tuple with 3 fields.
-    The first field signifies the number of parameters in each
-    parameter definition, the second the type, and the third the kind of
-    parameter passing. *)
+(** [enter_function i pL rt] enters a new function entry in the symbolTable. [i]
+    is the function's identifier, [rt] is the return type of the function and
+    [pL] is a list of type [(int * Types.t_type * param_passing) list]. Each
+    element of the [pL] is a tuple with 3 fields. The first field signifies the
+    number of parameters in each parameter definition, the second the type, and
+    the third the kind of parameter passing. *)
 val enter_function :
   string -> (int * Types.t_type * param_passing) list -> Types.t_type -> unit
 
