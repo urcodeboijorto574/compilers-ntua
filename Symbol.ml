@@ -126,15 +126,12 @@ let look_up_entry_temp (id : string) =
   Printf.printf "Looking for name %s...\n" id;
   let rec look_up_entry_helper (sc : scope) =
     begin
-      (* Print debug messages *)
-      Printf.printf "Scope '%s':\n\t[ " sc.name;
-      let rec print_entries_list = function
-        | [] -> Printf.printf "]\n"
-        | h :: t ->
-            Printf.printf "%s " h.id;
-            print_entries_list t
+      let print_entries_list (sc : scope) =
+        Printf.printf "Scope '%s':\n\t[ " sc.name;
+        List.iter (fun e -> Printf.printf "%s " e.id) sc.scope_entries;
+        Printf.printf "]\n"
       in
-      print_entries_list sc.scope_entries
+      print_entries_list sc
     end;
     let isTarget e = e.id = id in
     try Some (List.find isTarget sc.scope_entries)
