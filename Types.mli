@@ -2,7 +2,8 @@ type t_type =
   | T_int
   | T_char
   | T_array of t_type * int
-  | T_func of t_type option
+  | T_none
+  | T_func of t_type
 
 (** [string_of_type t] takes a [t : t_type] and returns a string
     corresponding to the type given.
@@ -29,4 +30,4 @@ val t_type_of_dataType : Ast.dataType -> t_type
 (** [t_type_of_retType rt] takes an object [rt] of type [Ast.retType]
     and returns an option to the corresponding type.
     Returns [Types.t_type option]. *)
-val t_type_of_retType : Ast.retType -> t_type option
+val t_type_of_retType : Ast.retType -> t_type

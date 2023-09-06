@@ -45,4 +45,4 @@ format: Ast.ml Lexer.mli Main.ml Symbol.ml Symbol.mli Types.ml Types.mli PrintAs
 	ocamlformat -i $^
 
 test: clean format depend
-	make
+	make; make clean
