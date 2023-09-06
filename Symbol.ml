@@ -122,17 +122,15 @@ let enter_function (id : string)
   in
   enter_entry id kind
 
+let print_entries_list (sc : scope) =
+  Printf.printf "Scope '%s':\n\t[ " sc.name;
+  List.iter (fun e -> Printf.printf "%s " e.id) sc.scope_entries;
+  Printf.printf "]\n"
+
 let look_up_entry_temp (id : string) =
   Printf.printf "Looking for name %s...\n" id;
   let rec look_up_entry_helper (sc : scope) =
-    begin
-      let print_entries_list (sc : scope) =
-        Printf.printf "Scope '%s':\n\t[ " sc.name;
-        List.iter (fun e -> Printf.printf "%s " e.id) sc.scope_entries;
-        Printf.printf "]\n"
-      in
-      print_entries_list sc
-    end;
+    print_entries_list sc;
     let isTarget e = e.id = id in
     try Some (List.find isTarget sc.scope_entries)
     with Not_found -> (
@@ -140,7 +138,38 @@ let look_up_entry_temp (id : string) =
   in
   look_up_entry_helper !current_scope
 
-let look_up_entry (id : string) =
+let look_up_entry (id : string) (stringOfEntryKind : string) =
   Printf.printf "Looking for name %s...\n" id;
-  try HT.find !symbolTable id
-  with Not_found -> failwith "(TODO) Undefined variable name"
+  let resultEntryList = HT.find_all !symbolTable id in
+  let resultEntry =
+    try List.hd resultEntryList
+    with Failure _ ->
+      Printf.eprintf "Error: Undefined %s '%s' used in function %s.\n"
+        stringOfEntryKind id !current_scope.name;
+      failwith (String.concat " " [ "Undefined"; stringOfEntryKind ])
+  in
+  if
+    resultEntry.scope <> !current_scope
+    && resultEntry.scope.depth >= !current_scope.depth
+  then
+    let rec get_entry_in_smaller_depth = function
+      | [] ->
+          (* no entry is defined in a parent scope *)
+          Printf.eprintf
+            "Error: Undefined %s. '%s' %s is defined in a scope that does not \
+             include the current.\n"
+            stringOfEntryKind id stringOfEntryKind;
+          failwith (String.concat " " [ "Undefined"; stringOfEntryKind ])
+      | entry :: remainingList ->
+          if entry.scope.depth >= !current_scope.depth then
+            get_entry_in_smaller_depth remainingList
+          else (
+            (* entry is defined in a parent scope *)
+            print_entries_list entry.scope;
+            entry)
+    in
+    get_entry_in_smaller_depth resultEntryList
+  else (
+    (* entry got found *)
+    print_entries_list resultEntry.scope;
+    resultEntry)

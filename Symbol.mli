@@ -77,7 +77,8 @@ val enter_function :
     the key. TODO: must be deleted after debugging completes *)
 val look_up_entry_temp : string -> entry option
 
-(** [look_up_entry id] searches in the symbolTable an entry with [id] as the key.
-    It returns the entry found. If no entry is found, [Not_found] exception is
-    thrown. *)
-val look_up_entry : string -> entry
+(** [look_up_entry id strOfE] searches in the symbolTable an entry with [id] as
+    the key. It returns the entry found. [strOfE] is a string describing the
+    entry that's beeing looked up. If no entry is found, [Not_found] exception
+    is thrown. *)
+val look_up_entry : string -> string -> entry
