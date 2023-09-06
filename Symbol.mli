@@ -5,6 +5,7 @@ type param_passing =
 and scope = {
   name : string;
   parent : scope option;
+  depth : int;
   mutable scope_entries : entry list;
 }
 
@@ -24,12 +25,17 @@ and entry_variable = { variable_type : Types.t_type }
 and entry_function = {
   parameters_list : entry_parameter list;
   return_type : Types.t_type;
+  scope_depth : int;
 }
 
 and entry_parameter = {
   parameter_type : Types.t_type;
   passing : param_passing;
 }
+
+(** [current_scope_depth] stores the depth of the currently opened scope. Global
+    scope has depth 0 and for each nested function the depth increases by 1.*)
+val current_scope_depth : int ref
 
 (** [current_scope] is a variable that stores the current scope during the
     semantic analysis of the AST. *)

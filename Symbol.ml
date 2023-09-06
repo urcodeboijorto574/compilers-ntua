@@ -12,6 +12,7 @@ type param_passing =
 and scope = {
   name : string;
   parent : scope option;
+  depth : int;
   mutable scope_entries : entry list;
 }
 
@@ -31,6 +32,7 @@ and entry_variable = { variable_type : Types.t_type }
 and entry_function = {
   parameters_list : entry_parameter list;
   return_type : Types.t_type;
+  scope_depth : int;
 }
 
 and entry_parameter = {
@@ -38,14 +40,24 @@ and entry_parameter = {
   passing : param_passing;
 }
 
-let current_scope = ref { name = ""; parent = None; scope_entries = [] }
+let current_scope_depth = ref 0
+
+let current_scope =
+  ref { name = ""; parent = None; depth = 0; scope_entries = [] }
 
 let open_scope str =
+  current_scope_depth := !current_scope_depth + 1;
   current_scope :=
-    { name = str; parent = Some !current_scope; scope_entries = [] }
+    {
+      name = str;
+      parent = Some !current_scope;
+      depth = !current_scope_depth;
+      scope_entries = [];
+    }
 
 and close_scope () =
   let getV = function None -> failwith "Initial scope closed" | Some v -> v in
+  current_scope_depth := !current_scope_depth - 1;
   current_scope := getV !current_scope.parent
 
 (** [symbolTable] is a Hashtbl ref that stores the current image of the
@@ -54,7 +66,14 @@ let symbolTable = ref (HT.create 0)
 
 let create_symbol_table numOfBuckets =
   symbolTable := HT.create numOfBuckets;
-  current_scope := { name = ""; parent = None; scope_entries = [] }
+  current_scope_depth := 0;
+  current_scope :=
+    {
+      name = "";
+      parent = None;
+      depth = !current_scope_depth;
+      scope_entries = [];
+    }
 
 (** [enter_entry i e] takes an identifier [i] and an entry kind [e] and creates
     and adds a new entry in the symbolTable. *)
@@ -94,7 +113,12 @@ let enter_function (id : string)
     convert_list paramList
   in
   let kind =
-    ENTRY_function { parameters_list = paramL; return_type = retTyp }
+    ENTRY_function
+      {
+        parameters_list = paramL;
+        return_type = retTyp;
+        scope_depth = !current_scope_depth;
+      }
   in
   enter_entry id kind
 
