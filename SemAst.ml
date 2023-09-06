@@ -256,7 +256,7 @@ and sem_stmt = function
       | Types.T_array _ ->
           Printf.eprintf
             "Error: Assignment to an l-value of type array is not possible.\n";
-          failwith "Assignment to array" (* Types.equal_type t (sem_expr e) *)
+          failwith "Assignment to array"
       | Types.T_func _ ->
           Printf.eprintf
             "Error: Assignment to a function call is not possible.\n";
@@ -287,8 +287,7 @@ and sem_stmt = function
       sem_cond c;
       sem_stmt s;
       Ast.check_condition c
-  | S_return re -> () (* this check is happening in sem_funcDef *)
-  | S_semicolon -> ()
+  | S_return _ | S_semicolon -> ()
 
 (** [sem_lvalue (lv : Ast.lvalue)] returns the type of the l-value [lv].
     Returns [Types.t_type]. *)
@@ -321,14 +320,12 @@ and sem_lvalue = function
           failwith "Undefined variable")
   | L_string s -> Types.T_array (Types.T_char, 0)
   | L_comp (lv, e) -> (
-      (* (Its value must be at most n - 1, if n is the size of the array). *)
       Printf.printf
         "... checking the type of the content inside the brackets (position in \
          array must be an integer)\n";
       Types.(equal_type T_int (sem_expr e));
       match sem_lvalue lv with
       | Types.T_array (t, n) ->
-          (* Check for segmentation fault if the expression has a constant value. *)
           begin
             match Ast.get_const_expr_value e with
             | None -> ()
@@ -366,10 +363,7 @@ and sem_expr = function
           Printf.eprintf "Error: Function %s returns nothing.\n" fc.id;
           failwith "A function of type nothing is being used as an expression"
       | Types.T_func (Some t) -> t
-      | Types.T_int | Types.T_char | Types.T_array _ ->
-          (* A function must always be inserted in the SymbolTable with type
-             Types.T_func (t : Types.t_type option) *)
-          assert false)
+      | Types.T_int | Types.T_char | Types.T_array _ -> assert false)
   | E_sgn_expr (s, e) ->
       Printf.printf "... checking a signed expression (must be int)\n";
       Types.equal_type Types.T_int (sem_expr e);
@@ -403,7 +397,7 @@ and sem_cond = function
     Returns [Types.t_type]. *)
 and sem_funcCall = function
   | { id = ident; expr_list = el } ->
-      let entr =
+      let entryFound =
         match look_up_entry_temp ident with
         | Some e -> e
         | None ->
@@ -417,7 +411,7 @@ and sem_funcCall = function
       (* [paramTypesList] is a list of [Types.t_type] and the nth element
          is the type of the nth parameter of the function *)
       let paramTypesList =
-        match entr.kind with
+        match entryFound.kind with
         | ENTRY_function ef ->
             let rec getEntryTypesList = function
               | [] -> []
@@ -430,7 +424,7 @@ and sem_funcCall = function
          the nth parameter of the function is passed by reference, and [false]
          otherwise. *)
       let paramByRefList =
-        match entr.kind with
+        match entryFound.kind with
         | ENTRY_function ef ->
             let rec getRefList = function
               | [] -> []
@@ -440,12 +434,10 @@ and sem_funcCall = function
             getRefList ef.parameters_list
         | ENTRY_variable _ | ENTRY_parameter _ -> assert false
       in
-      (* Check if the number of arguments is the expected one *)
       if List.length exprTypesList <> List.length paramTypesList then (
         Printf.eprintf
           "Error: Function called without the expected number of parameters.\n";
         failwith "Unexpected number of parameters in function call");
-      (* Check if the parameters passed by reference are l-values *)
       begin
         (* [f] checks if the nth expression of the [expressionList] is an
            l-value if the nth element of the [byRefList] is [true].
@@ -484,7 +476,7 @@ and sem_funcCall = function
           (bool_of_unit_func Types.equal_type)
           exprTypesList paramTypesList
       then
-        match entr.kind with
+        match entryFound.kind with
         | ENTRY_function ef -> ef.return_type
         | ENTRY_variable _ | ENTRY_parameter _ -> assert false
       else (
