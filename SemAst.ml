@@ -31,6 +31,8 @@ let rec sem_funcDef = function
                     let type_of_s2 = type_of_stmt s2 in
                     if type_of_s1 = type_of_s2 then
                       type_of_s1
+                    else if type_of_s1 = None || type_of_s2 = None then
+                      None
                     else
                       match Ast.get_const_cond_value c with
                       | Some constValue ->
