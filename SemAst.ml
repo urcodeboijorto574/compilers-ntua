@@ -26,15 +26,29 @@ let rec sem_funcDef = function
                 | S_block b -> type_of_block b
                 | S_return x -> (
                     match x with None -> None | Some e -> Some (sem_expr e))
-                | S_if_else (_, s1, s2) ->
+                | S_if_else (c, s1, s2) -> (
                     let type_of_s1 = type_of_stmt s1 in
                     let type_of_s2 = type_of_stmt s2 in
                     if type_of_s1 = type_of_s2 then
                       type_of_s1
-                    else if type_of_s1 <> Some expectedReturnType then
-                      type_of_s1
                     else
-                      type_of_s2
+                      match Ast.get_const_cond_value c with
+                      | Some constValue ->
+                          Printf.eprintf
+                            "Warning: In an if-then-else statement two \
+                             different types are returned. However, the type \
+                             of ";
+                          if constValue then (
+                            Printf.eprintf "'else' branch is never returned.\n";
+                            type_of_s1)
+                          else (
+                            Printf.eprintf "'then' branch is never returned.\n";
+                            type_of_s2)
+                      | None ->
+                          Printf.eprintf
+                            "Error: In an if-then-else statement two different \
+                             types are returned.\n";
+                          failwith "Multiple types returned in if-then-else")
                 | S_assignment _ | S_func_call _ | S_if _ | S_while _
                  |S_semicolon ->
                     None
