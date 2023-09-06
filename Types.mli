@@ -5,10 +5,10 @@ type t_type =
   | T_none
   | T_func of t_type
 
-(** [string_of_type t] takes a [t : t_type] and returns a string
+(** [string_of_t_type t] takes a [t : t_type] and returns a string
     corresponding to the type given.
     Returns [string]. *)
-val string_of_type : t_type -> string
+val string_of_t_type : t_type -> string
 
 (** [construct_array_type arrayList dataType] takes two arguments,
     [arrayList : int list], which represents the dimensions of
@@ -28,6 +28,16 @@ val equal_type : t_type -> t_type -> unit
 val t_type_of_dataType : Ast.dataType -> t_type
 
 (** [t_type_of_retType rt] takes an object [rt] of type [Ast.retType]
-    and returns an option to the corresponding type.
-    Returns [Types.t_type option]. *)
+    and returns the corresponding type.
+    Returns [Types.t_type]. *)
 val t_type_of_retType : Ast.retType -> t_type
+
+(** [t_type_of_fparType fpt] takes an object [fpt] of type [Ast.fparType]
+    and returns the corresponding type.
+    Returns [Types.t_type]. *)
+val t_type_of_fparType : Ast.fparType -> t_type
+
+(** [t_type_of_fparType vt] takes an object [vt] of type [Ast.varType]
+    and returns the corresponding type.
+    Returns [Types.t_type]. *)
+val t_type_of_varType : Ast.varType -> t_type

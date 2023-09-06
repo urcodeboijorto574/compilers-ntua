@@ -35,7 +35,7 @@ depend: Types.ml Types.mli Symbol.ml Symbol.mli PrintAst.ml PrintAst.mli SemAst.
 	$(OCAMLDEP) $^ > .depend
 
 clean:
-	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer.cmx Lexer Lexer.o Parser.automaton Parser.conflicts .depend *.cmo *.cmi *~
+	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer.cmx Lexer Lexer.o Parser.automaton Parser.conflicts *.cmo *.cmi *~
 
 distclean: clean
 	$(RM) grace$(EXE) .depend
@@ -45,3 +45,4 @@ format: Ast.ml Lexer.mli Main.ml Symbol.ml Symbol.mli Types.ml Types.mli PrintAs
 	ocamlformat -i $^
 
 test: clean format depend grace$(EXE)
+	make clean

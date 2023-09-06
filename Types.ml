@@ -5,13 +5,14 @@ type t_type =
   | T_none
   | T_func of t_type
 
-let rec string_of_type = function
+let rec string_of_t_type = function
   | T_int -> "integer"
   | T_char -> "character"
   | T_array (t, n) ->
-      String.concat "" [ "array("; string_of_int n; ") of "; string_of_type t ]
+      String.concat ""
+        [ "array("; string_of_int n; ") of "; string_of_t_type t ]
   | T_none -> "nothing"
-  | T_func t -> String.concat " " [ string_of_type t; "(function)" ]
+  | T_func t -> String.concat " " [ string_of_t_type t; "(function)" ]
 
 let construct_array_type dimList endType =
   let rec construct_array_type_helper counter len dimList endType =
@@ -30,8 +31,8 @@ let rec equal_type t1 t2 =
       equal_type t1' t2'
   | _ ->
       let print_types () =
-        Printf.printf "Type1: %s, Type2: %s\n" (string_of_type t1)
-          (string_of_type t2)
+        Printf.printf "Type1: %s, Type2: %s\n" (string_of_t_type t1)
+          (string_of_t_type t2)
       in
       if t1 <> t2 then (
         Printf.printf "Type mismatch! ";
@@ -48,3 +49,11 @@ let t_type_of_dataType = function
 let t_type_of_retType = function
   | Ast.RetDataType dt -> t_type_of_dataType dt
   | Ast.Nothing -> T_none
+
+let t_type_of_fparType : Ast.fparType -> t_type = function
+  | { data_type = dt; array_dimensions = dimList } ->
+      construct_array_type dimList (t_type_of_dataType dt)
+
+let t_type_of_varType : Ast.varType -> t_type = function
+  | { data_type = dt; array_dimensions = dimList } ->
+      construct_array_type dimList (t_type_of_dataType dt)

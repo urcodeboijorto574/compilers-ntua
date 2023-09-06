@@ -22,8 +22,8 @@ let rec sem_funcDef = function
       if expectedReturnType <> typeReturnedInBlock then (
         Printf.eprintf
           "Error: In function '%s': Expected type %s but got %s instead.\n" h.id
-          (Types.string_of_type expectedReturnType)
-          (Types.string_of_type typeReturnedInBlock);
+          (Types.string_of_t_type expectedReturnType)
+          (Types.string_of_t_type typeReturnedInBlock);
         failwith "Return statement doesn't return the expected type");
       Printf.printf "Closing scope for '%s' function's declarations.\n" h.id;
       Symbol.close_scope ()
@@ -84,11 +84,8 @@ and sem_header isPartOfAFuncDef = function
                     function
                     | [] -> []
                     | { ref = r; id_list = il; fpar_type = fpt } :: tail ->
-                        let wholeType =
-                          Types.construct_array_type fpt.array_dimensions
-                            (Types.t_type_of_dataType fpt.data_type)
-                        in
-                        (List.length il, wholeType, r) :: helper_function tail
+                        let paramType = Types.t_type_of_fparType fpt in
+                        (List.length il, paramType, r) :: helper_function tail
                   in
                   helper_function fpdl
                 in
@@ -120,7 +117,7 @@ and sem_header isPartOfAFuncDef = function
 
         let add_fparDef_to_scope : fparDef -> unit = function
           | { ref = r; id_list = idl; fpar_type = fpt } ->
-              let rec add_param_names_to_scope : string list -> unit = function
+              let rec add_param_names_to_scope = function
                 | [] -> ()
                 | headId :: tailId ->
                     !current_scope.scope_entries <-
@@ -130,14 +127,9 @@ and sem_header isPartOfAFuncDef = function
                         kind =
                           ENTRY_parameter
                             {
-                              parameter_type =
-                                Types.construct_array_type fpt.array_dimensions
-                                  (Types.t_type_of_dataType fpt.data_type);
+                              parameter_type = Types.t_type_of_fparType fpt;
                               passing =
-                                (if r then
-                                   Symbol.BY_REFERENCE
-                                 else
-                                   Symbol.BY_VALUE);
+                                Symbol.(if r then BY_REFERENCE else BY_VALUE);
                             };
                       }
                       :: !current_scope.scope_entries;
@@ -166,11 +158,9 @@ and sem_fparDef = function
         Printf.eprintf
           "Error: arrrays should always be passed as parameters by reference.\n";
         failwith "Array passed as a parameter by value");
-      let completeType =
-        let dataType = Types.t_type_of_dataType fpt.data_type in
-        Types.construct_array_type fpt.array_dimensions dataType
-      in
-      (List.length il, completeType, if r then BY_REFERENCE else BY_VALUE)
+      ( List.length il,
+        Types.t_type_of_fparType fpt,
+        if r then BY_REFERENCE else BY_VALUE )
 
 (** [sem_localDefList (ldl : Ast.localDef list)] semantically analyses the
     function's local definitions list [ldl].
@@ -196,11 +186,7 @@ and sem_funcDecl = function FuncDecl_Header h -> sem_header false h
     Returns [unit]. *)
 and sem_varDef = function
   | { id_list = idl; var_type = vt } ->
-      let wholeType =
-        let dataType = Types.t_type_of_dataType vt.data_type in
-        Types.construct_array_type vt.array_dimensions dataType
-      in
-      let helper i = enter_variable i wholeType in
+      let helper i = enter_variable i (Types.t_type_of_varType vt) in
       List.iter helper idl
 
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
@@ -309,9 +295,9 @@ and sem_lvalue = function
             | ENTRY_parameter ep -> ep.parameter_type
             | ENTRY_function ef -> ef.return_type
           in
-          Printf.printf ", type: %s\n" (Types.string_of_type entryType);
+          Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
           let print_type t =
-            Printf.printf "<<%s>> type\n" (Types.string_of_type t)
+            Printf.printf "<<%s>> type\n" (Types.string_of_t_type t)
           in
           match e.kind with
           | ENTRY_variable ev ->
@@ -340,7 +326,7 @@ and sem_lvalue = function
                   Printf.eprintf "Error: Segmentation fault.\n";
                   failwith "Segmentation fault")
           end;
-          Printf.printf "<<%s>> type\n" (Types.string_of_type t);
+          Printf.printf "<<%s>> type\n" (Types.string_of_t_type t);
           t
       | _ ->
           Printf.eprintf
@@ -359,7 +345,7 @@ and sem_expr = function
         match lv with
         | L_comp _ ->
             Printf.printf "Composite l-value is of type '%s'"
-              (Types.string_of_type lvalue_type)
+              (Types.string_of_t_type lvalue_type)
         | _ -> ()
       end;
       lvalue_type
@@ -476,8 +462,8 @@ and sem_funcCall = function
           "... checking whether the arguments of funcCall %s are indeed the \
            declared types\n"
           ident;
-        Printf.printf "Got expression of type %s\n" (Types.string_of_type x);
-        Printf.printf "Expected type %s\n" (Types.string_of_type y);
+        Printf.printf "Got expression of type %s\n" (Types.string_of_t_type x);
+        Printf.printf "Expected type %s\n" (Types.string_of_t_type y);
         f x y;
         true
       in
