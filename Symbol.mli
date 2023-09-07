@@ -5,7 +5,7 @@ type param_passing =
 and scope = {
   name : string;
   parent : scope option;
-  depth : int;
+  mutable depth : int;
   mutable scope_entries : entry list;
 }
 
@@ -32,10 +32,6 @@ and entry_parameter = {
   parameter_type : Types.t_type;
   passing : param_passing;
 }
-
-(** [current_scope_depth] stores the depth of the currently opened scope. Global
-    scope has depth 0 and for each nested function the depth increases by 1.*)
-val current_scope_depth : int ref
 
 (** [current_scope] is a variable that stores the current scope during the
     semantic analysis of the AST. *)
@@ -72,10 +68,6 @@ val enter_parameter : string -> Types.t_type -> bool -> unit
     the third the kind of parameter passing. *)
 val enter_function :
   string -> (int * Types.t_type * param_passing) list -> Types.t_type -> unit
-
-(** [look_up_entry_temp id] searches in the symbolTable an entry with [id] as
-    the key. TODO: must be deleted after debugging completes *)
-val look_up_entry_temp : string -> entry option
 
 (** [look_up_entry id] searches in the symbolTable an entry with [id] as the
     key. It returns the entry found. If no entry is found, [Not_found] exception
