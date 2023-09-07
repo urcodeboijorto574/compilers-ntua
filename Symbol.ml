@@ -138,28 +138,18 @@ let look_up_entry_temp (id : string) =
   in
   look_up_entry_helper !current_scope
 
-let look_up_entry (id : string) (stringOfEntryKind : string) =
+let look_up_entry (id : string) =
   Printf.printf "Looking for name %s...\n" id;
   let resultEntryList = HT.find_all !symbolTable id in
   let resultEntry =
-    try List.hd resultEntryList
-    with Failure _ ->
-      Printf.eprintf "Error: Undefined %s '%s' used in function %s.\n"
-        stringOfEntryKind id !current_scope.name;
-      failwith (String.concat " " [ "Undefined"; stringOfEntryKind ])
+    try List.hd resultEntryList with Failure _ -> raise Not_found
   in
   if
     resultEntry.scope <> !current_scope
     && resultEntry.scope.depth >= !current_scope.depth
   then
     let rec get_entry_in_smaller_depth = function
-      | [] ->
-          (* no entry is defined in a parent scope *)
-          Printf.eprintf
-            "Error: Undefined %s. '%s' %s is defined in a scope that does not \
-             include the current.\n"
-            stringOfEntryKind id stringOfEntryKind;
-          failwith (String.concat " " [ "Undefined"; stringOfEntryKind ])
+      | [] -> raise Not_found
       | entry :: remainingList ->
           if entry.scope.depth >= !current_scope.depth then
             get_entry_in_smaller_depth remainingList

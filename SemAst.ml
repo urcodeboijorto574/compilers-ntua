@@ -43,70 +43,69 @@ and sem_header isPartOfAFuncDef = function
 
       let returnTypeFromThisHeader = Types.(T_func (t_type_of_retType rt)) in
       begin
-        match look_up_entry_temp ident with
-        | None ->
-            enter_function ident (sem_fparDefList fpdl) returnTypeFromThisHeader
-        | Some entry -> begin
-            let expectedReturnTypeFromSymbolTable =
-              match entry.kind with
-              | ENTRY_function ef -> ef.return_type
-              | ENTRY_variable _ | ENTRY_parameter _ -> assert false
-            in
-            if entry.scope.name <> !current_scope.name then (
-              Printf.eprintf
-                "Error: The name '%s' is used for two functions in different \
-                 scopes.\n"
-                ident;
-              failwith "Function overloading is not permitted")
-            else if
-              expectedReturnTypeFromSymbolTable <> returnTypeFromThisHeader
-            then (
-              Printf.eprintf
-                "Error: Function %s's return type differs between declarations.\n"
-                ident;
-              failwith "Function's return type differs between declarations")
-            else if
-              (* TODO: in the section below it is checked whether the type of
-                 parameters are the same between declarations. However, the
-                 names of the parameters are not checked. This can be decided
-                 after consideration. *)
-              begin
-                let paramListFromSymbolTable : Symbol.entry_parameter list =
-                  match entry.kind with
-                  | ENTRY_function funcEntry -> funcEntry.parameters_list
-                  | ENTRY_variable _ | ENTRY_parameter _ -> assert false
+        try
+          let entryFound =
+            try look_up_entry ident with Not_found -> raise Not_found
+          in
+          let expectedReturnTypeFromSymbolTable =
+            match entryFound.kind with
+            | ENTRY_function ef -> ef.return_type
+            | ENTRY_variable _ | ENTRY_parameter _ -> assert false
+          in
+          if entryFound.scope.name <> !current_scope.name then (
+            Printf.eprintf
+              "Error: The name '%s' is used for two functions in different \
+               scopes.\n"
+              ident;
+            failwith "Function overloading is not permitted")
+          else if expectedReturnTypeFromSymbolTable <> returnTypeFromThisHeader
+          then (
+            Printf.eprintf
+              "Error: Function %s's return type differs between declarations.\n"
+              ident;
+            failwith "Function's return type differs between declarations")
+          else if
+            (* TODO: in the section below it is checked whether the type of
+               parameters are the same between declarations. However, the
+               names of the parameters are not checked. This can be decided
+               after consideration. *)
+            begin
+              let paramListFromSymbolTable : Symbol.entry_parameter list =
+                match entryFound.kind with
+                | ENTRY_function funcEntry -> funcEntry.parameters_list
+                | ENTRY_variable _ | ENTRY_parameter _ -> assert false
+              in
+              let paramListFromThisHeader : (int * Types.t_type * bool) list =
+                let rec helper_function :
+                    fparDef list -> (int * Types.t_type * bool) list = function
+                  | [] -> []
+                  | { ref = r; id_list = il; fpar_type = fpt } :: tail ->
+                      let paramType = Types.t_type_of_fparType fpt in
+                      (List.length il, paramType, r) :: helper_function tail
                 in
-                let paramListFromThisHeader : (int * Types.t_type * bool) list =
-                  let rec helper_function :
-                      fparDef list -> (int * Types.t_type * bool) list =
-                    function
-                    | [] -> []
-                    | { ref = r; id_list = il; fpar_type = fpt } :: tail ->
-                        let paramType = Types.t_type_of_fparType fpt in
-                        (List.length il, paramType, r) :: helper_function tail
-                  in
-                  helper_function fpdl
+                helper_function fpdl
+              in
+              let lists_are_equal paramListEntry paramListHeader =
+                let compareElements x y =
+                  match y with
+                  | _, t, r ->
+                      x.parameter_type = t
+                      && x.passing = Symbol.BY_REFERENCE == r
                 in
-                let lists_are_equal paramListEntry paramListHeader =
-                  let compareElements x y =
-                    match y with
-                    | _, t, r ->
-                        x.parameter_type = t
-                        && x.passing = Symbol.BY_REFERENCE == r
-                  in
-                  List.for_all2 compareElements paramListEntry
-                    paramListFromThisHeader
-                in
-                lists_are_equal paramListFromSymbolTable paramListFromThisHeader
-              end
-            then (
-              Printf.eprintf
-                "Error: Function %s's parameters differ between declarations.\n"
-                ident;
-              failwith "Function's parameters differ between declarations")
-            else if not isPartOfAFuncDef then
-              Printf.printf "Warning: Redeclaration of function '%s'" ident
-          end
+                List.for_all2 compareElements paramListEntry
+                  paramListFromThisHeader
+              in
+              lists_are_equal paramListFromSymbolTable paramListFromThisHeader
+            end
+          then (
+            Printf.eprintf
+              "Error: Function %s's parameters differ between declarations.\n"
+              ident;
+            failwith "Function's parameters differ between declarations")
+          else if not isPartOfAFuncDef then
+            Printf.printf "Warning: Redeclaration of function '%s'" ident
+        with Not_found ->
+          enter_function ident (sem_fparDefList fpdl) returnTypeFromThisHeader
       end;
 
       if isPartOfAFuncDef then begin
@@ -179,8 +178,7 @@ and sem_funcDecl = function FuncDecl_Header h -> sem_header false h
     defined in the variable definition [vd]. Returns [unit]. *)
 and sem_varDef = function
   | { id_list = idl; var_type = vt } ->
-      let helper i = enter_variable i (Types.t_type_of_varType vt) in
-      List.iter helper idl
+      List.iter (fun i -> enter_variable i (Types.t_type_of_varType vt)) idl
 
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
     block [bl]. Returns [Types.t_type option]. *)
@@ -286,31 +284,32 @@ and sem_stmt = function
     [Types.t_type]. *)
 and sem_lvalue = function
   | L_id id -> (
-      match look_up_entry_temp id with
-      | Some e -> (
-          Printf.printf "Entry for %s found. Information:\n" id;
-          Printf.printf "\tid: %s, scope: %s" id e.scope.name;
-          let entryType =
-            match e.kind with
-            | ENTRY_variable ev -> ev.variable_type
-            | ENTRY_parameter ep -> ep.parameter_type
-            | ENTRY_function ef -> ef.return_type
-          in
-          Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
-          let print_type t =
-            Printf.printf "<<%s>> type\n" (Types.string_of_t_type t)
-          in
-          match e.kind with
-          | ENTRY_variable ev ->
-              print_type ev.variable_type;
-              ev.variable_type
-          | ENTRY_parameter ep ->
-              print_type ep.parameter_type;
-              ep.parameter_type
-          | ENTRY_function _ -> assert false)
-      | None ->
+      let entryFound =
+        try look_up_entry id
+        with Not_found ->
           Printf.eprintf "Error: Undefined variable %s is being used.\n" id;
-          failwith "Undefined variable")
+          failwith "Undefined variable"
+      in
+      Printf.printf "Entry for %s found. Information:\n" id;
+      Printf.printf "\tid: %s, scope: %s" id entryFound.scope.name;
+      let entryType =
+        match entryFound.kind with
+        | ENTRY_variable ev -> ev.variable_type
+        | ENTRY_parameter ep -> ep.parameter_type
+        | ENTRY_function ef -> ef.return_type
+      in
+      Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
+      let print_type t =
+        Printf.printf "<<%s>> type\n" (Types.string_of_t_type t)
+      in
+      match entryFound.kind with
+      | ENTRY_variable ev ->
+          print_type ev.variable_type;
+          ev.variable_type
+      | ENTRY_parameter ep ->
+          print_type ep.parameter_type;
+          ep.parameter_type
+      | ENTRY_function _ -> assert false)
   | L_string s -> Types.T_array (Types.T_char, 0)
   | L_comp (lv, e) -> (
       Printf.printf
@@ -394,12 +393,11 @@ and sem_cond = function
 and sem_funcCall = function
   | { id = ident; expr_list = el } ->
       let entryFound =
-        match look_up_entry_temp ident with
-        | Some e -> e
-        | None ->
-            Printf.eprintf "Error: Function %s is called, but never declared\n"
-              ident;
-            failwith "Undeclared function called"
+        try look_up_entry ident
+        with Not_found ->
+          Printf.eprintf "Error: Function %s is called, but never declared\n"
+            ident;
+          failwith "Undeclared function called"
       in
       (* [exprTypesList] is a list of [Types.t_type] and the nth element
          is the type of the nth argument of the function call *)
