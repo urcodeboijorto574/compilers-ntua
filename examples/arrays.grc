@@ -1,0 +1,45 @@
+fun main () : nothing
+
+    var foo : int[90];
+    var bar : char[110];
+    var zen : int[5][10];
+
+    fun arrayProc (ref x : int[]; ref y : char[80]; ref z : int[][10])
+            : nothing
+
+        var a : int [100];
+        var b : char [80];
+        var i, j : int;
+        var s : int;
+
+    { $ arrayProc
+        i <- 0;
+        s <- 100;
+        while i < s do {
+            a[i] <- x[i];
+
+            if i < 80 then
+                b[i] <- y[i];
+
+            i <- i + 1;
+        }
+
+        j <- 0;
+        i <- 0;
+        s <- 10;
+        while i < 10 do {
+            while (z[j][i] # 0) do {
+                z[j][i] <- a[i];
+
+                j <- j + 1;
+            }
+
+            i <- i + 1;
+        }
+    }
+
+{ $ main
+    arrayProc(foo, bar, zen);
+    writeString("OK!\n");
+    foo[89] <- 1;
+}
