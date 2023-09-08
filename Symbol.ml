@@ -22,15 +22,20 @@ and entry_kind =
 
 and entry_variable = { variable_type : Types.t_type }
 
+and entry_parameter = {
+  parameter_type : Types.t_type;
+  passing : param_passing;
+}
+
+and entry_func_state =
+  | DECLARED
+  | DEFINED
+
 and entry_function = {
   parameters_list : entry_parameter list;
   return_type : Types.t_type;
   scope_depth : int;
-}
-
-and entry_parameter = {
-  parameter_type : Types.t_type;
-  passing : param_passing;
+  state : entry_func_state;
 }
 
 let current_scope =
@@ -79,7 +84,7 @@ let enter_parameter id typ isRef =
   enter_entry id kind
 
 let enter_function (id : string)
-    (paramList : (int * Types.t_type * param_passing) list) retTyp =
+    (paramList : (int * Types.t_type * param_passing) list) retTyp stat =
   let paramL : entry_parameter list =
     let rec convert_list paramList =
       match paramList with
@@ -97,6 +102,7 @@ let enter_function (id : string)
         parameters_list = paramL;
         return_type = retTyp;
         scope_depth = !current_scope.depth;
+        state = stat;
       }
   in
   enter_entry id kind
@@ -104,7 +110,9 @@ let enter_function (id : string)
 let look_up_entry (id : string) =
   let print_entries_list (sc : scope) =
     Printf.printf "Scope '%s':\n\t[ " sc.name;
-    List.iter (fun e -> Printf.printf "%s " e.id) sc.scope_entries;
+    List.iter
+      (fun e -> Printf.printf "%s(%s) " e.id e.scope.name)
+      sc.scope_entries;
     Printf.printf "]\n"
   and print_hashtable () =
     let printedSmth = ref false in
@@ -127,14 +135,20 @@ let look_up_entry (id : string) =
       !symbolTable;
     if not !printedSmth then Printf.printf "\t(nothing)\n"
   in
-  Printf.printf "Looking in scope '%s' for name '%s'...\n" !current_scope.name
-    id;
+  Printf.printf "Looking in scope '%s' for name '%s':\n" !current_scope.name id;
   print_hashtable ();
   let resultEntryList =
     List.filter
       (fun e -> e.scope.depth <= !current_scope.depth)
       (Hashtbl.find_all !symbolTable id)
   in
+  print_entries_list
+    {
+      name = "result entries";
+      parent = None;
+      depth = 42;
+      scope_entries = resultEntryList;
+    };
   let resultEntry =
     try List.hd resultEntryList
     with Failure _ ->

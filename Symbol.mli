@@ -22,15 +22,20 @@ and entry_kind =
 
 and entry_variable = { variable_type : Types.t_type }
 
+and entry_parameter = {
+  parameter_type : Types.t_type;
+  passing : param_passing;
+}
+
+and entry_func_state =
+  | DECLARED
+  | DEFINED
+
 and entry_function = {
   parameters_list : entry_parameter list;
   return_type : Types.t_type;
   scope_depth : int;
-}
-
-and entry_parameter = {
-  parameter_type : Types.t_type;
-  passing : param_passing;
+  state : entry_func_state;
 }
 
 (** [current_scope] is a variable that stores the current scope during the
@@ -60,14 +65,21 @@ val enter_variable : string -> Types.t_type -> unit
     if the parameter is passed by reference or [false] if by value. *)
 val enter_parameter : string -> Types.t_type -> bool -> unit
 
-(** [enter_function i pL rt] enters a new function entry in the symbolTable. [i]
-    is the function's identifier, [rt] is the return type of the function and
-    [pL] is a list of type [(int * Types.t_type * param_passing) list]. Each
-    element of the [pL] is a tuple with 3 fields. The first field signifies the
-    number of parameters in each parameter definition, the second the type, and
-    the third the kind of parameter passing. *)
+(** [enter_function i pL rt st] enters a new function entry in the symbolTable.
+    [i] is the function's identifier ([string]), [rt] is the return type of the
+    function, [pL] is a list of type [(int * Types.t_type * param_passing) list]
+    that contains information about the parameters and [st] is of type
+    [entry_func_state] and is [DECLARED] if the entry of the function originated
+    from a declaration and [DEFINED] if it originated from a definition. is .
+    Each element of the [pL] is a tuple with 3 fields. The first field signifies
+    the number of parameters in each parameter definition, the second the type,
+    and the third the kind of parameter passing. *)
 val enter_function :
-  string -> (int * Types.t_type * param_passing) list -> Types.t_type -> unit
+  string ->
+  (int * Types.t_type * param_passing) list ->
+  Types.t_type ->
+  entry_func_state ->
+  unit
 
 (** [look_up_entry id] searches in the symbolTable an entry with [id] as the
     key. It returns the entry found. If no entry is found, [Not_found] exception

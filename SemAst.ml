@@ -42,19 +42,49 @@ and sem_header isPartOfAFuncDef = function
         failwith "Main function shouldn't have parameters");
 
       let returnTypeFromThisHeader = Types.(T_func (t_type_of_retType rt)) in
+      let add_params_to_scope () =
+        if isPartOfAFuncDef then begin
+          Printf.printf "Opening new scope for '%s' function\n" ident;
+          Symbol.open_scope ident;
+          let add_fparDef : fparDef -> unit = function
+            | { ref = r; id_list = idl; fpar_type = fpt } ->
+                List.iter
+                  (fun id ->
+                    enter_parameter id (Types.t_type_of_fparType fpt) r)
+                  idl
+          in
+          List.iter add_fparDef fpdl
+        end
+      in
+
       try
         let entryFound =
           try look_up_entry ident
           with Not_found ->
-            enter_function ident (sem_fparDefList fpdl) returnTypeFromThisHeader;
+            enter_function ident (sem_fparDefList fpdl) returnTypeFromThisHeader
+              Symbol.(if isPartOfAFuncDef = true then DEFINED else DECLARED);
             raise Not_found
         in
+        begin
+          match entryFound.kind with
+          | ENTRY_function _ -> ()
+          | _ -> assert false
+          (* TODO: This section is reached only when a function and a variable/
+             parameter have the same names. What should the compiler do here? *)
+        end;
         let expectedReturnTypeFromSymbolTable =
           match entryFound.kind with
           | ENTRY_function ef -> ef.return_type
-          | ENTRY_variable _ | ENTRY_parameter _ -> assert false
+          | _ -> assert false
         in
-        if entryFound.scope.name <> !current_scope.name then (
+        if
+          match entryFound.kind with
+          | ENTRY_function ef -> ef.state = Symbol.DEFINED
+          | _ -> assert false
+        then (
+          Printf.eprintf "Error: Function %s is defined twiced.\n" ident;
+          failwith "Redefinition of function")
+        else if entryFound.scope.name <> !current_scope.name then (
           Printf.eprintf
             "Error: The name '%s' is used for two functions in different scopes.\n"
             ident;
@@ -73,7 +103,19 @@ and sem_header isPartOfAFuncDef = function
           begin
             let paramListFromSymbolTable : Symbol.entry_parameter list =
               match entryFound.kind with
-              | ENTRY_function funcEntry -> funcEntry.parameters_list
+              | ENTRY_function funcEntry ->
+                  Printf.printf "Parameter list from ST:\n\t[ ";
+                  List.iter
+                    (fun ep ->
+                      Printf.printf "{ type('%s'), pass('%s') } "
+                        (Types.string_of_t_type ep.parameter_type)
+                        (if ep.passing = Symbol.BY_VALUE then
+                           "byVal"
+                         else
+                           "byRef"))
+                    funcEntry.parameters_list;
+                  Printf.printf "]\n";
+                  funcEntry.parameters_list
               | ENTRY_variable _ | ENTRY_parameter _ -> assert false
             in
             let paramListFromThisHeader : (int * Types.t_type * bool) list =
@@ -84,18 +126,37 @@ and sem_header isPartOfAFuncDef = function
                     let paramType = Types.t_type_of_fparType fpt in
                     (List.length il, paramType, r) :: helper_function tail
               in
-              helper_function fpdl
+              let resultList = helper_function fpdl in
+              Printf.printf "Parameter list from this header:\n\t[ ";
+              List.iter
+                begin
+                  let rec print_elem = function
+                    | 0, t, r -> ()
+                    | n, t, r ->
+                        Printf.printf "{ type('%s'), pass('%s') } "
+                          (Types.string_of_t_type t)
+                          (if r then "byRef" else "byVal");
+                        print_elem (n - 1, t, r)
+                  in
+                  print_elem
+                end
+                resultList;
+              Printf.printf "]\n";
+              resultList
             in
-            let lists_are_equal paramListEntry paramListHeader =
+            let lists_are_not_equal paramListEntry paramListHeader =
               let compareElements x y =
                 match y with
                 | _, t, r ->
-                    x.parameter_type = t && x.passing = Symbol.BY_REFERENCE == r
+                    let xIsByReference = x.passing = Symbol.BY_REFERENCE in
+                    x.parameter_type <> t || xIsByReference <> r
               in
-              List.for_all2 compareElements paramListEntry
-                paramListFromThisHeader
+              List.for_all2 compareElements paramListEntry paramListHeader
             in
-            lists_are_equal paramListFromSymbolTable paramListFromThisHeader
+            try
+              lists_are_not_equal paramListFromSymbolTable
+                paramListFromThisHeader
+            with Invalid_argument _ -> false
           end
         then (
           Printf.eprintf
@@ -104,21 +165,10 @@ and sem_header isPartOfAFuncDef = function
           failwith "Function's parameters differ between declarations")
         else if not isPartOfAFuncDef then
           Printf.printf "Warning: Redeclaration of function '%s'" ident
-      with Not_found ->
-        ();
-
-        if isPartOfAFuncDef then begin
-          Printf.printf "Opening new scope for '%s' function\n" ident;
-          Symbol.open_scope ident;
-          let add_fparDef : fparDef -> unit = function
-            | { ref = r; id_list = idl; fpar_type = fpt } ->
-                List.iter
-                  (fun id ->
-                    enter_parameter id (Types.t_type_of_fparType fpt) r)
-                  idl
-          in
-          List.iter add_fparDef fpdl
-        end)
+        else
+          Printf.printf "Function %s is finally defined!\n" ident;
+        add_params_to_scope ()
+      with Not_found -> add_params_to_scope ())
 
 (** [sem_fparDefList (fpdl : Ast.fparDef list)] semantically analyses the
     function's parameter definitions [fpdl]. Returns
