@@ -44,5 +44,5 @@ distclean: clean
 format: Ast.ml Lexer.mli Main.ml Symbol.ml Symbol.mli Types.ml Types.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli
 	ocamlformat -i $^
 
-test: clean format depend grace$(EXE)
+update: clean format depend grace$(EXE)
 	make clean
