@@ -5,6 +5,11 @@ type t_type =
   | T_none
   | T_func of t_type
 
+(* DEBUG: delete when finished *)
+
+(** [debugMode] is [true] when debug messages will be printed out. *)
+val debugMode : bool
+
 (** [string_of_t_type t] takes a [t : t_type] and returns a string corresponding
     to the type given. Returns [string]. *)
 val string_of_t_type : t_type -> string

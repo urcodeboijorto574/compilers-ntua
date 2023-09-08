@@ -24,7 +24,8 @@ let rec sem_funcDef = function
           (Types.string_of_t_type expectedReturnType)
           (Types.string_of_t_type typeReturnedInBlock);
         failwith "Return statement doesn't return the expected type");
-      Printf.printf "Closing scope for '%s' function's declarations.\n" h.id;
+      if Types.debugMode then
+        Printf.printf "Closing scope for '%s' function's declarations.\n" h.id;
       Symbol.close_scope ()
 
 (** [sem_header (isPartOfAFuncDef : bool) (h : Ast.header)] takes
@@ -44,7 +45,8 @@ and sem_header isPartOfAFuncDef = function
       let returnTypeFromThisHeader = Types.(T_func (t_type_of_retType rt)) in
       let add_params_to_scope () =
         if isPartOfAFuncDef then begin
-          Printf.printf "Opening new scope for '%s' function\n" ident;
+          if Types.debugMode then
+            Printf.printf "Opening new scope for '%s' function\n" ident;
           Symbol.open_scope ident;
           let add_fparDef : fparDef -> unit = function
             | { ref = r; id_list = idl; fpar_type = fpt } ->
@@ -104,17 +106,18 @@ and sem_header isPartOfAFuncDef = function
             let paramListFromSymbolTable : Symbol.entry_parameter list =
               match entryFound.kind with
               | ENTRY_function funcEntry ->
-                  Printf.printf "Parameter list from ST:\n\t[ ";
-                  List.iter
-                    (fun ep ->
-                      Printf.printf "{ type('%s'), pass('%s') } "
-                        (Types.string_of_t_type ep.parameter_type)
-                        (if ep.passing = Symbol.BY_VALUE then
-                           "byVal"
-                         else
-                           "byRef"))
-                    funcEntry.parameters_list;
-                  Printf.printf "]\n";
+                  if Types.debugMode then (
+                    Printf.printf "Parameter list from ST:\n\t[ ";
+                    List.iter
+                      (fun ep ->
+                        Printf.printf "{ type('%s'), pass('%s') } "
+                          (Types.string_of_t_type ep.parameter_type)
+                          (if ep.passing = Symbol.BY_VALUE then
+                             "byVal"
+                           else
+                             "byRef"))
+                      funcEntry.parameters_list;
+                    Printf.printf "]\n");
                   funcEntry.parameters_list
               | ENTRY_variable _ | ENTRY_parameter _ -> assert false
             in
@@ -127,21 +130,23 @@ and sem_header isPartOfAFuncDef = function
                     (List.length il, paramType, r) :: helper_function tail
               in
               let resultList = helper_function fpdl in
-              Printf.printf "Parameter list from this header:\n\t[ ";
+              if Types.debugMode then
+                Printf.printf "Parameter list from this header:\n\t[ ";
               List.iter
                 begin
                   let rec print_elem = function
                     | 0, t, r -> ()
                     | n, t, r ->
-                        Printf.printf "{ type('%s'), pass('%s') } "
-                          (Types.string_of_t_type t)
-                          (if r then "byRef" else "byVal");
+                        if Types.debugMode then
+                          Printf.printf "{ type('%s'), pass('%s') } "
+                            (Types.string_of_t_type t)
+                            (if r then "byRef" else "byVal");
                         print_elem (n - 1, t, r)
                   in
                   print_elem
                 end
                 resultList;
-              Printf.printf "]\n";
+              if Types.debugMode then Printf.printf "]\n";
               resultList
             in
             let lists_are_not_equal paramListEntry paramListHeader =
@@ -164,8 +169,8 @@ and sem_header isPartOfAFuncDef = function
             ident;
           failwith "Function's parameters differ between declarations")
         else if not isPartOfAFuncDef then
-          Printf.printf "Warning: Redeclaration of function '%s'" ident
-        else
+          Printf.eprintf "Warning: Redeclaration of function '%s'" ident
+        else if Types.debugMode then
           Printf.printf "Function %s is finally defined!\n" ident;
         add_params_to_scope ()
       with Not_found -> add_params_to_scope ())
@@ -251,8 +256,10 @@ and sem_stmt = function
             "Error: Assignment to a function call is not possible.\n";
           failwith "Assignment to function"
       | t ->
-          Printf.printf
-            "... checking the types of an lvalue and an expression (assignment)\n";
+          if Types.debugMode then
+            Printf.printf
+              "... checking the types of an lvalue and an expression \
+               (assignment)\n";
           Types.equal_type t (sem_expr e);
           None)
   | S_block b -> sem_block b
@@ -323,21 +330,25 @@ and sem_lvalue = function
           Printf.eprintf "Error: Undefined variable %s is being used.\n" id;
           failwith "Undefined variable"
       in
-      Printf.printf "Entry for %s found. Information:\n" id;
-      Printf.printf "\tid: %s, scope: %s" id entryFound.scope.name;
+      if Types.debugMode then
+        Printf.printf "Entry for %s found. Information:\n" id;
+      if Types.debugMode then
+        Printf.printf "\tid: %s, scope: %s" id entryFound.scope.name;
       let entryType =
         match entryFound.kind with
         | ENTRY_variable ev -> ev.variable_type
         | ENTRY_parameter ep -> ep.parameter_type
         | ENTRY_function ef -> ef.return_type
       in
-      Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
+      if Types.debugMode then
+        Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
       entryType
   | L_string s -> Types.T_array (Types.T_char, 0)
   | L_comp (lv, e) -> (
-      Printf.printf
-        "... checking the type of the content inside the brackets (position in \
-         array must be an integer)\n";
+      if Types.debugMode then
+        Printf.printf
+          "... checking the type of the content inside the brackets (position \
+           in array must be an integer)\n";
       Types.(equal_type T_int (sem_expr e));
       match sem_lvalue lv with
       | Types.T_array (t, n) ->
@@ -349,7 +360,8 @@ and sem_lvalue = function
                   Printf.eprintf "Error: Segmentation fault.\n";
                   failwith "Segmentation fault")
           end;
-          Printf.printf "<<%s>> type\n" (Types.string_of_t_type t);
+          if Types.debugMode then
+            Printf.printf "<<%s>> type\n" (Types.string_of_t_type t);
           t
       | _ ->
           Printf.eprintf
@@ -366,8 +378,9 @@ and sem_expr = function
       begin
         match lv with
         | L_comp _ ->
-            Printf.printf "Composite l-value is of type '%s'"
-              (Types.string_of_t_type lvalue_type)
+            if Types.debugMode then
+              Printf.printf "Composite l-value is of type '%s'"
+                (Types.string_of_t_type lvalue_type)
         | _ -> ()
       end;
       lvalue_type
@@ -383,12 +396,15 @@ and sem_expr = function
       | T_func t -> t
       | T_none | T_int | T_char | T_array _ -> assert false)
   | E_sgn_expr (s, e) ->
-      Printf.printf "... checking a signed expression (must be int)\n";
+      if Types.debugMode then
+        Printf.printf "... checking a signed expression (must be int)\n";
       Types.equal_type Types.T_int (sem_expr e);
       Types.T_int
   | E_op_expr_expr (e1, ao, e2) ->
-      Printf.printf
-        "... checking whether the arguments of an arithmOperator are of type int\n";
+      if Types.debugMode then
+        Printf.printf
+          "... checking whether the arguments of an arithmOperator are of type \
+           int\n";
       Types.equal_type Types.T_int (sem_expr e1);
       Types.equal_type Types.T_int (sem_expr e2);
       Types.T_int
@@ -402,9 +418,10 @@ and sem_cond = function
       sem_cond c1;
       sem_cond c2
   | C_expr_expr (e1, co, e2) ->
-      Printf.printf
-        "... checking whether the arguments of a compOperator are of the same \
-         type\n";
+      if Types.debugMode then
+        Printf.printf
+          "... checking whether the arguments of a compOperator are of the \
+           same type\n";
       let typ1, typ2 = (sem_expr e1, sem_expr e2) in
       Types.equal_type typ1 typ2
   | C_cond_parenthesized c -> sem_cond c
@@ -478,12 +495,15 @@ and sem_funcCall = function
         f el paramByRefList
       end;
       let bool_of_unit_func f x y =
-        Printf.printf
-          "... checking whether the arguments of funcCall %s are indeed the \
-           declared types\n"
-          ident;
-        Printf.printf "Got expression of type %s\n" (Types.string_of_t_type x);
-        Printf.printf "Expected type %s\n" (Types.string_of_t_type y);
+        if Types.debugMode then
+          Printf.printf
+            "... checking whether the arguments of funcCall %s are indeed the \
+             declared types\n"
+            ident;
+        if Types.debugMode then
+          Printf.printf "Got expression of type %s\n" (Types.string_of_t_type x);
+        if Types.debugMode then
+          Printf.printf "Expected type %s\n" (Types.string_of_t_type y);
         f x y;
         true
       in

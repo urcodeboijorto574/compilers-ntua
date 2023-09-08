@@ -67,7 +67,8 @@ let create_symbol_table numOfBuckets =
 let enter_entry ident eKind =
   let e = { id = ident; scope = !current_scope; kind = eKind } in
   Hashtbl.add !symbolTable ident e;
-  Printf.printf "entering entry %s in current scope\n" e.id;
+  if Types.debugMode then
+    Printf.printf "entering entry %s in current scope\n" e.id;
   !current_scope.scope_entries <- e :: !current_scope.scope_entries
 
 let enter_variable id typ =
@@ -135,27 +136,32 @@ let look_up_entry (id : string) =
       !symbolTable;
     if not !printedSmth then Printf.printf "\t(nothing)\n"
   in
-  Printf.printf "Looking in scope '%s' for name '%s':\n" !current_scope.name id;
-  print_hashtable ();
+  if Types.debugMode then
+    Printf.printf "Looking in scope '%s' for name '%s':\n" !current_scope.name
+      id;
+  if Types.debugMode then print_hashtable ();
   let resultEntryList =
     List.filter
       (fun e -> e.scope.depth <= !current_scope.depth)
       (Hashtbl.find_all !symbolTable id)
   in
-  print_entries_list
-    {
-      name = "result entries";
-      parent = None;
-      depth = 42;
-      scope_entries = resultEntryList;
-    };
+  if Types.debugMode then
+    print_entries_list
+      {
+        name = "result entries";
+        parent = None;
+        depth = 42;
+        scope_entries = resultEntryList;
+      };
   let resultEntry =
     try List.hd resultEntryList
     with Failure _ ->
-      Printf.printf "Entry %s not found in scope %s.\n" id !current_scope.name;
+      if Types.debugMode then
+        Printf.printf "Entry %s not found in scope %s.\n" id !current_scope.name;
       raise Not_found
   in
-  Printf.printf "Entry '%s' found in scope '%s'!\n" id resultEntry.scope.name;
+  if Types.debugMode then
+    Printf.printf "Entry '%s' found in scope '%s'!\n" id resultEntry.scope.name;
   if
     let rec compare_scopes s1 s2 =
       s1.name = s2.name && s1.depth = s2.depth
@@ -175,11 +181,11 @@ let look_up_entry (id : string) =
             get_entry_in_smaller_depth remainingList
           else (
             (* entry is defined in a parent scope *)
-            print_entries_list entry.scope;
+            if Types.debugMode then print_entries_list entry.scope;
             entry)
     in
     get_entry_in_smaller_depth resultEntryList
   else (
     (* entry got found *)
-    print_entries_list resultEntry.scope;
+    if Types.debugMode then print_entries_list resultEntry.scope;
     resultEntry)

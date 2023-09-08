@@ -5,6 +5,9 @@ type t_type =
   | T_none
   | T_func of t_type
 
+(* DEBUG *)
+let debugMode = false
+
 let rec string_of_t_type = function
   | T_int -> "integer"
   | T_char -> "character"
@@ -33,11 +36,11 @@ let rec equal_type t1 t2 =
       let print_types () =
         Printf.printf "%s, %s -> " (string_of_t_type t1) (string_of_t_type t2)
       in
-      print_types ();
+      if debugMode then print_types ();
       if t1 <> t2 then (
-        Printf.printf "Type mismatch!\n";
+        Printf.eprintf "Error: Type mismatch!\n";
         failwith "Type error")
-      else
+      else if debugMode then
         Printf.printf "Same type!\n"
 
 let t_type_of_dataType = function
