@@ -73,14 +73,14 @@ and sem_header isPartOfAFuncDef = function
           Symbol.(if isPartOfAFuncDef = true then DEFINED else DECLARED);
         add_params_to_scope ())
       else
-        let functionEntry =
-          let getV = function Some e -> e | None -> assert false in
-          match (getV resultLookUp).kind with
-          | ENTRY_function ef -> ef
-          | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
-          (* A function and a variable share the same name. *)
-        in
         try
+          let functionEntry =
+            let getV = function Some e -> e | None -> assert false in
+            match (getV resultLookUp).kind with
+            | ENTRY_function ef -> ef
+            | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
+            (* A function and a variable share the same name. *)
+          in
           if Types.debugMode then (
             Printf.printf "Parameter list from ST:\n\t[ ";
             List.iter
