@@ -41,7 +41,7 @@ let rec sem_funcDef = function
     header [h]. If [h] is part of a function definition, then a new scope is
     opened and the function's parameters are inserted in it. Returns [unit]. *)
 and sem_header isPartOfAFuncDef = function
-  | { id = ident; fpar_def_list = fpdl; ret_type = rt } ->
+  | { id = ident; fpar_def_list = fpdl; ret_type = rt } -> (
       if !isMainProgram && rt <> Nothing then (
         Printf.eprintf "Error: Main function must return 'nothing' type\n";
         failwith "Main function should return nothing")
@@ -65,14 +65,14 @@ and sem_header isPartOfAFuncDef = function
         end
       in
       let resultLookUp =
-        try Some (look_up_entry ident)
-        with Not_found ->
-          enter_function ident (sem_fparDefList fpdl)
-            Types.(T_func (t_type_of_retType rt))
-            Symbol.(if isPartOfAFuncDef = true then DEFINED else DECLARED);
-          None
+        try Some (look_up_entry ident) with Not_found -> None
       in
-      if resultLookUp <> None then
+      if resultLookUp = None then (
+        enter_function ident (sem_fparDefList fpdl)
+          Types.(T_func (t_type_of_retType rt))
+          Symbol.(if isPartOfAFuncDef = true then DEFINED else DECLARED);
+        add_params_to_scope ())
+      else
         let functionEntry =
           let getV = function Some e -> e | None -> assert false in
           match (getV resultLookUp).kind with
@@ -172,9 +172,12 @@ and sem_header isPartOfAFuncDef = function
               "Error: Return type of function %s differs between declarations"
               ident;
             failwith "Function's return type differs between declarations"
-        | Non_matching_parameter_types -> ()
-      else
-        add_params_to_scope ()
+        | Non_matching_parameter_types ->
+            Printf.eprintf
+              "Error: Parameter types of function %s differ between \
+               declarations.\n"
+              ident;
+            failwith "Parameter types differ between declarations")
 
 (** [sem_fparDefList (fpdl : Ast.fparDef list)] semantically analyses the
     function's parameter definitions [fpdl]. Returns
