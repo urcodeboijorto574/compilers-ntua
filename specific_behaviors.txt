@@ -1,0 +1,16 @@
+This file includes details in the behavior of the compiler in certain situations.
+
+> Non-reached sections:
+    When a block has a section that is never reached, this section is not
+    semantically analysed.
+
+> Short-circuiting:
+    When a condition can be short-circuited by either the first or the second argument,
+    the argument that is not necessary is not calculated. This includes function calls.
+
+> Overloading names:
+    Currently function overloading is not allowed.
+
+> Function declaration and definition:
+    Currently the parameters of a function's declaration and definition must match types,
+    but not names, necessarily. This can be further looked at.

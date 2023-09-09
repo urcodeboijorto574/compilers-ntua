@@ -72,18 +72,23 @@ and sem_header isPartOfAFuncDef = function
           | ENTRY_function _ -> ()
           | _ -> assert false
           (* TODO: This section is reached only when a function and a variable/
-             parameter have the same names. What should the compiler do here? *)
+             parameter have the same name. What should the compiler do here? *)
         end;
         let expectedReturnTypeFromSymbolTable =
           match entryFound.kind with
           | ENTRY_function ef -> ef.return_type
           | _ -> assert false
         in
+        (* The section below could be written with a try-with statement.
+           This way more specific errors could be printed. *)
         if
           match entryFound.kind with
           | ENTRY_function ef -> ef.state = Symbol.DEFINED
           | _ -> assert false
         then (
+          (* This can happen when a function is overload. Function overloading
+             can be discussed. If in the end is approved, don't forget to change
+             scopes as well. *)
           Printf.eprintf "Error: Function %s is defined twiced.\n" ident;
           failwith "Redefinition of function")
         else if entryFound.scope.name <> !current_scope.name then (
@@ -161,7 +166,10 @@ and sem_header isPartOfAFuncDef = function
             try
               lists_are_not_equal paramListFromSymbolTable
                 paramListFromThisHeader
-            with Invalid_argument _ -> false
+            with Invalid_argument _ ->
+              (* A function's declaration and the definition don't have the same
+                 number of parameters. *)
+              false
           end
         then (
           Printf.eprintf

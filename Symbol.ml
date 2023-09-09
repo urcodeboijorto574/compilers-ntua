@@ -137,8 +137,7 @@ let look_up_entry (id : string) =
     if not !printedSmth then Printf.printf "\t(nothing)\n"
   in
   if Types.debugMode then
-    Printf.printf "Looking in scope '%s' for name '%s':\n" !current_scope.name
-      id;
+    Printf.printf "Looking for name '%s':\n" id;
   if Types.debugMode then print_hashtable ();
   let resultEntryList =
     List.filter
@@ -157,7 +156,7 @@ let look_up_entry (id : string) =
     try List.hd resultEntryList
     with Failure _ ->
       if Types.debugMode then
-        Printf.printf "Entry %s not found in scope %s.\n" id !current_scope.name;
+        Printf.printf "Entry %s not found in any scope.\n" id;
       raise Not_found
   in
   if Types.debugMode then
