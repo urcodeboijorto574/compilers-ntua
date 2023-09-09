@@ -35,8 +35,10 @@ and entry_function = {
   parameters_list : entry_parameter list;
   return_type : Types.t_type;
   scope_depth : int;
-  state : entry_func_state;
+  mutable state : entry_func_state;
 }
+
+let set_func_defined entryFunc = entryFunc.state <- DEFINED
 
 let current_scope =
   ref { name = ""; parent = None; depth = 0; scope_entries = [] }
@@ -186,5 +188,7 @@ let look_up_entry (id : string) =
     get_entry_in_smaller_depth resultEntryList
   else (
     (* entry got found *)
-    if Types.debugMode then print_entries_list resultEntry.scope;
+    if Types.debugMode then (
+      Printf.printf "%s found in " id;
+      print_entries_list resultEntry.scope);
     resultEntry)

@@ -35,8 +35,12 @@ and entry_function = {
   parameters_list : entry_parameter list;
   return_type : Types.t_type;
   scope_depth : int;
-  state : entry_func_state;
+  mutable state : entry_func_state;
 }
+
+(** [set_func_defined entryFunc] sets the state of in an entry_function
+    [entryFunc] to [DEFINED]. *)
+val set_func_defined : entry_function -> unit
 
 (** [current_scope] is a variable that stores the current scope during the
     semantic analysis of the AST. *)

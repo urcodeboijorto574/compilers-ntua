@@ -46,3 +46,6 @@ format: Ast.ml Lexer.mli Main.ml Symbol.ml Symbol.mli Types.ml Types.mli PrintAs
 
 update: clean format depend grace$(EXE)
 	make clean
+
+test:
+	./grace < examples/evenodd.grc
