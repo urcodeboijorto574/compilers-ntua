@@ -75,18 +75,18 @@ rule lexer = parse
     This section's sole purpose is to not impede the semantic analysis.
     TODO: this section, the 'num_parens' variable and the parsing rule 'skip'
     must be deleted when the standard library of grace is added. *)
-| "writeString(" { skip lexbuf }
-| "writeInteger(" { skip lexbuf }
-| "writeChar(" { skip lexbuf }
+| "writeString(" white* (string | identifier) white* ")" { lexer lexbuf }
+| "writeInteger(" { skip lexbuf; lexer lexbuf }
+| "writeChar(" white* (character | identifier) white* ")" { lexer lexbuf }
 | "readInteger()" { T_integer 42 }
-| "readChar(" { T_chr '*' }
-| "readString(" { skip lexbuf }
-| "ascii(" { skipint lexbuf }
-| "chr(" { skipchar lexbuf }
-| "strlen(" { skipint lexbuf }
-| "strcmp(" { skipint lexbuf }
-| "strcpy(" { skip lexbuf }
-| "strcat(" { skip lexbuf }
+| "readChar()" { T_chr '*' }
+| "readString(" [^ ',']* ',' identifier white* ")" { lexer lexbuf }
+| "ascii(" white* (identifier | character) white* ")" { T_integer 42 }
+| "chr(" { skip lexbuf; T_chr '*' }
+| "strlen(" white* (identifier | string) white* ")" { T_integer 42 }
+| "strcmp(" { skip lexbuf; lexer lexbuf }
+| "strcpy(" white* [^ ','] white* (string | identifier) white* ")" { lexer lexbuf }
+| "strcat(" white* identifier white* ',' white* (identifier | string) white* ')' { lexer lexbuf }
 
 | identifier  { T_identifier (Lexing.lexeme lexbuf) }
 | integer     { T_integer (int_of_string (Lexing.lexeme lexbuf)) }
@@ -119,21 +119,9 @@ and strings = parse
 (* TODO: delete this rule when... *)
 and skip = parse
 | '(' { incr num_parens; skip lexbuf }
-| ')' { if !num_parens = 0 then lexer lexbuf
+| ')' { if !num_parens = 0 then ()
         else (decr num_parens; skip lexbuf) }
 | _ { skip lexbuf }
-
-and skipint = parse
-| '(' { incr num_parens; skipint lexbuf }
-| ')' { if !num_parens = 0 then T_integer 42
-        else (decr num_parens; skipint lexbuf) }
-| _ { skipint lexbuf }
-
-and skipchar = parse
-| '(' { incr num_parens; skipchar lexbuf }
-| ')' { if !num_parens = 0 then T_chr '*'
-        else (decr num_parens; skipchar lexbuf) }
-| _ { skipchar lexbuf }
 
 {
   (*
