@@ -1,0 +1,16 @@
+fun name() : nothing
+  var name : char[64];
+  var a : int;
+
+  fun a(ref n : int; amount : int) : nothing {
+    $ Will add 'amount' to 'n'
+    n <- n + amount;
+  }
+
+{ $name
+  strcpy(name, "Is 'name' bound to the function or the variable?\n");
+  writeString(name);
+  writeString("It is to the function.\n");
+  writeString("Is 'a' bound to the function or the variable?\n");
+  writeString("Error! (Should this be an error or a warning?)\n");
+}

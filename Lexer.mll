@@ -85,7 +85,7 @@ rule lexer = parse
 | "chr(" { skip lexbuf; T_chr '*' }
 | "strlen(" white* (identifier | string) white* ")" { T_integer 42 }
 | "strcmp(" { skip lexbuf; lexer lexbuf }
-| "strcpy(" white* [^ ','] white* (string | identifier) white* ")" { lexer lexbuf }
+| "strcpy(" white* [^ ',']* ',' white* (string | identifier) white* ")" { lexer lexbuf }
 | "strcat(" white* identifier white* ',' white* (identifier | string) white* ')' { lexer lexbuf }
 
 | identifier  { T_identifier (Lexing.lexeme lexbuf) }

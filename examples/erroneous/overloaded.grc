@@ -1,0 +1,20 @@
+fun function_overload() : nothing
+  var a, b : int;
+
+  fun incr(ref x : int) : nothing {
+    x <- x + 1;
+  }
+
+  fun incr(ref x : int; step : int) : nothing {
+    x <- x + step;
+  }
+
+{ $function_overload
+  a <- 0;
+  b <- 10;
+
+  while a < b do {
+    incr(b);
+    incr(a, 2);
+  }
+}

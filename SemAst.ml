@@ -79,7 +79,7 @@ and sem_header isPartOfAFuncDef = function
             match (getV resultLookUp).kind with
             | ENTRY_function ef -> ef
             | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
-            (* A function and a variable share the same name. *)
+            (* A function and a variable/parameter share the same name. *)
           in
           if Types.debugMode then (
             Printf.printf "Parameter list from ST:\n\t[ ";
@@ -93,6 +93,7 @@ and sem_header isPartOfAFuncDef = function
                      "byRef"))
               functionEntry.parameters_list;
             Printf.printf "]\n");
+          let returnTypeFromHeader = Types.(T_func (t_type_of_retType rt)) in
           let paramListFromHeader : (int * Types.t_type * bool) list =
             let rec helper : fparDef list -> (int * Types.t_type * bool) list =
               function
@@ -125,10 +126,15 @@ and sem_header isPartOfAFuncDef = function
             resultList
           in
           let matchingNumOfParams =
-            let equal_lengths x y = List.length x = List.length y in
-            equal_lengths functionEntry.parameters_list paramListFromHeader
+            let paramListLengthHeader =
+              let rec f accum = function
+                | [] -> accum
+                | (n, _, _) :: tail -> f (accum + n) tail
+              in
+              f 0 paramListFromHeader
+            in
+            List.length functionEntry.parameters_list = paramListLengthHeader
           in
-          let returnTypeFromHeader = Types.(T_func (t_type_of_retType rt)) in
           let matchingParamTypes =
             let lists_are_equal paramListEntry paramListHeader =
               let elems_are_equal x y =
@@ -162,19 +168,19 @@ and sem_header isPartOfAFuncDef = function
               ident;
             failwith "Function and variable share the same name"
         | Overloaded_functions ->
-            Printf.eprintf "Error: Function %s is overloaded.\n" ident;
+            Printf.eprintf "Error: Function '%s' is overloaded.\n" ident;
             failwith "Function overload"
         | Redifined_function ->
-            Printf.eprintf "Error: Function %s is defined twice.\n" ident;
+            Printf.eprintf "Error: Function '%s' is defined twice.\n" ident;
             failwith "Redefinition of function"
         | Expected_type_not_returned ->
             Printf.eprintf
-              "Error: Return type of function %s differs between declarations"
+              "Error: Return type of function '%s' differs between declarations\n"
               ident;
             failwith "Function's return type differs between declarations"
         | Non_matching_parameter_types ->
             Printf.eprintf
-              "Error: Parameter types of function %s differ between \
+              "Error: Parameter types of function '%s' differ between \
                declarations.\n"
               ident;
             failwith "Parameter types differ between declarations")

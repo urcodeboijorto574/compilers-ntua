@@ -1,0 +1,23 @@
+fun return_type_mis_match() : nothing
+  var x : char;
+
+  fun isLowerCase(c : char) : int {
+    if ascii(c) >= ascii('a') and ascii(c) <= ascii('z') then
+      return 1;
+    else
+      return 0;
+  }
+
+  fun isLowerCase(c : char) : nothing {
+    writeChar('\''); writeChar(c); writeChar('\'');
+    if ascii(c) >= ascii('a') and ascii(c) <= ascii('z') then
+      writeString(" is a lower case letter.\n");
+    else
+      writeString(" is an upper case letter.\n");
+  }
+
+{ $ return_type_mis_match
+  x <- 'L';
+  isLowerCase(x);
+  writeString("Unfortunately, we will never know.\n");
+}
