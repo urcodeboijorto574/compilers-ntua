@@ -5,7 +5,7 @@ type param_passing =
 and scope = {
   name : string;
   parent : scope option;
-  mutable depth : int;
+  depth : int;
   mutable scope_entries : entry list;
 }
 
@@ -74,10 +74,10 @@ val enter_parameter : string -> Types.t_type -> bool -> unit
     function, [pL] is a list of type [(int * Types.t_type * param_passing) list]
     that contains information about the parameters and [st] is of type
     [entry_func_state] and is [DECLARED] if the entry of the function originated
-    from a declaration and [DEFINED] if it originated from a definition. is .
-    Each element of the [pL] is a tuple with 3 fields. The first field signifies
-    the number of parameters in each parameter definition, the second the type,
-    and the third the kind of parameter passing. *)
+    from a declaration and [DEFINED] if it originated from a definition. Each
+    element of the [pL] is a tuple with 3 fields. The first field signifies the
+    number of parameters in each parameter definition, the second the type, and
+    the third the kind of parameter passing. *)
 val enter_function :
   string ->
   (int * Types.t_type * param_passing) list ->

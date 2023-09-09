@@ -5,6 +5,7 @@ open Symbol
     program is currently analysed and [false] if not. *)
 let isMainProgram = ref true
 
+(* Exceptions used by sem_header *)
 exception Shared_name_func_var
 exception Overloaded_functions
 exception Redifined_function

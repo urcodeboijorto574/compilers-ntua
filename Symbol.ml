@@ -5,7 +5,7 @@ type param_passing =
 and scope = {
   name : string;
   parent : scope option;
-  mutable depth : int;
+  depth : int;
   mutable scope_entries : entry list;
 }
 
