@@ -138,9 +138,9 @@ let look_up_entry (id : string) =
       !symbolTable;
     if not !printedSmth then Printf.printf "\t(nothing)\n"
   in
-  if Types.debugMode then
+  if Types.debugMode then (
     Printf.printf "Looking for name '%s':\n" id;
-  if Types.debugMode then print_hashtable ();
+    print_hashtable ());
   let resultEntryList =
     List.filter
       (fun e -> e.scope.depth <= !current_scope.depth)

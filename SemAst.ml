@@ -103,26 +103,23 @@ and sem_header isPartOfAFuncDef = function
                   (List.length il, paramType, r) :: helper tail
             in
             let resultList = helper fpdl in
-            begin
+            if Types.debugMode then (
               (* DEBUG *)
-              if Types.debugMode then
-                Printf.printf "Parameter list from this header:\n\t[ ";
+              Printf.printf "Parameter list from this header:\n\t[ ";
               List.iter
                 begin
                   let rec print_elem = function
                     | 0, t, r -> ()
                     | n, t, r ->
-                        if Types.debugMode then
-                          Printf.printf "{ type('%s'), pass('%s') } "
-                            (Types.string_of_t_type t)
-                            (if r then "byRef" else "byVal");
+                        Printf.printf "{ type('%s'), pass('%s') } "
+                          (Types.string_of_t_type t)
+                          (if r then "byRef" else "byVal");
                         print_elem (n - 1, t, r)
                   in
                   print_elem
                 end
                 resultList;
-              if Types.debugMode then Printf.printf "]\n"
-            end;
+              Printf.printf "]\n");
             resultList
           in
           let matchingNumOfParams =
@@ -340,10 +337,9 @@ and sem_lvalue = function
           Printf.eprintf "Error: Undefined variable %s is being used.\n" id;
           failwith "Undefined variable"
       in
-      if Types.debugMode then
+      if Types.debugMode then (
         Printf.printf "Entry for %s found. Information:\n" id;
-      if Types.debugMode then
-        Printf.printf "\tid: %s, scope: %s" id entryFound.scope.name;
+        Printf.printf "\tid: %s, scope: %s" id entryFound.scope.name);
       let entryType =
         match entryFound.kind with
         | ENTRY_variable ev -> ev.variable_type
@@ -385,12 +381,11 @@ and sem_expr = function
   | E_const_char cc -> Types.T_char
   | E_lvalue lv ->
       let lvalue_type = sem_lvalue lv in
-      begin
+      if Types.debugMode then begin
         match lv with
         | L_comp _ ->
-            if Types.debugMode then
-              Printf.printf "Composite l-value is of type '%s'"
-                (Types.string_of_t_type lvalue_type)
+            Printf.printf "Composite l-value is of type '%s'"
+              (Types.string_of_t_type lvalue_type)
         | _ -> ()
       end;
       lvalue_type
@@ -505,15 +500,13 @@ and sem_funcCall = function
         f el paramByRefList
       end;
       let bool_of_unit_func f x y =
-        if Types.debugMode then
+        if Types.debugMode then (
           Printf.printf
             "... checking whether the arguments of funcCall %s are indeed the \
              declared types\n"
             ident;
-        if Types.debugMode then
           Printf.printf "Got expression of type %s\n" (Types.string_of_t_type x);
-        if Types.debugMode then
-          Printf.printf "Expected type %s\n" (Types.string_of_t_type y);
+          Printf.printf "Expected type %s\n" (Types.string_of_t_type y));
         f x y;
         true
       in

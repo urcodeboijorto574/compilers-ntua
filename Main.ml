@@ -5,7 +5,9 @@ let main =
     if Types.debugMode then (
       Printf.printf "Syntactic analysis:\n";
       PrintAst.print_on asts;
-      Printf.printf "\nSuccessful parsing.\n";
+      Printf.printf "\n");
+    Printf.printf "Successful parsing.\n";
+    if Types.debugMode then (
       Printf.printf "\n";
       Printf.printf "Semantic analysis:\n");
     SemAst.sem_on asts;
