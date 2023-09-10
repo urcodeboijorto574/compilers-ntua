@@ -5,12 +5,15 @@ open Symbol
     program is currently analysed and [false] if not. *)
 let isMainProgram = ref true
 
-(* Exceptions used by sem_header *)
+(* Exceptions used by sem_header and sem_funcCall *)
 exception Shared_name_func_var
 exception Overloaded_functions
 exception Redifined_function
 exception Expected_type_not_returned
 exception Non_matching_parameter_types
+exception Unexpected_number_of_parameters
+exception Type_error
+exception Passing_error
 
 (** [sem_funcDef (fd : Ast.funcDef)] semantically analyses the function
     definition [fd]. After semantically analysing the header, local definitions
@@ -435,93 +438,73 @@ and sem_cond = function
     [fc]. Additionally, it checks if the types of its arguments match the
     expected ones defined in the function's header. Returns [Types.t_type]. *)
 and sem_funcCall = function
-  | { id = ident; expr_list = el } ->
-      let entryFound =
-        try look_up_entry ident
-        with Not_found ->
+  | { id = ident; expr_list = el } -> (
+      try
+        let functionEntry =
+          match (look_up_entry ident).kind with
+          | ENTRY_function ef -> ef
+          | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
+        in
+        if List.length functionEntry.parameters_list <> List.length el then
+          raise Unexpected_number_of_parameters;
+
+        let exprTypesListInFuncCall = List.map sem_expr el in
+        let paramTypesListFromST =
+          let rec get_entry_types_list = function
+            | [] -> []
+            | { parameter_type = pt; _ } :: tl -> pt :: get_entry_types_list tl
+          in
+          get_entry_types_list functionEntry.parameters_list
+        in
+        let typeListsAreEqual =
+          let bool_of_unit_func f x y =
+            f x y;
+            true
+          in
+          List.for_all2
+            (bool_of_unit_func Types.equal_type)
+            exprTypesListInFuncCall paramTypesListFromST
+        in
+        if not typeListsAreEqual then raise Type_error;
+
+        let exprIsLValueList =
+          let rec helper = function
+            | E_lvalue _ -> true
+            | E_expr_parenthesized expr -> helper expr
+            | _ -> false
+          in
+          List.map helper el
+        in
+        let paramIsByRefListFromST =
+          let get_is_ref_of_param_entry pe = pe.passing = Symbol.BY_REFERENCE in
+          List.map get_is_ref_of_param_entry functionEntry.parameters_list
+        in
+        let byRefListsAreEqual =
+          List.for_all2 ( = ) exprIsLValueList paramIsByRefListFromST
+        in
+        if not byRefListsAreEqual then raise Passing_error;
+        functionEntry.return_type
+      with
+      | Not_found ->
           Printf.eprintf "Error: Function %s is called, but never declared\n"
             ident;
           failwith "Undeclared function called"
-      in
-      (* [exprTypesList] is a list of [Types.t_type] and the nth element
-         is the type of the nth argument of the function call *)
-      let exprTypesList = List.map sem_expr el in
-      (* [paramTypesList] is a list of [Types.t_type] and the nth element
-         is the type of the nth parameter of the function *)
-      let paramTypesList =
-        match entryFound.kind with
-        | ENTRY_function ef ->
-            let rec getEntryTypesList = function
-              | [] -> []
-              | { parameter_type = pt; _ } :: t -> pt :: getEntryTypesList t
-            in
-            getEntryTypesList ef.parameters_list
-        | ENTRY_variable _ | ENTRY_parameter _ -> assert false
-      in
-      (* [paramByRefList] is a list of [bool] and the nth element is [true] if
-         the nth parameter of the function is passed by reference, and [false]
-         otherwise. *)
-      let paramByRefList =
-        match entryFound.kind with
-        | ENTRY_function ef ->
-            let rec getRefList = function
-              | [] -> []
-              | { passing = p; _ } :: t ->
-                  (p = Symbol.BY_REFERENCE) :: getRefList t
-            in
-            getRefList ef.parameters_list
-        | ENTRY_variable _ | ENTRY_parameter _ -> assert false
-      in
-      if List.length exprTypesList <> List.length paramTypesList then (
-        Printf.eprintf
-          "Error: Function called without the expected number of parameters.\n";
-        failwith "Unexpected number of parameters in function call");
-      begin
-        (* [f] checks if the nth expression of the [expressionList] is an
-           l-value if the nth element of the [byRefList] is [true].
-           Returns [unit] if all checks pass. *)
-        let rec f expressionList byRefList =
-          match (expressionList, byRefList) with
-          | e :: exprTail, r :: refTail ->
-              if r then (
-                match e with
-                | E_lvalue _ -> ()
-                | E_const_int _ | E_const_char _ | E_func_call _
-                 |E_sgn_expr _ | E_op_expr_expr _ | E_expr_parenthesized _ ->
-                    Printf.eprintf
-                      "Error: Expression passed by reference isn't an l-value.\n";
-                    failwith "Parameter passed by reference must be an l-value")
-              else
-                f exprTail refTail
-          | [], [] -> ()
-          | _ ->
-              failwith "Unexpected number of parameters given in function call"
-        in
-        f el paramByRefList
-      end;
-      let bool_of_unit_func f x y =
-        if Types.debugMode then (
-          Printf.printf
-            "... checking whether the arguments of funcCall %s are indeed the \
-             declared types\n"
-            ident;
-          Printf.printf "Got expression of type %s\n" (Types.string_of_t_type x);
-          Printf.printf "Expected type %s\n" (Types.string_of_t_type y));
-        f x y;
-        true
-      in
-      if
-        List.equal
-          (bool_of_unit_func Types.equal_type)
-          exprTypesList paramTypesList
-      then
-        match entryFound.kind with
-        | ENTRY_function ef -> ef.return_type
-        | ENTRY_variable _ | ENTRY_parameter _ -> assert false
-      else (
-        Printf.eprintf "Error: Arguments' types of function %s don't match"
-          ident;
-        failwith "The arguments' types don't match")
+      | Shared_name_func_var ->
+          Printf.eprintf
+            "Error: Name '%s' is shared with a function and a variable.\n" ident;
+          failwith "Function and variable share the same name"
+      | Unexpected_number_of_parameters ->
+          Printf.eprintf
+            "Error: Function called without the expected number of parameters.\n";
+          failwith "Unexpected number of parameters in function call"
+      | Type_error ->
+          Printf.eprintf
+            "Error: Arguments' types of function '%s' don't match.\n" ident;
+          failwith "The arguments' types don't match"
+      | Passing_error ->
+          Printf.eprintf
+            "Error: Expression passed by reference isn't an l-value.\n";
+          failwith "Parameter passed by reference must be an l-value")
 
 (** [sem_on (ast : Ast.funcDef)] semantically analyses the root of the ast [ast]
     (produced by the parser). It also initializes the SymbolTable. Returns
