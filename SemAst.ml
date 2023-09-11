@@ -369,8 +369,6 @@ and sem_lvalue = function
                   Printf.eprintf "Error: Segmentation fault.\n";
                   failwith "Segmentation fault")
           end;
-          if Types.debugMode then
-            Printf.printf "<<%s>> type\n" (Types.string_of_t_type t);
           t
       | _ ->
           Printf.eprintf
@@ -387,7 +385,7 @@ and sem_expr = function
       if Types.debugMode then begin
         match lv with
         | L_comp _ ->
-            Printf.printf "Composite l-value is of type '%s'"
+            Printf.printf "Composite l-value is of type '%s'\n"
               (Types.string_of_t_type lvalue_type)
         | _ -> ()
       end;
@@ -468,19 +466,20 @@ and sem_funcCall = function
         if not typeListsAreEqual then raise Type_error;
 
         let exprIsLValueList =
-          let rec helper = function
+          let rec is_lvalue_of_expr = function
             | E_lvalue _ -> true
-            | E_expr_parenthesized expr -> helper expr
+            | E_expr_parenthesized expr -> is_lvalue_of_expr expr
             | _ -> false
           in
-          List.map helper el
+          List.map is_lvalue_of_expr el
         in
         let paramIsByRefListFromST =
           let get_is_ref_of_param_entry pe = pe.passing = Symbol.BY_REFERENCE in
           List.map get_is_ref_of_param_entry functionEntry.parameters_list
         in
         let byRefListsAreEqual =
-          List.for_all2 ( = ) exprIsLValueList paramIsByRefListFromST
+          let helper eLV pBR = eLV || not pBR in
+          List.equal helper exprIsLValueList paramIsByRefListFromST
         in
         if not byRefListsAreEqual then raise Passing_error;
         functionEntry.return_type
