@@ -20,10 +20,10 @@ val string_of_t_type : t_type -> string
     array. Returns [Types.t_type]. *)
 val construct_array_type : int list -> t_type -> t_type
 
-(** [equal_type] takes two arguments of type [t_type] and checks if they are the
-    same. If they are the same, unit is returned, otherwise an exception is
+(** [equal_types] takes two arguments of type [t_type] and checks if they are
+    the same. If they are the same, unit is returned, otherwise an exception is
     thrown. *)
-val equal_type : t_type -> t_type -> unit
+val equal_types : t_type -> t_type -> unit
 
 (** [t_type_of_dataType dt] takes an object [dt] of type [Ast.dataType] and
     returns the corresponding type. Returns [Types.t_type]. *)

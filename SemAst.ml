@@ -270,7 +270,7 @@ and sem_stmt = function
             Printf.printf
               "... checking the types of an lvalue and an expression \
                (assignment)\n";
-          Types.equal_type t (sem_expr e);
+          Types.equal_types t (sem_expr e);
           None)
   | S_block b -> sem_block b
   | S_func_call fc -> (
@@ -358,7 +358,7 @@ and sem_lvalue = function
         Printf.printf
           "... checking the type of the content inside the brackets (position \
            in array must be an integer)\n";
-      Types.(equal_type T_int (sem_expr e));
+      Types.(equal_types T_int (sem_expr e));
       match sem_lvalue lv with
       | Types.T_array (t, n) ->
           begin
@@ -406,15 +406,15 @@ and sem_expr = function
   | E_sgn_expr (s, e) ->
       if Types.debugMode then
         Printf.printf "... checking a signed expression (must be int)\n";
-      Types.equal_type Types.T_int (sem_expr e);
+      Types.equal_types Types.T_int (sem_expr e);
       Types.T_int
   | E_op_expr_expr (e1, ao, e2) ->
       if Types.debugMode then
         Printf.printf
           "... checking whether the arguments of an arithmOperator are of type \
            int\n";
-      Types.equal_type Types.T_int (sem_expr e1);
-      Types.equal_type Types.T_int (sem_expr e2);
+      Types.equal_types Types.T_int (sem_expr e1);
+      Types.equal_types Types.T_int (sem_expr e2);
       Types.T_int
   | E_expr_parenthesized e -> sem_expr e
 
@@ -431,7 +431,7 @@ and sem_cond = function
           "... checking whether the arguments of a compOperator are of the \
            same type\n";
       let typ1, typ2 = (sem_expr e1, sem_expr e2) in
-      Types.equal_type typ1 typ2
+      Types.equal_types typ1 typ2
   | C_cond_parenthesized c -> sem_cond c
 
 (** [sem_funcCall (fc : Ast.funcCall)] returns the return type of function call
@@ -462,7 +462,7 @@ and sem_funcCall = function
             true
           in
           List.for_all2
-            (bool_of_unit_func Types.equal_type)
+            (bool_of_unit_func Types.equal_types)
             exprTypesListInFuncCall paramTypesListFromST
         in
         if not typeListsAreEqual then raise Type_error;

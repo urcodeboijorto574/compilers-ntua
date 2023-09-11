@@ -28,20 +28,14 @@ let construct_array_type dimList endType =
   in
   construct_array_type_helper 0 (List.length dimList) dimList endType
 
-let rec equal_type t1 t2 =
-  match (t1, t2) with
-  | T_array (t1', _), T_array (t2', _) | T_func t1', T_func t2' ->
-      equal_type t1' t2'
-  | _ ->
-      let print_types () =
-        Printf.printf "%s, %s -> " (string_of_t_type t1) (string_of_t_type t2)
-      in
-      if debugMode then print_types ();
-      if t1 <> t2 then (
-        Printf.eprintf "Error: Type mismatch!\n";
-        failwith "Type error")
-      else if debugMode then
-        Printf.printf "Same type!\n"
+let rec equal_types t1 t2 =
+  if debugMode then
+    Printf.printf "%s, %s -> " (string_of_t_type t1) (string_of_t_type t2);
+  if t1 <> t2 then (
+    Printf.eprintf "Error: Type mismatch!\n";
+    failwith "Type error")
+  else if debugMode then
+    Printf.printf "Same type!\n"
 
 let t_type_of_dataType = function
   | Ast.ConstInt -> T_int
