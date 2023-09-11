@@ -5,7 +5,7 @@ fun param_type_mis_match() : nothing
   fun compare(x, y : char) : int;
 
   fun notCompare(x, y : int) : nothing {
-    writeString("This function won't compare :).\n");
+    writeString("This function won\'t compare :).\n");
   }
 
   fun compare(x, y : int) : int {

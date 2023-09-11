@@ -8,9 +8,9 @@ fun name() : nothing
   }
 
 { $name
-  strcpy(name, "Is 'name' bound to the function or the variable?\n");
+  strcpy(name, "Is \'name\' bound to the function or the variable?\n");
   writeString(name);
   writeString("It is to the function.\n");
-  writeString("Is 'a' bound to the function or the variable?\n");
+  writeString("Is \'a\' bound to the function or the variable?\n");
   writeString("Error! (Should this be an error or a warning?)\n");
 }
