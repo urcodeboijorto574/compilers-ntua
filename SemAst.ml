@@ -30,7 +30,9 @@ let rec sem_funcDef = function
       in
       if expectedReturnType <> typeReturnedInBlock then (
         Printf.eprintf
-          "Error: In function '%s': Expected type %s but got %s instead.\n" h.id
+          "\027[31mError\027[0m: In function '%s': Expected type %s but got %s \
+           instead.\n"
+          h.id
           (Types.string_of_t_type expectedReturnType)
           (Types.string_of_t_type typeReturnedInBlock);
         failwith "Return statement doesn't return the expected type");
@@ -46,10 +48,12 @@ let rec sem_funcDef = function
 and sem_header isPartOfAFuncDef = function
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } -> (
       if !isMainProgram && rt <> Nothing then (
-        Printf.eprintf "Error: Main function must return 'nothing' type\n";
+        Printf.eprintf
+          "\027[31mError\027[0m: Main function must return 'nothing' type\n";
         failwith "Main function should return nothing")
       else if !isMainProgram && fpdl <> [] then (
-        Printf.eprintf "Error: Main function shouldn't have parameters\n";
+        Printf.eprintf
+          "\027[31mError\027[0m: Main function shouldn't have parameters\n";
         failwith "Main function shouldn't have parameters");
 
       let add_params_to_scope () =
@@ -126,14 +130,14 @@ and sem_header isPartOfAFuncDef = function
             resultList
           in
           let matchingNumOfParams =
-            let paramListLengthHeader =
+            let lengthOfParamListHeader =
               let rec f accum = function
                 | [] -> accum
                 | (n, _, _) :: tail -> f (accum + n) tail
               in
               f 0 paramListFromHeader
             in
-            List.length functionEntry.parameters_list = paramListLengthHeader
+            List.length functionEntry.parameters_list = lengthOfParamListHeader
           in
           let matchingParamTypes =
             let lists_are_equal paramListEntry paramListHeader =
@@ -164,24 +168,28 @@ and sem_header isPartOfAFuncDef = function
         with
         | Shared_name_func_var ->
             Printf.eprintf
-              "Error: Name '%s' is shared with a function and a variable.\n"
+              "\027[31mError\027[0m: Name '%s' is shared with a function and a \
+               variable.\n"
               ident;
             failwith "Function and variable share the same name"
         | Overloaded_functions ->
-            Printf.eprintf "Error: Function '%s' is overloaded.\n" ident;
+            Printf.eprintf
+              "\027[31mError\027[0m: Function '%s' is overloaded.\n" ident;
             failwith "Function overload"
         | Redifined_function ->
-            Printf.eprintf "Error: Function '%s' is defined twice.\n" ident;
+            Printf.eprintf
+              "\027[31mError\027[0m: Function '%s' is defined twice.\n" ident;
             failwith "Redefinition of function"
         | Expected_type_not_returned ->
             Printf.eprintf
-              "Error: Return type of function '%s' differs between declarations\n"
+              "\027[31mError\027[0m: Return type of function '%s' differs \
+               between declarations\n"
               ident;
             failwith "Function's return type differs between declarations"
         | Non_matching_parameter_types ->
             Printf.eprintf
-              "Error: Parameter types of function '%s' differ between \
-               declarations.\n"
+              "\027[31mError\027[0m: Parameter types of function '%s' differ \
+               between declarations.\n"
               ident;
             failwith "Parameter types differ between declarations")
 
@@ -201,7 +209,8 @@ and sem_fparDef = function
       let passedByValue = not r in
       if paramIsArray && passedByValue then (
         Printf.eprintf
-          "Error: arrrays should always be passed as parameters by reference.\n";
+          "\027[31mError\027[0m: arrrays should always be passed as parameters \
+           by reference.\n";
         failwith "Array passed as a parameter by value");
       ( List.length il,
         Types.t_type_of_fparType fpt,
@@ -259,11 +268,13 @@ and sem_stmt = function
       match sem_lvalue lv with
       | Types.T_array _ ->
           Printf.eprintf
-            "Error: Assignment to an l-value of type array is not possible.\n";
+            "\027[31mError\027[0m: Assignment to an l-value of type array is \
+             not possible.\n";
           failwith "Assignment to array"
       | Types.T_func _ ->
           Printf.eprintf
-            "Error: Assignment to a function call is not possible.\n";
+            "\027[31mError\027[0m: Assignment to a function call is not \
+             possible.\n";
           failwith "Assignment to function"
       | t ->
           if Types.debugMode then
@@ -313,8 +324,8 @@ and sem_stmt = function
               type_of_s2)
         | None ->
             Printf.eprintf
-              "Error: In an if-then-else statement two different types are \
-               returned.\n";
+              "\027[31mError\027[0m: In an if-then-else statement two \
+               different types are returned.\n";
             failwith "Multiple types returned in if-then-else")
   | S_while (c, s) -> (
       sem_cond c;
@@ -337,7 +348,8 @@ and sem_lvalue = function
       let entryFound =
         try look_up_entry id
         with Not_found ->
-          Printf.eprintf "Error: Undefined variable %s is being used.\n" id;
+          Printf.eprintf
+            "\027[31mError\027[0m: Undefined variable %s is being used.\n" id;
           failwith "Undefined variable"
       in
       if Types.debugMode then (
@@ -366,13 +378,14 @@ and sem_lvalue = function
             | None -> ()
             | Some index ->
                 if index < 0 || index >= n then (
-                  Printf.eprintf "Error: Segmentation fault.\n";
+                  Printf.eprintf "\027[31mError\027[0m: Segmentation fault.\n";
                   failwith "Segmentation fault")
           end;
           t
       | _ ->
           Printf.eprintf
-            "Error: Iteration cannot happen in non-array type of variable.\n";
+            "\027[31mError\027[0m: Iteration cannot happen in non-array type \
+             of variable.\n";
           failwith "Iteration on non-array type of variable")
 
 (** [sem_expr (e : Ast.expr)] returns the type of the expression [e]. Returns
@@ -395,8 +408,8 @@ and sem_expr = function
       match sem_funcCall fc with
       | T_func T_none ->
           Printf.eprintf
-            "Error: Function %s returns nothing and can't be used as an \
-             expression.\n"
+            "\027[31mError\027[0m: Function %s returns nothing and can't be \
+             used as an expression.\n"
             fc.id;
           failwith "A function of type nothing is being used as an expression"
       | T_func t -> t
@@ -485,24 +498,31 @@ and sem_funcCall = function
         functionEntry.return_type
       with
       | Not_found ->
-          Printf.eprintf "Error: Function %s is called, but never declared\n"
+          Printf.eprintf
+            "\027[31mError\027[0m: Function %s is called, but never declared\n"
             ident;
           failwith "Undeclared function called"
       | Shared_name_func_var ->
           Printf.eprintf
-            "Error: Name '%s' is shared with a function and a variable.\n" ident;
+            "\027[31mError\027[0m: Name '%s' is shared with a function and a \
+             variable.\n"
+            ident;
           failwith "Function and variable share the same name"
       | Unexpected_number_of_parameters ->
           Printf.eprintf
-            "Error: Function called without the expected number of parameters.\n";
+            "\027[31mError\027[0m: Function called without the expected number \
+             of parameters.\n";
           failwith "Unexpected number of parameters in function call"
       | Type_error ->
           Printf.eprintf
-            "Error: Arguments' types of function '%s' don't match.\n" ident;
+            "\027[31mError\027[0m: Arguments' types of function '%s' don't \
+             match.\n"
+            ident;
           failwith "The arguments' types don't match"
       | Passing_error ->
           Printf.eprintf
-            "Error: Expression passed by reference isn't an l-value.\n";
+            "\027[31mError\027[0m: Expression passed by reference isn't an \
+             l-value.\n";
           failwith "Parameter passed by reference must be an l-value")
 
 (** [sem_on (ast : Ast.funcDef)] semantically analyses the root of the ast [ast]

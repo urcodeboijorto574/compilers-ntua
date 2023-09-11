@@ -11,7 +11,7 @@ let main =
       Printf.printf "\n";
       Printf.printf "Semantic analysis:\n");
     SemAst.sem_on asts;
-    Printf.printf "Semantically correct.\n";
+    Printf.printf "\027[32mSemantically correct.\027[0m\n";
     exit 0
   with Parsing.Parse_error ->
     Printf.eprintf "Syntax error\n";
