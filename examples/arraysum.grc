@@ -73,7 +73,7 @@ fun main() : nothing
   writeString("Initializing array.\n");
   initializeArray(arr);
 
-  writeString("Calculating the sum of the array using the 'array1DSum' function.\n");
+  writeString("Calculating the sum of the array using the \'array1DSum\' function.\n");
 
   i <- 0;
   j <- 0;
@@ -91,7 +91,7 @@ fun main() : nothing
   writeString(".\n");
 
 
-  writeString("Calculating the sum of the array using the 'array2DSum' function.\n");
+  writeString("Calculating the sum of the array using the \'array2DSum\' function.\n");
 
   i <- 0;
   sum[1] <- 0;

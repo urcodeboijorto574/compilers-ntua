@@ -48,4 +48,14 @@ update: clean format depend grace$(EXE)
 	make clean
 
 test:
-	./grace < examples/evenodd.grc
+	echo "arrays.grc:" ; ./grace < examples/arrays.grc ; echo "" ; \
+	echo "arraysum.grc" ; ./grace < examples/arraysum.grc ; echo "" ; \
+	echo "bsort.grc" ; ./grace < examples/bsort.grc ; echo "" ; \
+	echo "checkpairs.grc" ; ./grace < examples/checkpairs.grc ; echo "" ; \
+	echo "evenodd.grc" ; ./grace < examples/evenodd.grc ; echo "" ; \
+	echo "hanoi.grc" ; ./grace < examples/hanoi.grc ; echo "" ; \
+	echo "helloworld.grc" ; ./grace < examples/helloworld.grc ; echo "" ; \
+	echo "mergesort.grc" ; ./grace < examples/mergesort.grc ; echo "" ; \
+	echo "primes.grc" ; ./grace < examples/primes.grc ; echo "" ; \
+	echo "shortcircuit.grc" ; ./grace < examples/shortcircuit.grc ; echo "" ; \
+	echo "sierpinski.grc" ; ./grace < examples/sierpinski.grc
