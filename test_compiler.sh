@@ -24,6 +24,7 @@ done
 echo "> Testing erroneous programs:"
 echo ""
 
+# Loop through all erroneous test files in the directory
 for test_file in "$TEST_ERR_DIR"/*.grc; do
 	if [ -f "$test_file" ]; then
 		echo "Testing $test_file..."
@@ -35,4 +36,3 @@ for test_file in "$TEST_ERR_DIR"/*.grc; do
 		echo ""
 	fi
 done
-

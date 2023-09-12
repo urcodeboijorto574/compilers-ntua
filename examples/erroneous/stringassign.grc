@@ -1,0 +1,12 @@
+fun main () : nothing
+    var str : char[20];
+
+{ $ main
+    str <- "Hello world!\n";
+    $ This should be done like this:
+    $ strcpy(str, "Hello world!\n");
+
+    writeString(str);
+
+    return;
+}

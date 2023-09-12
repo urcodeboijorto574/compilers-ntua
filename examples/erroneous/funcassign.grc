@@ -1,0 +1,13 @@
+fun main() : nothing
+  var n : int;
+
+  fun storage() : nothing
+  {
+    writeString("To be honest, I can\'t store a value...\n");
+  }
+
+{ $ main
+  n <- 4;
+  storage <- n;
+  writeString("Hopefully this got stored...\n");
+}
