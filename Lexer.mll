@@ -83,9 +83,11 @@ rule lexer = parse
 | "readString(" [^ ',']* ',' identifier white* ")" { lexer lexbuf }
 | "ascii(" white* (identifier | character) white* ")" { T_integer 42 }
 | "chr(" { skip lexbuf; T_chr '*' }
-| "strlen(" white* (identifier | string) white* ")" { T_integer 42 }
-| "strcmp(" { skip lexbuf; lexer lexbuf }
-| "strcpy(" white* [^ ',']* ',' white* (string | identifier) white* ")" { lexer lexbuf }
+| "strlen(" white* (string as s) white* ")" { T_integer (String.length s) }
+| "strlen(" white* identifier white* ")" { T_integer 42 }
+| "strcmp(" white* (string as s1) white* "," white* (string as s2) white* ")"  { T_integer (String.compare s1 s2) }
+| "strcmp(" white* (identifier | string) white* "," white* (identifier | string) white* ")"  { T_integer 0 }
+| "strcpy(" white* identifier white* ',' white* (identifier | string) white* ")" { lexer lexbuf }
 | "strcat(" white* identifier white* ',' white* (identifier | string) white* ')' { lexer lexbuf }
 
 | identifier  { T_identifier (Lexing.lexeme lexbuf) }
