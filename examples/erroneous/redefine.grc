@@ -1,3 +1,10 @@
+$$
+  In this erroneous grace program a function is defined twice.
+
+  The function 'print' is defined twice having the same header, but different
+  block.
+$$
+
 fun func_redefinition() : nothing
   var msg : char[64];
 
