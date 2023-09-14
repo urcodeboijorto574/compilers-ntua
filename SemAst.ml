@@ -11,7 +11,7 @@ exception Overloaded_functions
 exception Redifined_function
 exception Expected_type_not_returned
 exception Non_matching_parameter_types
-exception Unexpected_number_of_parameters of bool
+exception Unexpected_number_of_parameters
 exception Type_error
 exception Passing_error
 
@@ -457,12 +457,8 @@ and sem_funcCall = function
           | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
         in
 
-        let resultListLengthComparison =
-          List.compare_lengths el functionEntry.parameters_list
-        in
-        if resultListLengthComparison <> 0 then
-          raise
-            (Unexpected_number_of_parameters (resultListLengthComparison > 0));
+        if List.compare_lengths el functionEntry.parameters_list <> 0 then
+          raise Unexpected_number_of_parameters;
 
         let exprTypesListInFuncCall = List.map sem_expr el in
         let paramTypesListFromST =
@@ -503,6 +499,7 @@ and sem_funcCall = function
         functionEntry.return_type
       with
       | Not_found ->
+          (* Raised by look_up_entry *)
           Printf.eprintf
             "\027[31mError\027[0m: Function '%s' is called, but never declared\n"
             ident;
@@ -513,12 +510,18 @@ and sem_funcCall = function
              variable.\n"
             ident;
           failwith "Function and variable share the same name"
-      | Unexpected_number_of_parameters moreExpressions ->
+      | Unexpected_number_of_parameters ->
+          let functionEntry =
+            match (look_up_entry ident).kind with
+            | ENTRY_function ef -> ef
+            | _ -> assert false
+          in
           Printf.eprintf
-            "\027[31mError\027[0m: Function '%s' called with %s parameters \
-             than expected.\n"
+            "\027[31mError\027[0m: Function '%s' expected %d arguments, but \
+             instead got %d.\n"
             ident
-            (if moreExpressions then "more" else "less");
+            (List.length functionEntry.parameters_list)
+            (List.length el);
           failwith "Unexpected number of parameters in function call"
       | Type_error ->
           Printf.eprintf
