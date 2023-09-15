@@ -229,7 +229,7 @@ and sem_fparDef = function
       let passedByValue = not r in
       if paramIsArray && passedByValue then (
         Printf.eprintf
-          "\027[31mError\027[0m: arrrays should always be passed as parameters \
+          "\027[31mError\027[0m: Arrays should always be passed as parameters \
            by reference.\n";
         failwith "Array passed as a parameter by value");
       ( List.length il,
@@ -380,7 +380,10 @@ and sem_lvalue = function
       let entryFoundOption = look_up_entry id in
       if entryFoundOption = None then (
         Printf.eprintf
-          "\027[31mError\027[0m: Undefined variable %s is being used.\n" id;
+          "\027[31mError\027[0m: Undefined variable '%s' is being used in \
+           function '%s'.\n"
+          id
+          Symbol.(!current_scope.name);
         failwith "Undefined variable");
       let entryFound =
         match entryFoundOption with Some e -> e | None -> assert false
@@ -409,10 +412,16 @@ and sem_lvalue = function
       let typeExpr = sem_expr e in
       if not Types.(equal_types T_int typeExpr) then (
         Printf.eprintf
-          "\027[31mError\027[0m: Expected type integer, but instead got %s.\n\
-           Position of array elements must be of integer type.\n"
+          "\027[31mError\027[0m: Expected type integer, but received %s.\n\
+           Index of array elements must be of integer type.\n"
           (Types.string_of_t_type typeExpr);
         failwith "Type error");
+      Types.(equal_types T_int (sem_expr e));
+      let rec get_name_of_lv = function
+        | L_id id -> id
+        | L_string s -> s
+        | L_comp (lvalue, _) -> get_name_of_lv lvalue
+      in
       match sem_lvalue lv with
       | Types.T_array (t, n) ->
           begin
@@ -420,14 +429,18 @@ and sem_lvalue = function
             | None -> ()
             | Some index ->
                 if index < 0 || index >= n then (
-                  Printf.eprintf "\027[31mError\027[0m: Segmentation fault.\n";
+                  Printf.eprintf
+                    "\027[31mError\027[0m: Attempt to access an out of bounds \
+                     element of the array '%s'.\n"
+                    (get_name_of_lv lv);
                   failwith "Segmentation fault")
           end;
           t
       | _ ->
           Printf.eprintf
-            "\027[31mError\027[0m: Iteration cannot happen in non-array type \
-             of variable.\n";
+            "\027[31mError\027[0m: Variable '%s' is either not an array or it \
+             is declared as an array with less dimensions than as used.\n"
+            (get_name_of_lv lv);
           failwith "Iteration on non-array type of variable")
 
 (** [sem_expr (e : Ast.expr)] returns the type of the expression [e]. Returns
@@ -450,7 +463,7 @@ and sem_expr = function
       match sem_funcCall fc with
       | T_func T_none ->
           Printf.eprintf
-            "\027[31mError\027[0m: Function %s returns nothing and can't be \
+            "\027[31mError\027[0m: Function '%s' returns nothing and can't be \
              used as an expression.\n"
             fc.id;
           failwith "A function of type nothing is being used as an expression"
@@ -597,8 +610,8 @@ and sem_funcCall = function
           failwith "The arguments' types don't match"
       | Passing_error ->
           Printf.eprintf
-            "\027[31mError\027[0m: '%s' function call: Expression passed by \
-             reference isn't an l-value.\n"
+            "\027[31mError\027[0m: '%s' function call: Expression that is \
+             passed by reference isn't an l-value.\n"
             ident;
           failwith "r-value passed by reference")
 

@@ -1,3 +1,12 @@
+$$
+  In this erroneous grace program two pairs of a function and a variable have
+  the same name each.
+
+  The variable 'name' is declared inside the main function 'name', as well as
+  the variable and the function with the name 'a'. The error triggered should
+  only happen for the 'a' name.
+$$
+
 fun name() : nothing
   var name : char[64];
   var a : int;
@@ -8,9 +17,13 @@ fun name() : nothing
   }
 
 { $name
-  strcpy(name, "Is \'name\' bound to the function or the variable?\n");
+  strcpy(name, "I am a message stored in the variable \'name\'.");
   writeString(name);
-  writeString("It is to the function.\n");
-  writeString("Is \'a\' bound to the function or the variable?\n");
-  writeString("Error! (Should this be an error or a warning?)\n");
+  writeChar('\n');
+
+  $ Initialization of variable 'a'
+  a <- 0;
+
+  $ Function 'a' is called with arguments the variable 'a' and 17.
+  a(a, 17);
 }

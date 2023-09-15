@@ -1,0 +1,35 @@
+$$
+  In this erroneous grace program a segmentation fault occurs that is obvious.
+
+  The 'letters' array has 26 elements, but it is tried to access the 27th
+  element, causing an out of bounds error. This access is written with a
+  constant variable, so it will certainly happen in every execution.
+$$
+
+fun main() : nothing
+  var i, break : int;
+  var letters : char[26];
+
+{ $ main
+
+  $ Initialize array
+  i <- 0;
+  while i < 26 do {
+    letters[i] <- chr(ascii('a') + i);
+    i <- i + 1;
+  }
+  letters[26] <- '\0';
+
+  $ Print array
+  i <- 0;
+  while i < 26 do {
+    writeChar(letters[i]);
+    if i = 25 then
+      writeChar('\n');
+    else
+      writeChar(' ');
+    i <- i + 1;
+  }
+
+  return;
+} $ main

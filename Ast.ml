@@ -151,6 +151,7 @@ let get_const_cond_value c =
         | Some v -> Some (not v))
     | C_cond_cond (c1, lo, c2) -> begin
         match get_const_cond_value_helper c1 with
+        | None -> None
         | Some v1 ->
             if lo = O_or && v1 then
               Some true
@@ -158,15 +159,6 @@ let get_const_cond_value c =
               Some false
             else
               get_const_cond_value_helper c2
-        | None -> None
-        (* TODO: Clarification needed here:
-           This section should be ignored if the evaluation of the
-           first condition should always happen, whether the second
-           condition is hard-wired or not *)
-        (* match get_const_cond_value_helper c2 with
-           | Some true -> if lo = O_or then Some true else None
-           | Some false -> if lo = O_and then Some false else None
-           | None -> None *)
       end
     | C_expr_expr (e1, co, e2) -> (
         match (get_const_expr_value e1, get_const_expr_value e2) with
