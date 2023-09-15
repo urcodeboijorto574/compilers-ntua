@@ -88,4 +88,4 @@ val enter_function :
 (** [look_up_entry id] searches in the symbolTable an entry with [id] as the
     key. It returns the entry found. If no entry is found, [Not_found] exception
     is thrown. *)
-val look_up_entry : string -> entry
+val look_up_entry : string -> entry option

@@ -141,54 +141,57 @@ let look_up_entry (id : string) =
   if Types.debugMode then (
     Printf.printf "Looking for name '%s':\n" id;
     print_hashtable ());
-  let resultEntryList =
-    List.filter
-      (fun e -> e.scope.depth <= !current_scope.depth)
-      (Hashtbl.find_all !symbolTable id)
-  in
-  if Types.debugMode then
-    print_entries_list
-      {
-        name = "result entries";
-        parent = None;
-        depth = 42;
-        scope_entries = resultEntryList;
-      };
-  let resultEntry =
-    try List.hd resultEntryList
-    with Failure _ ->
-      if Types.debugMode then
-        Printf.printf "Entry %s not found in any scope.\n" id;
-      raise Not_found
-  in
-  if Types.debugMode then
-    Printf.printf "Entry '%s' found in scope '%s'!\n" id resultEntry.scope.name;
-  if
-    let rec compare_scopes s1 s2 =
-      s1.name = s2.name && s1.depth = s2.depth
-      &&
-      match (s1.parent, s2.parent) with
-      | None, None -> true
-      | Some s1', Some s2' -> compare_scopes s1' s2'
-      | _ -> false
+
+  try
+    let resultEntryList =
+      List.filter
+        (fun e -> e.scope.depth <= !current_scope.depth)
+        (Hashtbl.find_all !symbolTable id)
     in
-    compare_scopes resultEntry.scope !current_scope
-    && resultEntry.scope.depth >= !current_scope.depth
-  then
-    let rec get_entry_in_smaller_depth = function
-      | [] -> raise Not_found
-      | entry :: remainingList ->
-          if entry.scope.depth > !current_scope.depth then
-            get_entry_in_smaller_depth remainingList
-          else (
-            (* entry is defined in a parent scope *)
-            if Types.debugMode then print_entries_list entry.scope;
-            entry)
+    if Types.debugMode then
+      print_entries_list
+        {
+          name = "result entries";
+          parent = None;
+          depth = 42;
+          scope_entries = resultEntryList;
+        };
+    let resultEntry =
+      try List.hd resultEntryList
+      with Failure _ ->
+        if Types.debugMode then
+          Printf.printf "Entry '%s' not found in any scope.\n" id;
+        raise Not_found
     in
-    get_entry_in_smaller_depth resultEntryList
-  else (
-    (* entry got found *)
-    if Types.debugMode then (
-      Printf.printf "%s found in " id;
-      print_entries_list resultEntry.scope);
-    resultEntry)
+    if Types.debugMode then
+      Printf.printf "Entry '%s' found in scope '%s'!\n" id
+        resultEntry.scope.name;
+    if
+      let rec equal_scopes s1 s2 : bool =
+        s1.name = s2.name && s1.depth = s2.depth
+        &&
+        match (s1.parent, s2.parent) with
+        | None, None -> true
+        | Some s1', Some s2' -> equal_scopes s1' s2'
+        | _ -> false
+      in
+      equal_scopes resultEntry.scope !current_scope
+    then
+      let rec get_entry_in_smaller_depth = function
+        | [] -> raise Not_found
+        | entry :: remainingList ->
+            if entry.scope.depth > !current_scope.depth then
+              get_entry_in_smaller_depth remainingList
+            else (
+              (* entry is defined in a parent scope *)
+              if Types.debugMode then print_entries_list entry.scope;
+              Some entry)
+      in
+      get_entry_in_smaller_depth resultEntryList
+    else (
+      (* entry got found *)
+      if Types.debugMode then (
+        Printf.printf "%s found in " id;
+        print_entries_list resultEntry.scope);
+      Some resultEntry)
+  with Not_found -> None

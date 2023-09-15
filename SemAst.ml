@@ -72,9 +72,7 @@ and sem_header isPartOfAFuncDef = function
           List.iter add_fparDef fpdl
         end
       in
-      let resultLookUp =
-        try Some (look_up_entry ident) with Not_found -> None
-      in
+      let resultLookUp = look_up_entry ident in
       if resultLookUp = None then (
         enter_function ident (sem_fparDefList fpdl)
           Types.(T_func (t_type_of_retType rt))
@@ -346,12 +344,13 @@ and sem_stmt = function
     [Types.t_type]. *)
 and sem_lvalue = function
   | L_id id ->
+      let entryFoundOption = look_up_entry id in
+      if entryFoundOption = None then (
+        Printf.eprintf
+          "\027[31mError\027[0m: Undefined variable %s is being used.\n" id;
+        failwith "Undefined variable");
       let entryFound =
-        try look_up_entry id
-        with Not_found ->
-          Printf.eprintf
-            "\027[31mError\027[0m: Undefined variable %s is being used.\n" id;
-          failwith "Undefined variable"
+        match entryFoundOption with Some e -> e | None -> assert false
       in
       if Types.debugMode then (
         Printf.printf "Entry for %s found. Information:\n" id;
@@ -451,9 +450,14 @@ and sem_cond = function
     expected ones defined in the function's header. Returns [Types.t_type]. *)
 and sem_funcCall = function
   | { id = ident; expr_list = el } -> (
+      let resultLookUpOption = look_up_entry ident in
       try
+        if resultLookUpOption = None then raise Not_found;
+        let resultLookUp =
+          match resultLookUpOption with Some e -> e | None -> assert false
+        in
         let functionEntry =
-          match (look_up_entry ident).kind with
+          match resultLookUp.kind with
           | ENTRY_function ef -> ef
           | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
         in
@@ -519,7 +523,10 @@ and sem_funcCall = function
           failwith "Function and variable share the same name"
       | Unexpected_number_of_parameters ->
           let functionEntry =
-            match (look_up_entry ident).kind with
+            let resultLookUp =
+              match resultLookUpOption with Some e -> e | None -> assert false
+            in
+            match resultLookUp.kind with
             | ENTRY_function ef -> ef
             | _ -> assert false
           in
