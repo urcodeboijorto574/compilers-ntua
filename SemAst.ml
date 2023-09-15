@@ -12,6 +12,7 @@ exception Redifined_function
 exception Expected_type_not_returned
 exception Non_matching_parameter_types
 exception Unexpected_number_of_parameters
+exception Undefined_function
 exception Type_error
 exception Passing_error
 
@@ -457,6 +458,8 @@ and sem_funcCall = function
           | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
         in
 
+        if functionEntry.state <> Symbol.DEFINED then raise Undefined_function;
+
         if List.compare_lengths el functionEntry.parameters_list <> 0 then
           raise Unexpected_number_of_parameters;
 
@@ -499,11 +502,15 @@ and sem_funcCall = function
         functionEntry.return_type
       with
       | Not_found ->
-          (* Raised by look_up_entry *)
           Printf.eprintf
-            "\027[31mError\027[0m: Function '%s' is called, but never declared\n"
+            "\027[31mError\027[0m: Function '%s' is called, but never declared.\n"
             ident;
           failwith "Undeclared function called"
+      | Undefined_function ->
+          Printf.eprintf
+            "\027[31mError\027[0m: Function '%s' is called, but never defined.\n"
+            ident;
+          failwith "Undefined function called"
       | Shared_name_func_var ->
           Printf.eprintf
             "\027[31mError\027[0m: Name '%s' is shared with a function and a \
