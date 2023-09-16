@@ -48,14 +48,15 @@ let rec sem_funcDef = function
     opened and the function's parameters are inserted in it. Returns [unit]. *)
 and sem_header isPartOfAFuncDef = function
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } -> (
-      if !isMainProgram && rt <> Nothing then (
-        Printf.eprintf
-          "\027[31mError\027[0m: Main function must return 'nothing' type\n";
-        failwith "Main function should return nothing")
-      else if !isMainProgram && fpdl <> [] then (
-        Printf.eprintf
-          "\027[31mError\027[0m: Main function shouldn't have parameters\n";
-        failwith "Main function shouldn't have parameters");
+      if !isMainProgram then
+        if rt <> Nothing then (
+          Printf.eprintf
+            "\027[31mError\027[0m: Main function must return 'nothing' type.\n";
+          failwith "Main function should return nothing"))
+        else if fpdl <> [] then (
+          Printf.eprintf
+            "\027[31mError\027[0m: Main function shouldn't have parameters.\n";
+          failwith "Main function shouldn't have parameters");
 
       let add_params_to_scope () =
         if isPartOfAFuncDef then begin
