@@ -52,7 +52,7 @@ and sem_header isPartOfAFuncDef = function
         if rt <> Nothing then (
           Printf.eprintf
             "\027[31mError\027[0m: Main function must return 'nothing' type.\n";
-          failwith "Main function should return nothing"))
+          failwith "Main function should return nothing")
         else if fpdl <> [] then (
           Printf.eprintf
             "\027[31mError\027[0m: Main function shouldn't have parameters.\n";

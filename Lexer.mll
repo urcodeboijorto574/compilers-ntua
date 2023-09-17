@@ -77,7 +77,7 @@ rule lexer = parse
     must be deleted when the standard library of grace is added. *)
 | "writeString(" white* (string | identifier) white* ")" { lexer lexbuf }
 | "writeInteger(" { skip lexbuf; lexer lexbuf }
-| "writeChar(" white* (character | identifier) white* ")" { lexer lexbuf }
+| "writeChar(" { skip lexbuf; lexer lexbuf }
 | "readInteger()" { T_integer 42 }
 | "readChar()" { T_chr '*' }
 | "readString(" [^ ',']* ',' identifier white* ")" { lexer lexbuf }
