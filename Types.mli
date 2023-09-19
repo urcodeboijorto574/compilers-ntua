@@ -30,7 +30,7 @@ val equal_types : t_type -> t_type -> unit
 val t_type_of_dataType : Ast.dataType -> t_type
 
 (** [t_type_of_retType rt] takes an object [rt] of type [Ast.retType] and
-    returns the corresponding type. Returns [Types.t_type]. *)
+    returns the corresponding [t_type] (encapsulated in [T_func]). *)
 val t_type_of_retType : Ast.retType -> t_type
 
 (** [t_type_of_fparType fpt] takes an object [fpt] of type [Ast.fparType] and

@@ -46,8 +46,8 @@ let t_type_of_dataType = function
   | Ast.ConstChar -> T_char
 
 let t_type_of_retType = function
-  | Ast.RetDataType dt -> t_type_of_dataType dt
-  | Ast.Nothing -> T_none
+  | Ast.RetDataType dt -> T_func (t_type_of_dataType dt)
+  | Ast.Nothing -> T_func T_none
 
 let t_type_of_fparType : Ast.fparType -> t_type = function
   | { data_type = dt; array_dimensions = dimList } ->

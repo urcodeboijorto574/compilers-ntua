@@ -35,7 +35,7 @@ let rec sem_funcDef = function
             funcIdList;
           failwith "Undefined function")
       end;
-      let expectedReturnType = Types.(T_func (t_type_of_retType h.ret_type)) in
+      let expectedReturnType = Types.t_type_of_retType h.ret_type in
       let typeReturnedInBlock =
         Types.T_func (match sem_block b with None -> T_none | Some t -> t)
       in
@@ -87,7 +87,7 @@ and sem_header isPartOfAFuncDef = function
       let resultLookUp = look_up_entry ident in
       if resultLookUp = None then (
         enter_function ident (sem_fparDefList fpdl)
-          Types.(T_func (t_type_of_retType rt))
+          (Types.t_type_of_retType rt)
           Symbol.(if isPartOfAFuncDef = true then DEFINED else DECLARED);
         add_params_to_scope ())
       else
@@ -111,7 +111,7 @@ and sem_header isPartOfAFuncDef = function
                      "byRef"))
               functionEntry.parameters_list;
             Printf.printf "]\n");
-          let returnTypeFromHeader = Types.(T_func (t_type_of_retType rt)) in
+          let returnTypeFromHeader = Types.t_type_of_retType rt in
           let paramListFromHeader : (int * Types.t_type * bool) list =
             let rec helper : fparDef list -> (int * Types.t_type * bool) list =
               function
