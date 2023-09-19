@@ -5,9 +5,6 @@
   let multi_line_string_error_msg () =
     Printf.eprintf "String must close in the same line it starts. Line %d.\n" !num_lines;
     incr num_lines
-
-  (* TODO: delete this variable when... *)
-  let num_parens = ref 0
 }
 
 let digit = ['0'-'9']
@@ -71,25 +68,6 @@ rule lexer = parse
 | "$$"  { multi_comments lexbuf }
 | '$'   { comment lexbuf }
 
-(*  This section should be deleted when these functions can be imlemented.
-    This section's sole purpose is to not impede the semantic analysis.
-    TODO: this section, the 'num_parens' variable and the parsing rule 'skip'
-    must be deleted when the standard library of grace is added. *)
-| "writeString(" white* (string | identifier) white* ")" { lexer lexbuf }
-| "writeInteger(" { skip lexbuf; lexer lexbuf }
-| "writeChar(" { skip lexbuf; lexer lexbuf }
-| "readInteger()" { T_integer 42 }
-| "readChar()" { T_chr '*' }
-| "readString(" [^ ',']* ',' identifier white* ")" { lexer lexbuf }
-| "ascii(" white* (identifier | character) white* ")" { T_integer 42 }
-| "chr(" { skip lexbuf; T_chr '*' }
-| "strlen(" white* (string as s) white* ")" { T_integer (String.length s) }
-| "strlen(" white* identifier white* ")" { T_integer 42 }
-| "strcmp(" white* (string as s1) white* "," white* (string as s2) white* ")"  { T_integer (String.compare s1 s2) }
-| "strcmp(" white* (identifier | string) white* "," white* (identifier | string) white* ")"  { T_integer 0 }
-| "strcpy(" white* identifier white* ',' white* (identifier | string) white* ")" { lexer lexbuf }
-| "strcat(" white* identifier white* ',' white* (identifier | string) white* ')' { lexer lexbuf }
-
 | identifier  { T_identifier (Lexing.lexeme lexbuf) }
 | integer     { T_integer (int_of_string (Lexing.lexeme lexbuf)) }
 
@@ -117,13 +95,6 @@ and strings = parse
 | char_string* '\"' { lexer lexbuf }
 | char_string* '\n' { incr num_lines; strings lexbuf }
 | char_string* eof  { incr num_lines; T_eof}
-
-(* TODO: delete this rule when... *)
-and skip = parse
-| '(' { incr num_parens; skip lexbuf }
-| ')' { if !num_parens = 0 then ()
-        else (decr num_parens; skip lexbuf) }
-| _ { skip lexbuf }
 
 {
   (*

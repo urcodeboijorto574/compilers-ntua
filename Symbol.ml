@@ -110,6 +110,32 @@ let enter_function (id : string)
   in
   enter_entry id kind
 
+let add_standard_library () =
+  let open Types in
+  let add_func_lib name parList typ =
+    let extract_passing (n, t) =
+      ( n,
+        t,
+        match t with
+        | T_array _ -> BY_REFERENCE
+        | T_int | T_char -> BY_VALUE
+        | T_none | T_func _ -> assert false )
+    in
+    enter_function name (List.map extract_passing parList) (T_func typ) DEFINED
+  in
+  add_func_lib "writeInteger" [ (1, T_int) ] T_none;
+  add_func_lib "writeChar" [ (1, T_char) ] T_none;
+  add_func_lib "writeString" [ (1, T_array (T_char, -1)) ] T_none;
+  add_func_lib "readInteger" [] T_int;
+  add_func_lib "readChar" [] T_char;
+  add_func_lib "readString" [ (1, T_int); (1, T_array (T_char, -1)) ] T_none;
+  add_func_lib "ascii" [ (1, T_char) ] T_int;
+  add_func_lib "chr" [ (1, T_int) ] T_char;
+  add_func_lib "strlen" [ (1, T_array (T_char, -1)) ] T_int;
+  add_func_lib "strcmp" [ (2, T_array (T_char, -1)) ] T_int;
+  add_func_lib "strcpy" [ (2, T_array (T_char, -1)) ] T_none;
+  add_func_lib "strcat" [ (2, T_array (T_char, -1)) ] T_none
+
 let look_up_entry (id : string) =
   let print_entries_list (sc : scope) =
     Printf.printf "Scope '%s':\n\t[ " sc.name;

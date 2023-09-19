@@ -17,8 +17,12 @@ exception Passing_error
     expected type is returned. Returns [unit]. *)
 let rec sem_funcDef = function
   | { header = h; local_def_list = l; block = b } ->
+      let isMainProgram = !current_scope.depth = 0 in
+      if isMainProgram then Symbol.add_standard_library ();
+
       sem_header true h;
       sem_localDefList l;
+
       let isMainProgram = !current_scope.depth = 1 in
       if isMainProgram then begin
         let funcIdListOpt = Symbol.get_undefined_functions () in

@@ -85,6 +85,10 @@ val enter_function :
   entry_func_state ->
   unit
 
+(** [add_standard_library] inserts to the symbolTable all the functions of the
+    standard library of Grace. *)
+val add_standard_library : unit -> unit
+
 (** [look_up_entry id] searches in the symbolTable an entry with [id] as the
     key. It returns the entry found. If no entry is found, [Not_found] exception
     is thrown. *)
