@@ -66,7 +66,7 @@ and print_varType varType =
 and print_fparType fparType =
   Printf.printf "FparType(";
   print_dataType fparType.data_type;
-  let f = function 0 -> Printf.printf "[]" | x -> Printf.printf "[%d]" x in
+  let f = function -1 -> Printf.printf "[]" | x -> Printf.printf "[%d]" x in
   List.iter f fparType.array_dimensions;
   Printf.printf ")"
 

@@ -46,7 +46,7 @@ and fparDef = {
 
 and fparType = {
   data_type : dataType;
-  (* [array_dimensions] has 0 as its head when the
+  (* [array_dimensions] has -1 as its head when the
      1st dimension of the array is not of fixed size *)
   array_dimensions : int list;
 }

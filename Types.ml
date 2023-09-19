@@ -31,7 +31,7 @@ let construct_array_type dimList endType =
 let rec equal_types t1 t2 =
   match (t1, t2) with
   | T_array (t1', s1), T_array (t2', s2) ->
-      if s1 = 0 || s2 = 0 then equal_types t1' t2'
+      if s1 = -1 || s2 = -1 then equal_types t1' t2'
   | _ ->
       if debugMode then
         Printf.printf "%s, %s -> " (string_of_t_type t1) (string_of_t_type t2);

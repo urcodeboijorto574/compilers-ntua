@@ -91,7 +91,7 @@ id_list:
 
 fpar_type:
   data_type array_dimensions { newFparType($1, $2) }
-| data_type T_left_sqr T_right_sqr array_dimensions { newFparType($1, 0 :: $4) }
+| data_type T_left_sqr T_right_sqr array_dimensions { newFparType($1, -1 :: $4) }
 
 data_type:
   T_int { ConstInt }

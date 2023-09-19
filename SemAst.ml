@@ -219,6 +219,11 @@ and sem_fparDefList = function
     [int * Types.t_type * Symbol.param_passing]. *)
 and sem_fparDef = function
   | { ref = r; id_list = il; fpar_type = fpt } ->
+      if List.exists (fun n -> n = 0) fpt.array_dimensions then (
+        Printf.eprintf
+          "\027[31mError\027[0m: Array declared to have size a non-positive \
+           number.\n";
+        failwith "Array of zero size");
       let paramIsArray = fpt.array_dimensions <> [] in
       let passedByValue = not r in
       if paramIsArray && passedByValue then (
@@ -249,6 +254,11 @@ and sem_funcDecl = function FuncDecl_Header h -> sem_header false h
     defined in the variable definition [vd]. Returns [unit]. *)
 and sem_varDef = function
   | { id_list = idl; var_type = vt } ->
+      if List.exists (fun n -> n = 0) vt.array_dimensions then (
+        Printf.eprintf
+          "\027[31mError\027[0m: Array declared to have size a non-positive \
+           number.\n";
+        failwith "Array of zero size");
       List.iter (fun i -> enter_variable i (Types.t_type_of_varType vt)) idl
 
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
@@ -379,7 +389,7 @@ and sem_lvalue = function
       if Types.debugMode then
         Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
       entryType
-  | L_string s -> Types.T_array (Types.T_char, 0)
+  | L_string s -> Types.T_array (Types.T_char, -1)
   | L_comp (lv, e) -> (
       if Types.debugMode then
         Printf.printf
