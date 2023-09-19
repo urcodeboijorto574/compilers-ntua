@@ -31,15 +31,11 @@ let construct_array_type dimList endType =
 let rec equal_types t1 t2 =
   match (t1, t2) with
   | T_array (t1', s1), T_array (t2', s2) ->
-      if s1 = -1 || s2 = -1 then equal_types t1' t2'
+      if s1 = -1 || s2 = -1 then true else equal_types t1' t2'
   | _ ->
       if debugMode then
         Printf.printf "%s, %s -> " (string_of_t_type t1) (string_of_t_type t2);
-      if t1 <> t2 then (
-        Printf.eprintf "Error: Type mismatch!\n";
-        failwith "Type error")
-      else if debugMode then
-        Printf.printf "Same type!\n"
+      t1 = t2 || false
 
 let t_type_of_dataType = function
   | Ast.ConstInt -> T_int
