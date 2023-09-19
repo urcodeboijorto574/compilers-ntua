@@ -89,3 +89,8 @@ val enter_function :
     key. It returns the entry found. If no entry is found, [Not_found] exception
     is thrown. *)
 val look_up_entry : string -> entry option
+
+(** [all_functions_defined] returns [None] if no function is declared and not
+    defined or [Some sl] with [sl] being a list of the names of the functions
+    that are not defined. *)
+val all_functions_defined : unit -> string list option

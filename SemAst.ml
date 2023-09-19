@@ -12,7 +12,6 @@ exception Redifined_function
 exception Expected_type_not_returned
 exception Non_matching_parameter_types
 exception Unexpected_number_of_parameters
-exception Undefined_function
 exception Type_error
 exception Passing_error
 
@@ -25,6 +24,21 @@ let rec sem_funcDef = function
       sem_header true h;
       isMainProgram := false;
       sem_localDefList l;
+      if !current_scope.depth = 1 then begin
+        let funcIdListOpt = Symbol.all_functions_defined () in
+        if funcIdListOpt <> None then (
+          let funcIdList =
+            match funcIdListOpt with Some s -> s | None -> assert false
+          in
+          List.iter
+            (fun fid ->
+              Printf.eprintf
+                "\027[31mError\027[0m: Function '%s' is declared, but not \
+                 defined.\n"
+                fid)
+            funcIdList;
+          failwith "Undefined function")
+      end;
       let expectedReturnType = Types.(T_func (t_type_of_retType h.ret_type)) in
       let typeReturnedInBlock =
         Types.T_func (match sem_block b with None -> T_none | Some t -> t)
@@ -463,8 +477,6 @@ and sem_funcCall = function
           | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
         in
 
-        if functionEntry.state <> Symbol.DEFINED then raise Undefined_function;
-
         if List.compare_lengths el functionEntry.parameters_list <> 0 then
           raise Unexpected_number_of_parameters;
 
@@ -511,11 +523,6 @@ and sem_funcCall = function
             "\027[31mError\027[0m: Function '%s' is called, but never declared.\n"
             ident;
           failwith "Undeclared function called"
-      | Undefined_function ->
-          Printf.eprintf
-            "\027[31mError\027[0m: Function '%s' is called, but never defined.\n"
-            ident;
-          failwith "Undefined function called"
       | Shared_name_func_var ->
           Printf.eprintf
             "\027[31mError\027[0m: Name '%s' is shared with a function and a \
