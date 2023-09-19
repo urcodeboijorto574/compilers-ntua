@@ -1,10 +1,6 @@
 open Ast
 open Symbol
 
-(** [isMainProgram] is a variable that has [true] if the main function of a
-    program is currently analysed and [false] if not. *)
-let isMainProgram = ref true
-
 (* Exceptions used by sem_header and sem_funcCall *)
 exception Shared_name_func_var
 exception Overloaded_functions
@@ -22,9 +18,9 @@ exception Passing_error
 let rec sem_funcDef = function
   | { header = h; local_def_list = l; block = b } ->
       sem_header true h;
-      isMainProgram := false;
       sem_localDefList l;
-      if !current_scope.depth = 1 then begin
+      let isMainProgram = !current_scope.depth = 1 in
+      if isMainProgram then begin
         let funcIdListOpt = Symbol.all_functions_defined () in
         if funcIdListOpt <> None then (
           let funcIdList =
@@ -62,7 +58,8 @@ let rec sem_funcDef = function
     opened and the function's parameters are inserted in it. Returns [unit]. *)
 and sem_header isPartOfAFuncDef = function
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } -> (
-      if !isMainProgram then
+      let isMainProgram = !current_scope.depth = 0 in
+      if isMainProgram then
         if rt <> Nothing then (
           Printf.eprintf
             "\027[31mError\027[0m: Main function must return 'nothing' type.\n";
