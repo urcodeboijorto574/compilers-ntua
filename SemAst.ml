@@ -21,7 +21,7 @@ let rec sem_funcDef = function
       sem_localDefList l;
       let isMainProgram = !current_scope.depth = 1 in
       if isMainProgram then begin
-        let funcIdListOpt = Symbol.all_functions_defined () in
+        let funcIdListOpt = Symbol.get_undefined_functions () in
         if funcIdListOpt <> None then (
           let funcIdList =
             match funcIdListOpt with Some s -> s | None -> assert false

@@ -90,7 +90,7 @@ val enter_function :
     is thrown. *)
 val look_up_entry : string -> entry option
 
-(** [all_functions_defined] returns [None] if no function is declared and not
-    defined or [Some sl] with [sl] being a list of the names of the functions
+(** [get_undefined_functions] returns [None] if no declared function is
+    undefined or [Some sl] with [sl] being a list of the names of the functions
     that are not defined. *)
-val all_functions_defined : unit -> string list option
+val get_undefined_functions : unit -> string list option

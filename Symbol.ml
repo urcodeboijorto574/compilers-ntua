@@ -196,7 +196,7 @@ let look_up_entry (id : string) =
       Some resultEntry)
   with Not_found -> None
 
-let all_functions_defined () =
+let get_undefined_functions () =
   let undefinedFunctionsList = ref [] in
   begin
     Hashtbl.iter
