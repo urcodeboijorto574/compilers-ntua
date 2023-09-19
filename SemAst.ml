@@ -393,7 +393,10 @@ and sem_lvalue = function
       if Types.debugMode then
         Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
       entryType
-  | L_string s -> Types.T_array (Types.T_char, -1)
+  | L_string s ->
+      Types.T_array (Types.T_char, -1)
+      (* TODO: the size of the array must be the length of the string plus 1 for
+         the empty character ('\0') *)
   | L_comp (lv, e) -> (
       if Types.debugMode then
         Printf.printf
