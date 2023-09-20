@@ -35,7 +35,7 @@ let rec equal_types t1 t2 =
   | _ ->
       if debugMode then
         Printf.printf "%s, %s -> " (string_of_t_type t1) (string_of_t_type t2);
-      t1 = t2 || false
+      t1 = t2
 
 let t_type_of_dataType = function
   | Ast.ConstInt -> T_int

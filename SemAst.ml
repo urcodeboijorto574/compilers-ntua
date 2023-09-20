@@ -481,8 +481,8 @@ and sem_expr = function
         failwith "Type error");
       if not (equal_types Types.T_int typeExpr2) then (
         Printf.eprintf
-          "\027[31mError\027[0m: Left argument of an arithmetic operator is an \
-           argument of type %s.\n"
+          "\027[31mError\027[0m: Right argument of an arithmetic operator is \
+           an argument of type %s.\n"
           (Types.string_of_t_type typeExpr2);
         failwith "Type error");
       Types.T_int
