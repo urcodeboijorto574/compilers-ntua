@@ -126,7 +126,6 @@ and sem_header isPartOfAFuncDef = function
             in
             let resultList = helper fpdl in
             if Types.debugMode then (
-              (* DEBUG *)
               Printf.printf "Parameter list from this header:\n\t[ ";
               List.iter
                 begin
@@ -322,7 +321,7 @@ and sem_stmt = function
       | T_func t ->
           if t <> T_none then
             Printf.eprintf
-              "Warning: The return value of the function %s is not used.\n"
+              "Warning: The return value of the function '%s' is not used.\n"
               fc.id;
           None
       | T_none | T_int | T_char | T_array _ -> assert false)
@@ -389,7 +388,7 @@ and sem_lvalue = function
         match entryFoundOption with Some e -> e | None -> assert false
       in
       if Types.debugMode then (
-        Printf.printf "Entry for %s found. Information:\n" id;
+        Printf.printf "Entry for '%s' found. Information:\n" id;
         Printf.printf "\tid: %s, scope: %s" id entryFound.scope.name);
       let entryType =
         match entryFound.kind with
@@ -416,7 +415,6 @@ and sem_lvalue = function
            Index of array elements must be of integer type.\n"
           (Types.string_of_t_type typeExpr);
         failwith "Type error");
-      Types.(equal_types T_int (sem_expr e));
       let rec get_name_of_lv = function
         | L_id id -> id
         | L_string s -> s
