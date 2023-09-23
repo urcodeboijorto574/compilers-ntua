@@ -53,8 +53,8 @@ let open_scope str =
     }
 
 and close_scope () =
-  let getV = function None -> failwith "Initial scope closed" | Some v -> v in
-  current_scope := getV !current_scope.parent
+  try current_scope := Option.get !current_scope.parent
+  with Invalid_argument _ -> failwith "Initial scope closed"
 
 (** [symbolTable] is a Hashtbl ref that stores the current image of the
     SymbolTable. *)

@@ -98,8 +98,7 @@ and sem_header isPartOfAFuncDef = function
       else
         try
           let functionEntry =
-            let getV = function Some e -> e | None -> assert false in
-            match (getV resultLookUp).kind with
+            match (Option.get resultLookUp).kind with
             | ENTRY_function ef -> ef
             | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
             (* A function and a variable/parameter share the same name. *)
