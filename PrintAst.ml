@@ -73,8 +73,8 @@ and print_fparType fparType =
 and print_localDef localDef =
   let help localDef =
     match localDef with
-    | L_FuncDef funcDef -> print_funcDef funcDef
-    | L_FuncDecl funcDecl -> print_funcDecl funcDecl
+    | L_funcDef funcDef -> print_funcDef funcDef
+    | L_funcDecl funcDecl -> print_funcDecl funcDecl
     | L_varDef varDef -> print_varDef varDef
   in
   Printf.printf "LocalDef(";

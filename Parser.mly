@@ -106,8 +106,8 @@ local_def_list:
 | local_def local_def_list { $1 :: $2 }
 
 local_def:
-  func_def { L_FuncDef($1) }
-| func_decl { L_FuncDecl($1) }
+  func_def { L_funcDef($1) }
+| func_decl { L_funcDecl($1) }
 | var_def { L_varDef($1) }
 
 func_decl:

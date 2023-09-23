@@ -244,8 +244,8 @@ and sem_localDefList = function [] -> () | ldl -> List.iter sem_localDef ldl
 (** [sem_localDef (ld : Ast.localDef)] adds in the symbolTable the functions and
     parameters defined in the local definition [ld]. Returns [unit]. *)
 and sem_localDef = function
-  | L_FuncDef fd -> sem_funcDef fd
-  | L_FuncDecl fd -> sem_funcDecl fd
+  | L_funcDef fd -> sem_funcDef fd
+  | L_funcDecl fd -> sem_funcDecl fd
   | L_varDef vd -> sem_varDef vd
 
 (** [sem_funcDecl (fd : Ast.funcDef)] semantically analyses the header of the

@@ -56,8 +56,8 @@ and dataType =
   | ConstChar
 
 and localDef =
-  | L_FuncDef of funcDef
-  | L_FuncDecl of funcDecl
+  | L_funcDef of funcDef
+  | L_funcDecl of funcDecl
   | L_varDef of varDef
 
 and funcDecl = FuncDecl_Header of header
