@@ -23,6 +23,7 @@ let rec sem_funcDef = function
       sem_header true h;
       sem_localDefList l;
 
+      (* TODO: raise error if a parameter and a variable have the same name. *)
       let isMainProgram = !current_scope.depth = 1 in
       if isMainProgram then begin
         let funcIdListOpt = Symbol.get_undefined_functions () in
@@ -231,6 +232,7 @@ and sem_fparDef = function
           "\027[31mError\027[0m: Arrays should always be passed as parameters \
            by reference.\n";
         failwith "Array passed as a parameter by value");
+      (* TODO: raise error if two parameters have the same name. *)
       ( List.length il,
         Types.t_type_of_fparType fpt,
         if r then BY_REFERENCE else BY_VALUE )
@@ -259,6 +261,7 @@ and sem_varDef = function
           "\027[31mError\027[0m: Array declared to have size a non-positive \
            number.\n";
         failwith "Array of zero size");
+      (* TODO: raise warning if a variable's name is used twice (redeclaration). *)
       List.iter (fun i -> enter_variable i (Types.t_type_of_varType vt)) idl
 
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
@@ -403,6 +406,8 @@ and sem_lvalue = function
       Types.T_array (Types.T_char, -1)
       (* TODO: the size of the array must be the length of the string plus 1 for
          the empty character ('\0') *)
+      (* Types.(T_array (T_char, String.length s + 1)) *)
+      (* TODO: check what happens with the size of all character arrays *)
   | L_comp (lv, e) -> (
       if Types.debugMode then
         Printf.printf
