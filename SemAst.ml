@@ -23,7 +23,56 @@ let rec sem_funcDef = function
       sem_header true h;
       sem_localDefList l;
 
-      (* TODO: raise error if a parameter and a variable have the same name. *)
+      let sharedNameParVarOption =
+        let parNames : string list =
+          let rec get_par_names = function
+            | [] -> []
+            | { id_list = il; ref; fpar_type } :: tail ->
+                il @ get_par_names tail
+          in
+          get_par_names h.fpar_def_list
+        in
+        let varNames : string list =
+          let rec get_var_names = function
+            | [] -> []
+            | L_funcDef _ :: tail | L_funcDecl _ :: tail -> get_var_names tail
+            | L_varDef vd :: tail -> vd.id_list @ get_var_names tail
+          in
+          let resultList = get_var_names l in
+          let duplicate_element lst =
+            let rec helper seen = function
+              | [] -> None
+              | h :: t ->
+                  if List.mem h seen then Some h else helper (h :: seen) t
+            in
+            helper [] lst
+          in
+          let overloadedNameOption = duplicate_element resultList in
+          if overloadedNameOption <> None then (
+            Printf.eprintf
+              "\027[31mError\027[0m: Variable '%s' is declared twice in the \
+               function '%s'.\n"
+              (Option.get overloadedNameOption)
+              h.id;
+            failwith "Overloaded variable name");
+          resultList
+        in
+        let rec share_common_elem l1 l2 =
+          match l1 with
+          | [] -> None
+          | head :: tail ->
+              if List.mem head l2 then Some head else share_common_elem tail l2
+        in
+        share_common_elem parNames varNames
+      in
+      if sharedNameParVarOption <> None then (
+        Printf.eprintf
+          "\027[31mError\027[0m: The name '%s' is shared between a variable \
+           and a parameter of the function '%s'.\n"
+          (Option.get sharedNameParVarOption)
+          h.id;
+        failwith "Overloaded variable name");
+
       let isMainProgram = !current_scope.depth = 1 in
       if isMainProgram then begin
         let funcIdListOption = Symbol.get_undefined_functions () in
