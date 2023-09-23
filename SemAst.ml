@@ -23,14 +23,30 @@ let rec sem_funcDef = function
       sem_header true h;
       sem_localDefList l;
 
-      let sharedNameParVarOption =
+      let overloadedParVarNameOption =
+        let duplicate_element lst =
+          let rec helper seen = function
+            | [] -> None
+            | h :: t -> if List.mem h seen then Some h else helper (h :: seen) t
+          in
+          helper [] lst
+        in
         let parNames : string list =
           let rec get_par_names = function
             | [] -> []
             | { id_list = il; ref; fpar_type } :: tail ->
                 il @ get_par_names tail
           in
-          get_par_names h.fpar_def_list
+          let resultList = get_par_names h.fpar_def_list in
+          let overloadedParNameOption = duplicate_element resultList in
+          if overloadedParNameOption <> None then (
+            Printf.eprintf
+              "\027[31mError\027[0m: Parameter name '%s' in function '%s' is \
+               used twice.\n"
+              (Option.get overloadedParNameOption)
+              h.id;
+            failwith "Overloaded parameter name");
+          resultList
         in
         let varNames : string list =
           let rec get_var_names = function
@@ -39,20 +55,12 @@ let rec sem_funcDef = function
             | L_varDef vd :: tail -> vd.id_list @ get_var_names tail
           in
           let resultList = get_var_names l in
-          let duplicate_element lst =
-            let rec helper seen = function
-              | [] -> None
-              | h :: t ->
-                  if List.mem h seen then Some h else helper (h :: seen) t
-            in
-            helper [] lst
-          in
-          let overloadedNameOption = duplicate_element resultList in
-          if overloadedNameOption <> None then (
+          let overloadedVarNameOption = duplicate_element resultList in
+          if overloadedVarNameOption <> None then (
             Printf.eprintf
               "\027[31mError\027[0m: Variable '%s' is declared twice in the \
                function '%s'.\n"
-              (Option.get overloadedNameOption)
+              (Option.get overloadedVarNameOption)
               h.id;
             failwith "Overloaded variable name");
           resultList
@@ -65,13 +73,13 @@ let rec sem_funcDef = function
         in
         share_common_elem parNames varNames
       in
-      if sharedNameParVarOption <> None then (
+      if overloadedParVarNameOption <> None then (
         Printf.eprintf
           "\027[31mError\027[0m: The name '%s' is shared between a variable \
-           and a parameter of the function '%s'.\n"
-          (Option.get sharedNameParVarOption)
+           and a parameter in the function '%s'.\n"
+          (Option.get overloadedParVarNameOption)
           h.id;
-        failwith "Overloaded variable name");
+        failwith "Overloaded variable/parameter name");
 
       let isMainProgram = !current_scope.depth = 1 in
       if isMainProgram then begin
