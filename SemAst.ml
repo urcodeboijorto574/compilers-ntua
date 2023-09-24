@@ -26,18 +26,15 @@ let rec sem_funcDef = function
       (* TODO: raise error if a parameter and a variable have the same name. *)
       let isMainProgram = !current_scope.depth = 1 in
       if isMainProgram then begin
-        let funcIdListOpt = Symbol.get_undefined_functions () in
-        if funcIdListOpt <> None then (
-          let funcIdList =
-            match funcIdListOpt with Some s -> s | None -> assert false
-          in
+        let funcIdListOption = Symbol.get_undefined_functions () in
+        if funcIdListOption <> None then (
           List.iter
             (fun fid ->
               Printf.eprintf
                 "\027[31mError\027[0m: Function '%s' is declared, but not \
                  defined.\n"
                 fid)
-            funcIdList;
+            (Option.get funcIdListOption);
           failwith "Undefined function")
       end;
       let expectedReturnType = Types.t_type_of_retType h.ret_type in
@@ -89,8 +86,8 @@ and sem_header isPartOfAFuncDef = function
           List.iter add_fparDef fpdl
         end
       in
-      let resultLookUp = look_up_entry ident in
-      if resultLookUp = None then (
+      let resultLookUpOption = look_up_entry ident in
+      if resultLookUpOption = None then (
         enter_function ident (sem_fparDefList fpdl)
           (Types.t_type_of_retType rt)
           Symbol.(if isPartOfAFuncDef = true then DEFINED else DECLARED);
@@ -98,7 +95,7 @@ and sem_header isPartOfAFuncDef = function
       else
         try
           let functionEntry =
-            match (Option.get resultLookUp).kind with
+            match (Option.get resultLookUpOption).kind with
             | ENTRY_function ef -> ef
             | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
             (* A function and a variable/parameter share the same name. *)
@@ -384,9 +381,7 @@ and sem_lvalue = function
           id
           Symbol.(!current_scope.name);
         failwith "Undefined variable");
-      let entryFound =
-        match entryFoundOption with Some e -> e | None -> assert false
-      in
+      let entryFound = Option.get entryFoundOption in
       if Types.debugMode then (
         Printf.printf "Entry for '%s' found. Information:\n" id;
         Printf.printf "\tid: %s, scope: %s" id entryFound.scope.name);
@@ -530,11 +525,8 @@ and sem_funcCall = function
       let resultLookUpOption = look_up_entry ident in
       try
         if resultLookUpOption = None then raise Not_found;
-        let resultLookUp =
-          match resultLookUpOption with Some e -> e | None -> assert false
-        in
         let functionEntry =
-          match resultLookUp.kind with
+          match (Option.get resultLookUpOption).kind with
           | ENTRY_function ef -> ef
           | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
         in
@@ -588,10 +580,7 @@ and sem_funcCall = function
           failwith "Function and variable share the same name"
       | Unexpected_number_of_parameters ->
           let functionEntry =
-            let resultLookUp =
-              match resultLookUpOption with Some e -> e | None -> assert false
-            in
-            match resultLookUp.kind with
+            match (Option.get resultLookUpOption).kind with
             | ENTRY_function ef -> ef
             | _ -> assert false
           in
