@@ -11,11 +11,9 @@ let debugMode = false
 let rec string_of_t_type = function
   | T_int -> "integer"
   | T_char -> "character"
-  | T_array (t, n) ->
-      String.concat ""
-        [ "array("; string_of_int n; ") of "; string_of_t_type t ]
+  | T_array (t, n) -> "array(" ^ string_of_int n ^ ") of " ^ string_of_t_type t
   | T_none -> "nothing"
-  | T_func t -> String.concat " " [ string_of_t_type t; "(function)" ]
+  | T_func t -> string_of_t_type t ^ " (function)"
 
 let construct_array_type dimList endType =
   let rec construct_array_type_helper counter len dimList endType =

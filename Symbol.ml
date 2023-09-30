@@ -126,11 +126,14 @@ let add_standard_library () =
   add_func_lib "writeInteger" [ (1, T_int) ] T_none;
   add_func_lib "writeChar" [ (1, T_char) ] T_none;
   add_func_lib "writeString" [ (1, T_array (T_char, -1)) ] T_none;
+
   add_func_lib "readInteger" [] T_int;
   add_func_lib "readChar" [] T_char;
   add_func_lib "readString" [ (1, T_int); (1, T_array (T_char, -1)) ] T_none;
+
   add_func_lib "ascii" [ (1, T_char) ] T_int;
   add_func_lib "chr" [ (1, T_int) ] T_char;
+
   add_func_lib "strlen" [ (1, T_array (T_char, -1)) ] T_int;
   add_func_lib "strcmp" [ (2, T_array (T_char, -1)) ] T_int;
   add_func_lib "strcpy" [ (2, T_array (T_char, -1)) ] T_none;
