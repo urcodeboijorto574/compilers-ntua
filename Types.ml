@@ -16,15 +16,16 @@ let rec string_of_t_type = function
   | T_func t -> string_of_t_type t ^ " (function)"
 
 let construct_array_type dimList endType =
-  let rec construct_array_type_helper counter len dimList endType =
-    if counter = len then
+  let rec helper cnt len dl =
+    if cnt = len then
       endType
     else
-      T_array
-        ( construct_array_type_helper (counter + 1) len (List.tl dimList) endType,
-          List.hd dimList )
+      T_array (helper (cnt + 1) len (List.tl dl), List.hd dl)
   in
-  construct_array_type_helper 0 (List.length dimList) dimList endType
+  if List.mem endType [ T_int; T_char ] then
+    helper 0 (List.length dimList) dimList
+  else
+    failwith "Can't construct array of non-integers and non-characters"
 
 let rec equal_types t1 t2 =
   match (t1, t2) with
