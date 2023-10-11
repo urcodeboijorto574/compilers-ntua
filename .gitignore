@@ -26,3 +26,4 @@
 !SemAst.ml
 !SemAst.mli
 !GenAst.ml
+!GenAst2.ml
