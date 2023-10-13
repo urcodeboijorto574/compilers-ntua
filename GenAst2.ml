@@ -14,6 +14,7 @@ let bool_type = i1_type context
 
 (* Symbol table that holds the memory location of the variable in question*)
 let named_values:(string, llvalue) Hashtbl.t = Hashtbl.create 2000
+let named_functions = Hashtb.create 2000
 
 let rec convert_to_llvm_type x = match x with
   | T_int -> i64_type context
@@ -26,14 +27,16 @@ let rec convert_to_llvm_type x = match x with
   | Nothing -> void_type context
 
 let rec convert_param_to_llvm_type x = match x.ref with
-  | true -> convert_to_llvm_type x.fpar_type.data_type
-  | false -> match x. (* TODO: need to add a check here whether type is
+  | false -> convert_to_llvm_type x.fpar_type.data_type
+  | true -> match x. (* TODO: need to add a check here whether type is
      array. Maybe need to change fparType and add type array there *)
      pointer_type (convert_to_llvm_type x)
 
 
 (* Create an alloca instruction in the entry block of the function. This
  * is used for mutable variables etc. *)
+
+ (* TODO: t_type may be an array type*)
 let create_entry_block_alloca the_function var_name t_type =
   let builder = builder_at (instr_begin (entry_block the_function)) in
   build_alloca t_type var_name builder
@@ -47,13 +50,17 @@ let expand_fpar_def_list (def_list : fparDef list) : fparDef list =
   in
   List.concat (List.map expand_fpar_def def_list)
 
+  (* Create array of parameters. This array is of like:
+     [llvm int, llvm char, llvm int *, ...]*)
 let gen_func_prototype header = 
   let name = header.id in
   let args = expand_fpar_def_list header.fpar_def_list in
+  (* edw to in sunexizetai??*)
+  Hashtbl.add named_functions (Hashtbl.hash name) args;
   let ret_type = header.ret_type in
   let param_types_list = List.iter convert_param_to_llvm_type args in
   let param_types_array = Array.of_list param_types_list in
-  let return_type = convert_param_to_llvm_type ret_type in
+  let return_type = convert_to_llvm_type ret_type in
   let ft = function_type return_type param_types_array in
   let f = match lookup_function name thee_module with
     | None -> declare_function name ft thee_module
@@ -62,7 +69,7 @@ let gen_func_prototype header =
   (* Set names for all arguments. *)
   Array.iteri (fun i a ->
     let n = param_types_array.(i).(List.hd id_list) in
-    (* Set the name of each argument which is an llvalue to a string *)
+    (* Set the name of each argument which is an llvalue, to a string *)
     set_value_name n a;
     Hashtbl.add named_values n a;
   ) (params f);
@@ -94,12 +101,24 @@ let gen_func the_func =
 
 
 
-let rec gen_expr expr = match expr with
+let rec gen_expr expr ?(is_param_ref) = match expr with
   | E_const_int x -> const_int int_type x
   | E_const_char x -> const_char char_type x
-  | E_lvalue lv -> failwith "TODO" (* TODO *)
+
+  | E_lvalue lv -> match lv with
+    | L_id id -> let lv_addr = Hashtbl.find named_values id in
+      match is_param_ref with
+        | false -> build_load lv_addr id builder
+        | true -> lv_addr
+    | L_string -> failwith "argument cannot be of type string"
+    | L_comp lv2 expr2 -> () (* TODO *)
+
   | E_func_call fc -> 
-    let callee = fc.id and args = fc.expr_list in
+    (* get this list here:
+      [ {ref, [a], int}, {ref, [b], int}, {ref, [c], int}, {noref, [e], char}, {noref, [f], char} ]  *)
+    let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
+    (* TODO: may need some work here *)
+    let callee = fc.id and args_list = fc.expr_list in
     let callee = 
       match lookup_function callee thee_module with
       | Some callee -> callee
@@ -108,9 +127,16 @@ let rec gen_expr expr = match expr with
     let params = params callee in
       if Array.length params == Array.length args then () else
           raise (Error "incorrect # arguments passed");
-      let args = Array.map gen_expr args in
-      build_call callee args "calltmp" builder
-  | E_sgn_exrp (sign, expr) -> (
+    let i = ref 0 in
+    let args = List.map 
+    (fun x -> 
+      let ith_elem = List.nth args_list !i in
+      if x.ref = true then gen_expr ith_elem true 
+      else gen_expr ith_elem false; incr i;) fpar_def_list in
+    let args_array = Array.of_list args in
+    build_call callee args_array "calltmp" builder
+
+  | E_sgn_expr (sign, expr) -> (
       match sign with
       | O_plus -> gen_expr expr
       | O_minus -> build_neg (gen_expr expr) "minus" builder)
@@ -118,8 +144,8 @@ let rec gen_expr expr = match expr with
       let lhs_val = gen_expr lhs in
       let rhs_lval = gen_expr rhs in
       match oper with
-      | O_plus -> build_fadd lhs_val rhs_val "addtmp" builder
-      | O_minus -> build_fsub lhs_val rhs_val "subtmp" builder
+      | O_plus -> build_add lhs_val rhs_val "addtmp" builder
+      | O_minus -> build_sub lhs_val rhs_val "subtmp" builder
       | O_mul -> build_mul lhs_val rhs_lval "multmp" builder
       | O_div -> build_sdiv lhs_val rhs_lval "divtmp" builder
       | O_mod -> build_srem lhs_val rhs_lval "modtmp" builder
