@@ -14,21 +14,21 @@ let bool_type = i1_type context
 
 (* Symbol table that holds the memory location of the variable in question*)
 let named_values:(string, llvalue) Hashtbl.t = Hashtbl.create 2000
-let named_functions = Hashtb.create 2000
+let named_functions = Hashtbl.create 2000
 
 let rec convert_to_llvm_type x = match x with
-  | T_int -> i64_type context
-  | ConstInt -> i64_type context
-  | T_char -> i8_type context
-  | ConstChar -> i8_type context
-  | T_bool -> i1_type context
+  | T_int -> int_type
+  | ConstInt -> int_type
+  | T_char -> char_type
+  | ConstChar -> char_type
+  | T_bool -> bool_type
   | T_array (t, n) -> array_type (convert_to_llvm t) n
   | T_func -> failwith "TODO" (* It's pointless to define something for functions here  *)
   | Nothing -> void_type context
 
 let rec convert_param_to_llvm_type x = match x.ref with
   | false -> convert_to_llvm_type x.fpar_type.data_type
-  | true -> match x. (* TODO: need to add a check here whether type is
+  | true -> (* TODO: need to add a check here whether type is
      array. Maybe need to change fparType and add type array there *)
      pointer_type (convert_to_llvm_type x)
 
@@ -96,12 +96,30 @@ let create_argument_allocas the_function header =
   ) (params the_function)
 
 let gen_func the_func = 
-  let rec helper f local_def = match local_def with
-    | L_varDef v
+  ignore(gen_func_prototype the_func.header);
+  ignore(create_argument_allocas the_func the_func.header);
+
+  let bb = append_block context "entry" the_func in
+  position_at_end builder;
+  List.iter 
+  (fun local_def -> 
+    match local_def with
+    | L_varDef v ->
+       List.iter (fun x -> create_entry_block_alloca the_func x v.var_type.data_type) 
+       v.id_list
+    
+    | L_funcDef fd -> gen_func fd
+    | L_funcDecl fdl -> () (* TODO: Function Declarations *)
+  ) the_func.local_def_list;
+
+  let stmt_list = match the_func.block with
+  | Block b -> b
+  | _ -> () in
+  List.iter gen_stmt stmt_list;
 
 
 
-let rec gen_expr expr ?(is_param_ref) = match expr with
+and gen_expr expr ?(is_param_ref) = match expr with
   | E_const_int x -> const_int int_type x
   | E_const_char x -> const_char char_type x
 
@@ -111,7 +129,7 @@ let rec gen_expr expr ?(is_param_ref) = match expr with
         | false -> build_load lv_addr id builder
         | true -> lv_addr
     | L_string -> failwith "argument cannot be of type string"
-    | L_comp lv2 expr2 -> () (* TODO *)
+    | L_comp (lv2, expr2) -> () (* TODO *)
 
   | E_func_call fc -> 
     (* get this list here:
@@ -142,13 +160,26 @@ let rec gen_expr expr ?(is_param_ref) = match expr with
       | O_minus -> build_neg (gen_expr expr) "minus" builder)
   | E_op_expr_expr (lhs, oper, rhs) ->
       let lhs_val = gen_expr lhs in
-      let rhs_lval = gen_expr rhs in
+      let rhs_val = gen_expr rhs in
       match oper with
       | O_plus -> build_add lhs_val rhs_val "addtmp" builder
       | O_minus -> build_sub lhs_val rhs_val "subtmp" builder
-      | O_mul -> build_mul lhs_val rhs_lval "multmp" builder
-      | O_div -> build_sdiv lhs_val rhs_lval "divtmp" builder
-      | O_mod -> build_srem lhs_val rhs_lval "modtmp" builder
+      | O_mul -> build_mul lhs_val rhs_val "multmp" builder
+      | O_div -> build_sdiv lhs_val rhs_val "divtmp" builder
+      | O_mod -> build_srem lhs_val rhs_val "modtmp" builder
   | E_expr_parenthesized expr -> gen_expr expr
+
+
+and gen_stmt stmt = 
+  match stmt with
+  | S_assignment (lv, expr) -> 
+    match lv with  
+    | L_id id -> 
+      let lv_addr = Hashtbl.find named_values id in
+      let value = gen_expr expr in
+      ignore(build_store value lv_addr)
+  | _ -> ()
+
+
 
 

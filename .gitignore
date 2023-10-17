@@ -27,3 +27,4 @@
 !SemAst.mli
 !GenAst.ml
 !GenAst2.ml
+!lib
