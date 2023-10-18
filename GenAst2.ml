@@ -124,31 +124,37 @@ and gen_func the_func =
   (fun local_def -> 
     match local_def with
     | L_varDef v ->
-       List.iter (fun x -> create_entry_block_alloca the_func_ll x v.var_type.data_type) 
-       v.id_list
+      let ll_type = convert_to_llvm_type (Types.t_type_of_dataType v.var_type.data_type) in
+      List.iter (fun x -> ignore(create_entry_block_alloca the_func_ll x ll_type)) v.id_list
     
     | L_funcDef fd -> gen_func fd
-    | L_funcDecl fdl -> () (* TODO: Function Declarations *)
+    | L_funcDecl fdl -> failwith "todo" (* TODO: Function Declarations *)
   ) the_func.local_def_list;
 
-  let stmt_list = match the_func.block with
-  | Block b -> b
-  | _ -> () in
+  let stmt_list = 
+    match the_func.block with
+    | Block b -> b
+    | _ -> failwith "todo" 
+  in
   List.iter gen_stmt stmt_list;
 
 
 
 and gen_expr expr ?(is_param_ref) = match expr with
   | E_const_int x -> const_int int_type x
-  | E_const_char x -> const_char char_type x
+  | E_const_char x -> const_int char_type (int_of_char x)
 
-  | E_lvalue lv -> match lv with
-    | L_id id -> let lv_addr = Hashtbl.find named_values id in
-      match is_param_ref with
-        | false -> build_load lv_addr id builder
-        | true -> lv_addr
-    | L_string -> failwith "argument cannot be of type string"
-    | L_comp (lv2, expr2) -> () (* TODO *)
+  | E_lvalue lv -> 
+    (
+      match lv with
+      | L_id id -> let lv_addr = Hashtbl.find named_values id in
+        (match is_param_ref with
+          | Some ref -> if (ref = false) then build_load lv_addr id builder else lv_addr
+          | None -> build_load lv_addr id builder
+        )
+      | L_string _ -> failwith "argument cannot be of type string"
+      | L_comp (lv2, expr2) -> failwith "todo" (* TODO *)
+    ) 
 
   | E_func_call fc -> 
     (* get this list here:
@@ -162,14 +168,14 @@ and gen_expr expr ?(is_param_ref) = match expr with
       | None -> raise (Error "unknown function referenced")
     in 
     let params = params callee in
-      if Array.length params == Array.length args then () else
-          raise (Error "incorrect # arguments passed");
+     (*  if Array.length params == Array.length args then () else
+          raise (Error "incorrect # arguments passed"); *)
     let i = ref 0 in
     let args = List.map 
     (fun x -> 
       let ith_elem = List.nth args_list !i in
-      if x.ref = true then gen_expr ith_elem true 
-      else gen_expr ith_elem false; incr i;) fpar_def_list in
+      if x.ref = true then gen_expr ith_elem ~is_param_ref:true 
+      else gen_expr ith_elem ~is_param_ref:false; incr i;) fpar_def_list in
     let args_array = Array.of_list args in
     build_call callee args_array "calltmp" builder
 
