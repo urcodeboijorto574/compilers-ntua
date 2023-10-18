@@ -140,7 +140,7 @@ and gen_func the_func =
 
 
 
-and gen_expr expr ?(is_param_ref) = match expr with
+and gen_expr expr ?(is_param_ref : bool option) = match expr with
   | E_const_int x -> const_int int_type x
   | E_const_char x -> const_int char_type (int_of_char x)
 
@@ -161,38 +161,40 @@ and gen_expr expr ?(is_param_ref) = match expr with
       [ {ref, [a], int}, {ref, [b], int}, {ref, [c], int}, {noref, [e], char}, {noref, [f], char} ]  *)
     let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
     (* TODO: may need some work here *)
-    let callee = fc.id and args_list = fc.expr_list in
+    let callee = fc.id in 
+    let args_list = fc.expr_list in
     let callee = 
       match lookup_function callee thee_module with
       | Some callee -> callee
       | None -> raise (Error "unknown function referenced")
     in 
     let params = params callee in
-     (*  if Array.length params == Array.length args then () else
+      (* if Array.length params == Array.length args then () else
           raise (Error "incorrect # arguments passed"); *)
     let i = ref 0 in
-    let args = List.map 
+    let res = ref [] in
+    let args = List.iter 
     (fun x -> 
       let ith_elem = List.nth args_list !i in
-      if x.ref = true then gen_expr ith_elem ~is_param_ref:true 
-      else gen_expr ith_elem ~is_param_ref:false; incr i;) fpar_def_list in
-    let args_array = Array.of_list args in
+      if x.ref = true then res:= (gen_expr ith_elem ~is_param_ref:true) :: !res 
+      else res:= (gen_expr ith_elem ~is_param_ref:false) :: !res; incr i;) fpar_def_list in
+    let args_array = Array.of_list !res in
     build_call callee args_array "calltmp" builder
 
   | E_sgn_expr (sign, expr) -> (
       match sign with
-      | O_plus -> gen_expr expr
-      | O_minus -> build_neg (gen_expr expr) "minus" builder)
+      | O_plus -> gen_expr expr ~is_param_ref:false
+      | O_minus -> build_neg (gen_expr expr ~is_param_ref:false) "minus" builder)
   | E_op_expr_expr (lhs, oper, rhs) ->
-      let lhs_val = gen_expr lhs in
-      let rhs_val = gen_expr rhs in
-      match oper with
+      let lhs_val = gen_expr lhs ~is_param_ref:false in
+      let rhs_val = gen_expr rhs ~is_param_ref:false in
+      (match oper with
       | O_plus -> build_add lhs_val rhs_val "addtmp" builder
       | O_minus -> build_sub lhs_val rhs_val "subtmp" builder
       | O_mul -> build_mul lhs_val rhs_val "multmp" builder
       | O_div -> build_sdiv lhs_val rhs_val "divtmp" builder
-      | O_mod -> build_srem lhs_val rhs_val "modtmp" builder
-  | E_expr_parenthesized expr -> gen_expr expr
+      | O_mod -> build_srem lhs_val rhs_val "modtmp" builder)
+  | E_expr_parenthesized expr -> gen_expr expr ~is_param_ref:false
 
 
 and gen_stmt stmt = 
@@ -201,9 +203,9 @@ and gen_stmt stmt =
     match lv with  
     | L_id id -> 
       let lv_addr = Hashtbl.find named_values id in
-      let value = gen_expr expr in
+      let value = gen_expr expr ~is_param_ref:false in
       ignore(build_store value lv_addr)
-  | _ -> ()
+  | _ -> failwith "todo"
 
 
 
