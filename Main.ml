@@ -12,7 +12,10 @@ let main =
       Printf.printf "Semantic analysis:\n");
     SemAst.sem_on asts;
     Printf.printf "\027[32mSemantically correct.\027[0m\n";
-    let ir_code = List.map GenAst2.gen_func asts in
+    let ir_code = List.map GenAst.gen_func asts in
+    (* command to compile GenAst.ml 
+       ocamlc -I /home/jimv/.opam/4.14.0/lib/llvm/ -c GenAst.ml*)
+
     (* creates an a.ll file which includes the llvm
     intermediate code*)
     (* Then, the following 2 commands need to be executed:
@@ -22,7 +25,7 @@ let main =
                               linking it with the library
       
       *)
-    print_module "a.ll" GenAst2.thee_module
+    print_module "a.ll" GenAst.thee_module
 
   with Parsing.Parse_error ->
     Printf.eprintf "Syntax error\n";
