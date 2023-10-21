@@ -28,7 +28,7 @@ let main =
                               linking it with the library
       
       *)
-    print_module "a.ll" GenAst.thee_module
+    print_module "a.ll" GenAst.the_module
 
   with Parsing.Parse_error ->
     Printf.eprintf "Syntax error\n";

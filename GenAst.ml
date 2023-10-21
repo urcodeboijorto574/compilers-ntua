@@ -6,7 +6,7 @@ open Types
 exception Error of string
 
 let context = global_context ()
-let thee_module = create_module context "my_module"
+let the_module = create_module context "my_module"
 let builder = builder context
 let int_type = i64_type context
 let char_type = i8_type context
@@ -65,8 +65,8 @@ let gen_func_prototype (header : Ast.header) =
   let param_types_array = Array.of_list param_types_list in
   let return_type = convert_to_llvm_type (Types.t_type_of_retType ret_type) in
   let ft = function_type return_type param_types_array in
-  let f = match lookup_function name thee_module with
-    | None -> declare_function name ft thee_module
+  let f = match lookup_function name the_module with
+    | None -> declare_function name ft the_module
     | Some x -> failwith "semantic analysis error: function already defined"
   in
   (* Set names for all arguments. *)
@@ -111,7 +111,7 @@ let rec create_argument_allocas the_function header =
 
 and gen_func the_func = 
   let the_func_ll =
-    match lookup_function the_func.header.id thee_module with 
+    match lookup_function the_func.header.id the_module with 
     | Some f -> f
     | None -> failwith "undeclared function"
   in
@@ -164,7 +164,7 @@ and gen_expr expr ?(is_param_ref : bool option) = match expr with
     let callee = fc.id in 
     let args_list = fc.expr_list in
     let callee = 
-      match lookup_function callee thee_module with
+      match lookup_function callee the_module with
       | Some callee -> callee
       | None -> raise (Error "unknown function referenced")
     in 
