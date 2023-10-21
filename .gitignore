@@ -21,6 +21,8 @@
 !Types.ml
 !Types.mli
 
+!GenAst.mli
+
 !PrintAst.ml
 !PrintAst.mli
 !SemAst.ml
