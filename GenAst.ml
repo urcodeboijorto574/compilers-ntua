@@ -150,7 +150,9 @@ and gen_func the_func =
   let stmt_list =
     match the_func.block with Block b -> b | _ -> failwith "todofbf"
   in
-  List.iter gen_stmt stmt_list
+  List.iter gen_stmt stmt_list;
+  if (block_terminator @@ insertion_block builder) = None then (
+      ignore(build_ret_void builder));
 
 and gen_expr expr ?(is_param_ref : bool option) =
   match expr with
@@ -253,6 +255,12 @@ and gen_stmt stmt =
       in
       let args_array = Array.of_list !res in
       ignore (build_call callee args_array "" builder)
+  | S_return expr -> (
+      match expr with
+      | None -> ignore (build_ret_void builder)
+      | Some e ->
+          let ll_expr = gen_expr e ~is_param_ref:false in
+          ignore (build_ret ll_expr builder))
   | _ -> failwith "todoaa"
 
 and define_lib_func =
