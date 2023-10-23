@@ -6,6 +6,7 @@
 !README.md
 !Makefile
 !.ocamlformat
+!build.sh
 
 !Main.ml
 
