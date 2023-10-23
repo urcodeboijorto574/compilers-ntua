@@ -141,8 +141,9 @@ and gen_func the_func =
             convert_to_llvm_type (Types.t_type_of_dataType v.var_type.data_type)
           in
           List.iter
-            (fun x -> let alloca = create_entry_block_alloca the_func_ll x ll_type in
-            Hashtbl.add named_values x alloca)
+            (fun x ->
+              let alloca = create_entry_block_alloca the_func_ll x ll_type in
+              Hashtbl.add named_values x alloca)
             v.id_list
       | L_funcDef fd -> gen_func fd
       | L_funcDecl fdl -> failwith "todo" (* TODO: Function Declarations *))
@@ -152,8 +153,8 @@ and gen_func the_func =
     match the_func.block with Block b -> b | _ -> failwith "todofbf"
   in
   List.iter gen_stmt stmt_list;
-  if (block_terminator @@ insertion_block builder) = None then (
-      ignore(build_ret_void builder));
+  if block_terminator @@ insertion_block builder = None then
+    ignore (build_ret_void builder)
 
 and gen_expr expr ?(is_param_ref : bool option) =
   match expr with
@@ -220,7 +221,7 @@ and gen_stmt stmt =
   | S_assignment (lv, expr) -> (
       match lv with
       | L_id id ->
-          Printf.printf("L_id\n");
+          Printf.printf "L_id\n";
           let lv_addr = Hashtbl.find named_values id in
           let value = gen_expr expr ~is_param_ref:false in
           ignore (build_store value lv_addr builder)
