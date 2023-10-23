@@ -84,7 +84,7 @@ let gen_func_prototype (header : Ast.header) =
       in
       (* Set the name of each argument which is an llvalue, to a string *)
       set_value_name n a;
-      Hashtbl.add named_values n a;)
+      Hashtbl.add named_values n a)
     (params f);
   f
 
@@ -122,10 +122,8 @@ let rec create_argument_allocas the_function header =
 
 and gen_func the_func =
   (* iterate functions in dfs order *)
-  let iterate x = match x with
-    | L_funcDef f -> gen_func f 
-    | _ -> ()
-  in  List.iter iterate the_func.local_def_list;
+  let iterate x = match x with L_funcDef f -> gen_func f | _ -> () in
+  List.iter iterate the_func.local_def_list;
   (* let the_func_ll =
        match lookup_function the_func.header.id the_module with
        | Some f -> f
@@ -156,7 +154,7 @@ and gen_func the_func =
     match the_func.block with Block b -> b | _ -> failwith "todofbf"
   in
   List.iter gen_stmt stmt_list;
-  if (block_terminator @@ insertion_block builder) = None then
+  if block_terminator @@ insertion_block builder = None then
     ignore (build_ret_void builder)
 
 and gen_expr expr ?(is_param_ref : bool option) =
@@ -195,9 +193,9 @@ and gen_expr expr ?(is_param_ref : bool option) =
           (fun x ->
             let ith_elem = List.nth args_list !i in
             if x.ref = true then
-              res := (gen_expr ith_elem ~is_param_ref:true) :: !res
+              res := gen_expr ith_elem ~is_param_ref:true :: !res
             else
-              res := (gen_expr ith_elem ~is_param_ref:false) :: !res;
+              res := gen_expr ith_elem ~is_param_ref:false :: !res;
             incr i)
           fpar_def_list
       in
