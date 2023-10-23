@@ -26,8 +26,9 @@ let main =
     (* Then, the following 2 commands need to be executed:
        llc -o a.s a.ll -> uses the llc compiler to create an
                            a.s assembly file from the a.ll
-       clang -o a.out lib.a -> creates the executable a.out
+       clang -o a.out a.s ./lib/lib.a -> creates the executable a.out
                                linking it with the library
+       ./a.out
     *)
     print_module "a.ll" GenAst.the_module
   with Parsing.Parse_error ->
