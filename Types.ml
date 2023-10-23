@@ -19,6 +19,7 @@ let rec string_of_t_type = function
   | T_array (t, n) -> "array(" ^ string_of_int n ^ ") of " ^ string_of_t_type t
   | T_none -> "nothing"
   | T_func t -> string_of_t_type t ^ " (function)"
+  | T_bool | ConstInt | ConstChar -> failwith "will be deleted"
 
 let construct_array_type dimList endType =
   let rec helper cnt len dl =

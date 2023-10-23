@@ -150,9 +150,7 @@ and gen_func the_func =
       | L_funcDecl fdl -> failwith "todo" (* TODO: Function Declarations *))
     the_func.local_def_list;
 
-  let stmt_list =
-    match the_func.block with Block b -> b | _ -> failwith "todofbf"
-  in
+  let stmt_list = match the_func.block with Block b -> b in
   List.iter gen_stmt stmt_list;
   if block_terminator @@ insertion_block builder = None then
     ignore (build_ret_void builder)

@@ -392,7 +392,8 @@ and sem_stmt = function
               "Warning: The return value of the function '%s' is not used.\n"
               fc.id;
           None
-      | T_none | T_int | T_char | T_array _ -> assert false)
+      | T_none | T_int | T_char | T_array _ -> assert false
+      | T_bool | ConstInt | ConstChar -> failwith "will be deleted")
   | S_if (c, s) -> (
       sem_cond c;
       let constCondValue = Ast.get_const_cond_value c in
@@ -534,7 +535,8 @@ and sem_expr = function
             fc.id;
           failwith "A function of type nothing is being used as an expression"
       | T_func t -> t
-      | T_none | T_int | T_char | T_array _ -> assert false)
+      | T_none | T_int | T_char | T_array _ -> assert false
+      | T_bool | ConstInt | ConstChar -> failwith "will be deleted")
   | E_sgn_expr (s, e) ->
       if Types.debugMode then
         Printf.printf "... checking a signed expression (must be int)\n";
