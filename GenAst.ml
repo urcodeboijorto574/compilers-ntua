@@ -84,7 +84,7 @@ let gen_func_prototype (header : Ast.header) =
       in
       (* Set the name of each argument which is an llvalue, to a string *)
       set_value_name n a;
-      Hashtbl.add named_values n a)
+      Hashtbl.add named_values n a;)
     (params f);
   f
 
@@ -121,17 +121,20 @@ let rec create_argument_allocas the_function header =
     (params the_function)
 
 and gen_func the_func =
+  (* iterate functions in dfs order *)
+  let iterate x = match x with
+    | L_funcDef f -> gen_func f 
+    | _ -> ()
+  in  List.iter iterate the_func.local_def_list;
   (* let the_func_ll =
        match lookup_function the_func.header.id the_module with
        | Some f -> f
        | None -> failwith "undeclared function"
      in *)
   let the_func_ll = gen_func_prototype the_func.header in
-  ignore (create_argument_allocas the_func_ll the_func.header);
-
   let bb = append_block context "entry" the_func_ll in
   position_at_end bb builder;
-  Printf.printf "here\n";
+  ignore (create_argument_allocas the_func_ll the_func.header);
 
   List.iter
     (fun local_def ->
@@ -145,7 +148,7 @@ and gen_func the_func =
               let alloca = create_entry_block_alloca the_func_ll x ll_type in
               Hashtbl.add named_values x alloca)
             v.id_list
-      | L_funcDef fd -> gen_func fd
+      | L_funcDef fd -> ()
       | L_funcDecl fdl -> failwith "todo" (* TODO: Function Declarations *))
     the_func.local_def_list;
 
@@ -153,7 +156,7 @@ and gen_func the_func =
     match the_func.block with Block b -> b | _ -> failwith "todofbf"
   in
   List.iter gen_stmt stmt_list;
-  if block_terminator @@ insertion_block builder = None then
+  if (block_terminator @@ insertion_block builder) = None then
     ignore (build_ret_void builder)
 
 and gen_expr expr ?(is_param_ref : bool option) =
@@ -192,12 +195,13 @@ and gen_expr expr ?(is_param_ref : bool option) =
           (fun x ->
             let ith_elem = List.nth args_list !i in
             if x.ref = true then
-              res := gen_expr ith_elem ~is_param_ref:true :: !res
+              res := (gen_expr ith_elem ~is_param_ref:true) :: !res
             else
-              res := gen_expr ith_elem ~is_param_ref:false :: !res;
+              res := (gen_expr ith_elem ~is_param_ref:false) :: !res;
             incr i)
           fpar_def_list
       in
+      (*List.iter(fun x -> Printf.printf("%d\n", x) ) !res;*)
       let args_array = Array.of_list !res in
       build_call callee args_array "calltmp" builder
   | E_sgn_expr (sign, expr) -> (
