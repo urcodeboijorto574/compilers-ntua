@@ -19,9 +19,7 @@ let named_functions = Hashtbl.create 2000
 let rec convert_to_llvm_type x =
   match x with
   | T_int -> int_type
-  | ConstInt -> int_type
   | T_char -> char_type
-  | ConstChar -> char_type
   | T_bool -> bool_type
   | T_array (t, n) -> array_type (convert_to_llvm_type t) n
   | T_func t -> convert_to_llvm_type t

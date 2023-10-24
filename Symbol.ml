@@ -128,7 +128,7 @@ let add_standard_library () =
         | T_array _ -> BY_REFERENCE
         | T_int | T_char -> BY_VALUE
         | T_none | T_func _ -> assert false
-        | T_bool | ConstInt | ConstChar -> failwith "will be deleted" )
+        | T_bool -> failwith "will be deleted" )
     in
     enter_function name (List.map extract_passing parList) (T_func typ) DEFINED
   in

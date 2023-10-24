@@ -3,10 +3,8 @@ type t_type =
   | T_char
   | T_array of t_type * int
   | T_none
-  | T_func of t_type (* ----- *)
-  (* added temporarily for trouble-shooting purposes only *)
-  | ConstInt
-  | ConstChar
+  | T_func of t_type
+  (* T_bool added temporarily here *)
   | T_bool
 
 (* DEBUG: delete when finished *)
