@@ -7,6 +7,8 @@
 !Makefile
 !.ocamlformat
 !build.sh
+!mybuild.sh
+!run.sh
 
 !Main.ml
 

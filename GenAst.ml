@@ -200,7 +200,7 @@ and gen_expr expr ?(is_param_ref : bool option) =
           fpar_def_list
       in
       (*List.iter(fun x -> Printf.printf("%d\n", x) ) !res;*)
-      let args_array = Array.of_list !res in
+      let args_array = Array.of_list (List.rev !res) in
       build_call callee args_array "calltmp" builder
   | E_sgn_expr (sign, expr) -> (
       match sign with
@@ -223,7 +223,6 @@ and gen_stmt stmt =
   | S_assignment (lv, expr) -> (
       match lv with
       | L_id id ->
-          Printf.printf "L_id\n";
           let lv_addr = Hashtbl.find named_values id in
           let value = gen_expr expr ~is_param_ref:false in
           ignore (build_store value lv_addr builder)
