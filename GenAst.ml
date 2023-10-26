@@ -169,7 +169,17 @@ and gen_expr expr ?(is_param_ref : bool option) =
           | Some ref ->
               if ref = false then build_load lv_addr id builder else lv_addr
           | None -> build_load lv_addr id builder)
-      | L_string _ -> failwith "argument cannot be of type string"
+      | L_string s ->
+          (* pointer_type (const_string context s) *)
+          (* create const string *)
+          let const_str = const_stringz context s in
+          (* create variable holding  const_str*)
+          let string_var = define_global "string_var" const_str the_module in
+          (* point to the first element (char) of the string *)
+          let first_element = const_int int_type 0 in
+          build_gep string_var
+            [| first_element; first_element |]
+            "string_ptr" builder
       | L_comp (lv2, expr2) -> failwith "todo" (* TODO *))
   | E_func_call fc ->
       (* get this list here:
@@ -267,14 +277,63 @@ and gen_stmt stmt =
           ignore (build_ret ll_expr builder))
   | _ -> failwith "todoaa"
 
-and define_lib_func =
-  let fp_type = newFparType (ConstInt, []) in
-  let fp_def = newFparDef (false, [ "n" ], fp_type) in
-  let writeInteger_header =
-    newHeader ("writeInteger", [ fp_def ], Ast.Nothing)
-  in
-  gen_func_prototype writeInteger_header
+(* and define_lib_func =
+   let fp_type = newFparType (ConstInt, []) in
+   let fp_def = newFparDef (false, [ "n" ], fp_type) in
+   let writeInteger_header =
+     newHeader ("writeInteger", [ fp_def ], Ast.Nothing)
+   in
+   gen_func_prototype writeInteger_header *)
 
-and gen_on asts =
-  define_lib_func;
+(* and define_lib_func (fp_type, fp_def, f_id, f_rtype) =
+   let fun_header = newHeader(f_id, [ fp_def ], f_rtype)
+   in
+   ignore(gen_func_prototype fun_header) *)
+
+let define_lib_funcs =
+  let define_lib_func (fp_def_list, f_id, f_rtype) =
+    let fun_header = newHeader (f_id, fp_def_list, f_rtype) in
+    ignore (gen_func_prototype fun_header)
+  in
+
+  let writeInteger_fp_type = newFparType (ConstInt, []) in
+  let writeInteger_fp_def_list =
+    [ newFparDef (false, [ "n" ], writeInteger_fp_type) ]
+  in
+  let writeInteger_f_rtype = Ast.Nothing in
+
+  let writeChar_fp_type = newFparType (ConstChar, []) in
+  let writeChar_fp_def_list =
+    [ newFparDef (false, [ "c" ], writeChar_fp_type) ]
+  in
+  let writeChar_f_rtype = Ast.Nothing in
+
+  let writeString_fp_type = newFparType (ConstChar, [ -1 ]) in
+  let writeString_fp_def_list =
+    [ newFparDef (true, [ "s" ], writeString_fp_type) ]
+  in
+  let writeString_f_rtype = Ast.Nothing in
+
+  (* this value is dummy *)
+  (* let readInteger_fp_type = newFparType (Nothing, []) in *)
+  let readInteger_fp_def_list = [] in
+  let readInteger_f_rtype = Ast.RetDataType Ast.ConstInt in
+
+  let lib_list =
+    [
+      (writeInteger_fp_def_list, "writeInteger", writeInteger_f_rtype);
+      (writeChar_fp_def_list, "writeChar", writeChar_f_rtype);
+      (writeString_fp_def_list, "writeString", writeString_f_rtype);
+      (readInteger_fp_def_list, "readInteger", readInteger_f_rtype);
+    ]
+  in
+  List.iter define_lib_func lib_list
+(* let writeString_fp_type = newFparType (ConstChar, [-1]) in
+   let writeString_fp_def = newFparDef (true, [ "s" ], writeString_fp_type) in
+   let writeString_f_rtype = Ast.Nothing in
+   let _ = define_lib_func writeString_fp_type writeString_fp_def "writeString" writeString_f_rtype in
+   () *)
+
+let gen_on asts =
+  define_lib_funcs;
   gen_func asts

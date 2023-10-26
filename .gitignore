@@ -32,4 +32,10 @@
 !SemAst.mli
 !GenAst.ml
 !GenAst2.ml
+
 !lib
+!lib.c
+!lib.a
+!lib.o
+!buildlib.sh
+
