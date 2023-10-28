@@ -2,7 +2,7 @@
 # > ocamlformat -i <file-name>
 
 profile = default
-version = 0.26.0
+version = 0.26.1
 
 break-before-in = fit-or-vertical
 
