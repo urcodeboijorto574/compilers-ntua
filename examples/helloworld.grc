@@ -1,4 +1,9 @@
 fun hello () : nothing
 {
-    writeString("Hello World!!!");
+    writeString("Hello World!!!\nIt\'s-a-me, Mario!\n");
+
+    writeChar('O');
+    writeChar('\K');
+    writeChar('!');
+    writeChar('\n');
 }

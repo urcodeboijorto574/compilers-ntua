@@ -21,7 +21,7 @@
 %token <string> T_identifier
 %token <int> T_integer
 %token <char> T_chr
-%token <string> T_string
+%token <char list> T_string
 
 %token T_eof
 
@@ -139,7 +139,13 @@ stmt:
 
 l_value:
   T_identifier { L_id($1) }
-| T_string { L_string($1) }
+| T_string {
+    let rec string_list_of_char_list = function
+      | [] -> []
+      | h :: t -> (String.make 1 h) :: string_list_of_char_list t
+    in
+    L_string (String.concat "" (string_list_of_char_list $1))
+  }
 | l_value T_left_sqr expr T_right_sqr { L_comp($1, $3) }
 
 expr:
