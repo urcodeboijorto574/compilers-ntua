@@ -16,6 +16,14 @@ let bool_type = i1_type context
 let named_values : (string, llvalue) Hashtbl.t = Hashtbl.create 2000
 let named_functions = Hashtbl.create 2000
 
+let blocks_list = ref []
+
+let print_hash_table tbl =
+  Hashtbl.iter (fun key value ->
+    Printf.printf "Key: %s, Value: \n" key;
+    Llvm.dump_value value;  (* Assuming values are LLVM llvalue *)
+  ) tbl
+
 let rec llvm_type_of_t_type x =
   match x with
   | T_int -> int_type
@@ -117,42 +125,60 @@ let rec create_argument_allocas the_function header =
     (params the_function)
 
 and gen_funcDef the_func =
+  let the_func_ll = gen_header the_func.header in
+  let bb = append_block context "entry" the_func_ll in
+  position_at_end bb builder;
+  blocks_list := bb :: ! blocks_list;
+  ignore (create_argument_allocas the_func_ll the_func.header);
   (* iterate functions in dfs order *)
-  let iterate x = match x with L_funcDef f -> gen_funcDef f | _ -> () in
+  let iterate local_def =
+    match local_def with
+    | L_varDef v ->
+        let ll_type =
+          llvm_type_of_t_type (Types.t_type_of_dataType v.var_type.data_type)
+        in
+        List.iter
+          (fun x ->
+            let alloca = create_entry_block_alloca the_func_ll x ll_type in
+            Hashtbl.add named_values x alloca)
+          v.id_list
+    | L_funcDef fd -> gen_func fd
+    | L_funcDecl fdl -> failwith "todo" (* TODO: Function Declarations *)
+  in
   List.iter iterate the_func.local_def_list;
   (* let the_func_ll =
        match lookup_function the_func.header.id the_module with
        | Some f -> f
        | None -> failwith "undeclared function"
      in *)
-  let the_func_ll = gen_header the_func.header in
-  let bb = append_block context "entry" the_func_ll in
-  position_at_end bb builder;
-  ignore (create_argument_allocas the_func_ll the_func.header);
 
-  List.iter
-    (fun local_def ->
-      match local_def with
-      | L_varDef v ->
-          let ll_type =
-            llvm_type_of_t_type (Types.t_type_of_dataType v.var_type.data_type)
-          in
-          List.iter
-            (fun x ->
-              let alloca = create_entry_block_alloca the_func_ll x ll_type in
-              Hashtbl.add named_values x alloca)
-            v.id_list
-      | L_funcDef fd ->
-          ()
-          (* gen_funcDef fd *)
-          (* TODO: to be checked semantically *)
-      | L_funcDecl fdl -> ())
-    the_func.local_def_list;
-
+  (* List.iter
+     (fun local_def ->
+       match local_def with
+       | L_varDef v ->
+           let ll_type =
+             llvm_type_of_t_type (Types.t_type_of_dataType v.var_type.data_type)
+           in
+           List.iter
+             (fun x ->
+               let alloca = create_entry_block_alloca the_func_ll x ll_type in
+               Hashtbl.add named_values x alloca)
+             v.id_list
+       | L_funcDef fd -> ()
+       | L_funcDecl fdl -> failwith "todo" (* TODO: Function Declarations *))
+     the_func.local_def_list; *)
   let stmt_list = match the_func.block with Block b -> b in
   List.iter gen_stmt stmt_list;
-  if block_terminator @@ insertion_block builder = None then
-    ignore (build_ret_void builder)
+  if block_terminator @@ insertion_block builder = None then ignore (build_ret_void builder);
+
+  blocks_list := List.tl !blocks_list;
+  let empty_list list = match list with
+    | [] -> true
+    | _ -> false
+  in
+  if empty_list !blocks_list = false then 
+    position_at_end (List.hd !blocks_list) builder;
+
 
 and gen_expr ?(is_param_ref : bool option) expr =
   match expr with
@@ -161,7 +187,9 @@ and gen_expr ?(is_param_ref : bool option) expr =
   | E_lvalue lv -> (
       match lv with
       | L_id id -> (
+          (* Printf.printf "%s\n" id; *)
           let lv_addr = Hashtbl.find named_values id in
+          dump_value lv_addr;
           match is_param_ref with
           | Some ref ->
               if ref = false then build_load lv_addr id builder else lv_addr
@@ -179,6 +207,7 @@ and gen_expr ?(is_param_ref : bool option) expr =
             "string_ptr" builder
       | L_comp (lv2, expr2) -> failwith "todo" (* TODO *))
   | E_func_call fc ->
+      (* Printf.printf "%s\n" fc.id; *)
       (* get this list here:
          [ {ref, [a], int}, {ref, [b], int}, {ref, [c], int}, {noref, [e], char}, {noref, [f], char} ] *)
       let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
@@ -318,4 +347,5 @@ let define_lib_funcs =
 
 let gen_on asts =
   ignore define_lib_funcs;
+  print_hash_table named_values;
   gen_funcDef asts
