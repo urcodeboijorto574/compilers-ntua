@@ -188,12 +188,18 @@ and gen_expr ?(is_param_ref : bool option) expr =
       match lv with
       | L_id id -> (
           (* Printf.printf "%s\n" id; *)
-          let lv_addr = Hashtbl.find named_values id in
-          dump_value lv_addr;
-          match is_param_ref with
-          | Some ref ->
-              if ref = false then build_load lv_addr id builder else lv_addr
-          | None -> build_load lv_addr id builder)
+          if Hashtbl.mem named_values id then
+            
+            let lv_addr = Hashtbl.find named_values id in
+              Printf.printf "%s" id;
+              Printf.printf(" found here\n");
+              match is_param_ref with
+              | Some ref ->
+                  if ref = false then build_load lv_addr id builder else lv_addr
+              | None -> build_load lv_addr id builder
+            
+          else
+            failwith("not found here"))
       | L_string s ->
           (* pointer_type (const_string context s) *)
           (* create const string *)
@@ -256,9 +262,14 @@ and gen_stmt stmt =
   | S_assignment (lv, expr) -> (
       match lv with
       | L_id id ->
-          let lv_addr = Hashtbl.find named_values id in
-          let value = gen_expr ~is_param_ref:false expr in
-          ignore (build_store value lv_addr builder)
+          if Hashtbl.mem named_values id then
+            let lv_addr = Hashtbl.find named_values id in
+            let value = gen_expr ~is_param_ref:false expr in
+            ignore (build_store value lv_addr builder)
+            (* Printf.printf "%s\n" id;
+            Printf.printf("FOUND\n"); *)
+          else
+            Printf.printf("not found")
       | _ -> failwith "tododd")
   | S_func_call fc ->
       (* let params_array = [| int_type; |] in
@@ -347,5 +358,5 @@ let define_lib_funcs =
 
 let gen_on asts =
   ignore define_lib_funcs;
-  print_hash_table named_values;
+  (* print_hash_table named_values; *)
   gen_funcDef asts
