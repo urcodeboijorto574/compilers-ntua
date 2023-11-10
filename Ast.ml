@@ -1,3 +1,5 @@
+Open Llvm
+
 type arithmOperator =
   | O_plus
   | O_minus
@@ -26,6 +28,8 @@ and funcDef = {
   header : header;
   local_def_list : localDef list;
   block : block;
+  mutable parent_func : funcDef option;
+  mutable stack_frame : Llvm.lltype option;
 }
 
 and header = {

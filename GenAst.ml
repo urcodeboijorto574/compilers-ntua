@@ -94,11 +94,19 @@ let gen_header (header : Ast.header) =
 
 (* Create an alloca for each argument and register the argument in the symbol
    * table so that references to it will succeed. *)
-let rec create_argument_allocas the_function header =
-  let args = expand_fpar_def_list header.fpar_def_list in
+let rec create_argument_allocas the_function func_def =
+  let args = expand_fpar_def_list func_def.header.fpar_def_list in
   let args_array = Array.of_list args in
   let param_types_list = List.map llvm_type_of_param args in
   let param_types_array = Array.of_list param_types_list in
+  let stack_frame_type = 
+    match func_def.stack_frame with
+      | Some sf -> sf
+      | None -> failwith "stack frame for function does not exist"
+  in
+  (* create memory for the stack frame of the current function *)
+  let stack_frame = build_alloca stack_frame_type "stack_frame" builder
+  in
   Array.iteri
     (fun i ai ->
       let ith_param = args_array.(i) in
@@ -124,12 +132,12 @@ let rec create_argument_allocas the_function header =
       | true -> Hashtbl.add named_values var_name ai)
     (params the_function)
 
-and gen_funcDef the_func =
-  let the_func_ll = gen_header the_func.header in
+and gen_funcDef func_def =
+  let the_func_ll = gen_header func_def.header in
   let bb = append_block context "entry" the_func_ll in
   position_at_end bb builder;
   blocks_list := bb :: ! blocks_list;
-  ignore (create_argument_allocas the_func_ll the_func.header);
+  ignore (create_argument_allocas the_func_ll func_def);
   (* iterate functions in dfs order *)
   let iterate local_def =
     match local_def with
@@ -145,7 +153,7 @@ and gen_funcDef the_func =
     | L_funcDef fd -> gen_func fd
     | L_funcDecl fdl -> failwith "todo" (* TODO: Function Declarations *)
   in
-  List.iter iterate the_func.local_def_list;
+  List.iter iterate func_def.local_def_list;
   (* let the_func_ll =
        match lookup_function the_func.header.id the_module with
        | Some f -> f
