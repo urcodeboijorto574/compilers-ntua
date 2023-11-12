@@ -18,6 +18,38 @@ let named_functions = Hashtbl.create 2000
 
 let blocks_list = ref []
 
+(* iterate func definitions in dfs order and set the stack frame of each funcDef
+   as an llvm struct type and set the parent function pointer of each funcDef as the function above. Also set the struct body with the types of the elements *)
+let rec set_stack_frames funcDef = 
+  let var_types_list =
+    let rec helper ld_list acc = 
+      match ld_list with
+      | [] -> []
+      | hd :: tail -> 
+        match hd with
+        | L_varDef vd -> (convert_param_to_llvm_type vd) :: helper tail acc
+        | _ -> acc 
+    in
+    helper funcDef.local_def_list []
+  in
+  List.iter 
+  (fun local_def ->
+    match local_def with
+    | L_funcDef fd -> 
+        fd.parent_func <- Some funcDef;
+        let stack_frame_ll = named_struct_type context ("frame_" ^ fd.header.id) in
+        fd.stack_frame <- Some stack_frame_ll;
+        let access_link = pointer_type stack_frame_ll in
+        let params_list = expand_fpar_def_list func_def.header.fpar_def_list in
+        let param_types_list = List.map convert_param_to_llvm_type args in
+        let stack_frame_records = [access_link] @ param_types_list @ var_types_list in
+        let stack_frame_records_arr = Array.of_list stack_frame_records in
+        struct_set_body stack_frame_ll stack_frame_records_arr false;
+        set_stack_frames fd
+    | _ -> ()
+  ) funcDef.local_def_list
+
+
 let print_hash_table tbl =
   Hashtbl.iter (fun key value ->
     Printf.printf "Key: %s, Value: \n" key;
