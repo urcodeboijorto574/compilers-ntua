@@ -18,44 +18,6 @@ let named_functions = Hashtbl.create 2000
 
 let blocks_list = ref []
 
-(* iterate func definitions in dfs order and set the stack frame of each funcDef
-   as an llvm struct type and set the parent function pointer of each funcDef as the function above. Also set the struct body with the types of the elements *)
-let rec set_stack_frames funcDef = 
-  let var_types_list =
-    let rec helper ld_list acc = 
-      match ld_list with
-      | [] -> []
-      | hd :: tail -> 
-        match hd with
-        | L_varDef vd -> (convert_param_to_llvm_type vd) :: helper tail acc
-        | _ -> acc 
-    in
-    helper funcDef.local_def_list []
-  in
-  List.iter 
-  (fun local_def ->
-    match local_def with
-    | L_funcDef fd -> 
-        fd.parent_func <- Some funcDef;
-        let stack_frame_ll = named_struct_type context ("frame_" ^ fd.header.id) in
-        fd.stack_frame <- Some stack_frame_ll;
-        let access_link = pointer_type stack_frame_ll in
-        let params_list = expand_fpar_def_list func_def.header.fpar_def_list in
-        let param_types_list = List.map convert_param_to_llvm_type args in
-        let stack_frame_records = [access_link] @ param_types_list @ var_types_list in
-        let stack_frame_records_arr = Array.of_list stack_frame_records in
-        struct_set_body stack_frame_ll stack_frame_records_arr false;
-        set_stack_frames fd
-    | _ -> ()
-  ) funcDef.local_def_list
-
-
-let print_hash_table tbl =
-  Hashtbl.iter (fun key value ->
-    Printf.printf "Key: %s, Value: \n" key;
-    Llvm.dump_value value;  (* Assuming values are LLVM llvalue *)
-  ) tbl
-
 let rec llvm_type_of_t_type x =
   match x with
   | T_int -> int_type
@@ -72,6 +34,55 @@ let rec llvm_type_of_param x =
       (* TODO: need to add a check here whether type is
          array. Maybe need to change fparType and add type array there *)
       pointer_type (llvm_type_of_t_type t_type)
+
+
+(* set parent function of each function *)
+let rec set_func_parents fd =
+  let traverse_dfs child = 
+    match child with
+    | L_funcDef -> child.parent_func <- Some fd; set_func_parents child
+    | _ -> () ;
+  in
+  List.iter traverse_dfs fd.local_def_list
+
+(* take a func definition and do the following
+   - create the stack frame containing the access link, parameters and local variables *)
+let rec set_stack_frame funcDef = 
+  (* gather local var definitions in a list for funcDef *)
+  let var_types_list =
+    let rec helper ld_list acc = 
+      match ld_list with
+      | [] -> []
+      | hd :: tail -> 
+        match hd with
+        | L_varDef vd -> (convert_param_to_llvm_type vd) :: helper tail acc
+        | _ -> helper tail acc 
+    in
+    helper funcDef.local_def_list []
+  in
+  let params_list = expand_fpar_def_list func_def.header.fpar_def_list in
+  let param_types_list = List.map convert_param_to_llvm_type args in
+  
+  (* create the stack frame in field stack_frame for funcDef*)
+  let stack_frame_ll = named_struct_type context ("frame_" ^ funcDef.header.id) in
+  funcDef.stack_frame <- Some stack_frame_ll;
+
+  let access_link = 
+    let the_parent = funcDef.parent_func in
+    match the_parent with
+    | Some _ ->  
+      let parent_stack_frame = the_parent.stack_frame in
+      Some (pointer_type parent_stack_frame)
+    | None -> None
+  in
+  let stack_frame_records = [access_link] @ param_types_list @ var_types_list in
+  let stack_frame_records_arr = Array.of_list stack_frame_records in
+  struct_set_body stack_frame_ll stack_frame_records_arr false;
+ 
+let set_stack_frames funcDef =
+  set_func_parents funcDef;
+  set_stack_frame funcDef;
+  List.iter set_stack_frame funcDef.local_def_list
 
 (* Create an alloca instruction in the entry block of the function. This
  * is used for mutable variables etc. *)
@@ -397,6 +408,7 @@ let define_lib_funcs =
        writeString_f_rtype) *)
 
 let gen_on asts =
+  set_stack_frames asts;
   ignore define_lib_funcs;
   (* print_hash_table named_values; *)
   gen_funcDef asts
