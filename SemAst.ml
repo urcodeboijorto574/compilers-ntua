@@ -155,7 +155,6 @@ and sem_header isPartOfAFuncDef = function
             match (Option.get resultLookUpOption).kind with
             | ENTRY_function ef -> ef
             | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
-            (* A function and a variable/parameter share the same name. *)
           in
           if Types.debugMode then (
             Printf.printf "Parameter list from ST:\n\t[ ";
@@ -222,7 +221,22 @@ and sem_header isPartOfAFuncDef = function
             lists_are_equal functionEntry.parameters_list paramListFromHeader
           in
 
-          if not matchingNumOfParams then
+          if Types.debugMode then
+            Printf.printf
+              "(Option.get resultLookUpOption).scope.depth = %d, \
+               !current_scope.depth = %d\n"
+              (Option.get resultLookUpOption).scope.depth !current_scope.depth;
+
+          if
+            not
+              (Symbol.equal_scopes (Option.get resultLookUpOption).scope
+                 !current_scope)
+          then (
+            enter_function ident (sem_fparDefList fpdl)
+              (Types.t_type_of_retType rt)
+              Symbol.(if isPartOfAFuncDef then DEFINED else DECLARED);
+            add_params_to_scope ())
+          else if not matchingNumOfParams then
             raise Overloaded_functions
           else if functionEntry.return_type <> returnTypeFromHeader then
             raise Expected_type_not_returned

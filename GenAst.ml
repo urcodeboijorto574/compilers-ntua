@@ -335,5 +335,5 @@ let define_lib_funcs =
    () *)
 
 let gen_on asts =
-  define_lib_funcs;
+  ignore define_lib_funcs;
   gen_func asts
