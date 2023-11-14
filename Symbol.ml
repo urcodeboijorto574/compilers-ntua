@@ -56,6 +56,14 @@ and close_scope () =
   try current_scope := Option.get !current_scope.parent
   with Invalid_argument _ -> failwith "Initial scope closed"
 
+let rec equal_scopes s1 s2 : bool =
+  s1.name = s2.name && s1.depth = s2.depth
+  &&
+  match (s1.parent, s2.parent) with
+  | None, None -> true
+  | Some s1', Some s2' -> equal_scopes s1' s2'
+  | _ -> false
+
 (** [symbolTable] is a Hashtbl ref that stores the current image of the
     SymbolTable. *)
 let symbolTable = ref (Hashtbl.create 0)
@@ -140,90 +148,73 @@ let add_standard_library () =
   add_func_lib "strcat" [ (2, T_array (T_char, -1)) ] T_none
 
 let look_up_entry (id : string) =
-  let print_entries_list (sc : scope) =
-    Printf.printf "Scope '%s':\n\t[ " sc.name;
-    List.iter
-      (fun e -> Printf.printf "%s(%s) " e.id e.scope.name)
-      sc.scope_entries;
-    Printf.printf "]\n"
-  and print_hashtable () =
-    let printedSmth = ref false in
-    Printf.printf "\tSymbolTable contains the following:\n";
-    let string_of_entry_kind = function
-      | ENTRY_variable _ -> "ENTRY_variable"
-      | ENTRY_parameter _ -> "ENTRY_parameter"
-      | ENTRY_function _ -> "ENTRY_function"
-    in
-    Hashtbl.iter
-      (fun key entry ->
-        if key = id then (
-          printedSmth := true;
-          Printf.printf
-            "\tKey: '%s', Value: { id = '%s'; scope = %s(%d); kind = %s }\n" key
-            entry.id
-            (match entry.scope.name with "" -> "(global)" | str -> str)
-            entry.scope.depth
-            (string_of_entry_kind entry.kind)))
-      !symbolTable;
-    if not !printedSmth then Printf.printf "\t(nothing)\n"
-  in
   if Types.debugMode then (
     Printf.printf "Looking for name '%s':\n" id;
+    let print_hashtable () =
+      let printedSmth = ref false in
+      Printf.printf "\tSymbolTable contains the following:\n";
+      let string_of_entry_kind = function
+        | ENTRY_variable _ -> "ENTRY_variable"
+        | ENTRY_parameter _ -> "ENTRY_parameter"
+        | ENTRY_function _ -> "ENTRY_function"
+      in
+      Hashtbl.iter
+        (fun key entry ->
+          if
+            not
+              (key = "writeInteger" || key = "writeChar" || key = "writeString"
+             || key = "readInteger" || key = "readChar" || key = "readString"
+             || key = "ascii" || key = "chr" || key = "strlen" || key = "strcmp"
+             || key = "strcpy" || key = "strcat")
+          then (
+            printedSmth := true;
+            Printf.printf
+              "\tKey: '%s', Value: { id = '%s'; scope = %s(%d); kind = %s }\n"
+              key entry.id
+              (match entry.scope.name with "" -> "(global)" | str -> str)
+              entry.scope.depth
+              (string_of_entry_kind entry.kind)))
+        !symbolTable;
+      if not !printedSmth then Printf.printf "\t(nothing)\n"
+    in
     print_hashtable ());
 
-  try
-    let resultEntryList =
-      List.filter
-        (fun e -> e.scope.depth <= !current_scope.depth)
-        (Hashtbl.find_all !symbolTable id)
+  let resultEntryList =
+    List.stable_sort
+      (fun e1 e2 -> compare e1.scope.depth e2.scope.depth * -1)
+      (List.filter
+         (fun e ->
+           let rec is_ancestor sc_ref sc =
+             if sc_ref.parent = None then
+               sc.parent = None
+             else
+               sc.parent = None || equal_scopes sc_ref sc
+               || is_ancestor (Option.get sc_ref.parent) sc
+           in
+           is_ancestor !current_scope e.scope)
+         (Hashtbl.find_all !symbolTable id))
+  in
+  if Types.debugMode then (
+    let print_entry_list () =
+      Printf.printf "resultEntryList contains the following\n\t[ ";
+      if resultEntryList <> [] then (
+        Printf.printf "\n\t";
+        List.iter
+          (fun e ->
+            Printf.printf "  { id: %s, scope: %s, depth: %d}\n\t" e.id
+              e.scope.name e.scope.depth)
+          resultEntryList);
+      Printf.printf "]\n"
     in
-    if Types.debugMode then
-      print_entries_list
-        {
-          name = "result entries";
-          parent = None;
-          depth = 42;
-          scope_entries = resultEntryList;
-        };
-    let resultEntry =
-      try List.hd resultEntryList
-      with Failure _ ->
-        if Types.debugMode then
-          Printf.printf "Entry '%s' not found in any scope.\n" id;
-        raise Not_found
-    in
-    if Types.debugMode then
-      Printf.printf "Entry '%s' found in scope '%s'!\n" id
-        resultEntry.scope.name;
-    if
-      let rec equal_scopes s1 s2 : bool =
-        s1.name = s2.name && s1.depth = s2.depth
-        &&
-        match (s1.parent, s2.parent) with
-        | None, None -> true
-        | Some s1', Some s2' -> equal_scopes s1' s2'
-        | _ -> false
-      in
-      equal_scopes resultEntry.scope !current_scope
-    then
-      let rec get_entry_in_smaller_depth = function
-        | [] -> raise Not_found
-        | entry :: remainingList ->
-            if entry.scope.depth > !current_scope.depth then
-              get_entry_in_smaller_depth remainingList
-            else (
-              (* entry is defined in a parent scope *)
-              if Types.debugMode then print_entries_list entry.scope;
-              Some entry)
-      in
-      get_entry_in_smaller_depth resultEntryList
-    else (
-      (* entry got found *)
-      if Types.debugMode then (
-        Printf.printf "%s found in " id;
-        print_entries_list resultEntry.scope);
-      Some resultEntry)
-  with Not_found -> None
+    print_entry_list ();
+    if resultEntryList <> [] then
+      Printf.printf
+        "Entry '%s' found in scope '%s'(depth: %d)!(Current depth: %d)\n" id
+        (List.hd resultEntryList).scope.name
+        (List.hd resultEntryList).scope.depth !current_scope.depth
+    else
+      Printf.printf "Entry '%s' not found in any scope.\n" id);
+  if resultEntryList = [] then None else Some (List.hd resultEntryList)
 
 let get_undefined_functions () =
   let undefinedFunctionsList = ref [] in
