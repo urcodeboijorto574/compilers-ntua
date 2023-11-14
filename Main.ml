@@ -14,10 +14,8 @@ let main =
       Printf.printf "\n";
       Printf.printf "Semantic analysis:\n");
     SemAst.sem_on asts;
-    PrintAst.print_on asts;
-    Printf.printf "\n";
-    Printf.printf "\027[32mSemantically correct.\027[0m\n";
-    let ir_code = GenAst.gen_on asts in
+    Printf.printf "\n\027[32mSemantically correct.\027[0m\n";
+    GenAst.gen_on asts;
 
     (* command to compile GenAst.ml
        ocamlc -I /home/jimv/.opam/4.14.0/lib/llvm/ -c GenAst.ml*)
