@@ -28,6 +28,7 @@ and funcDef = {
   header : header;
   local_def_list : localDef list;
   block : block;
+  mutable access_link : LLvm.lltype option;
   mutable parent_func : funcDef option;
   mutable stack_frame : Llvm.lltype option;
 }
