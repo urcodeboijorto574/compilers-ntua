@@ -157,7 +157,7 @@ and gen_func the_func =
   if block_terminator @@ insertion_block builder = None then
     ignore (build_ret_void builder)
 
-and gen_expr expr ?(is_param_ref : bool option) =
+and gen_expr ?(is_param_ref : bool option) expr =
   match expr with
   | E_const_int x -> const_int int_type x
   | E_const_char x -> const_int char_type (int_of_char x)
@@ -203,9 +203,9 @@ and gen_expr expr ?(is_param_ref : bool option) =
           (fun x ->
             let ith_elem = List.nth args_list !i in
             if x.ref = true then
-              res := gen_expr ith_elem ~is_param_ref:true :: !res
+              res := gen_expr ~is_param_ref:true ith_elem :: !res
             else
-              res := gen_expr ith_elem ~is_param_ref:false :: !res;
+              res := gen_expr ~is_param_ref:false ith_elem :: !res;
             incr i)
           fpar_def_list
       in
@@ -214,19 +214,19 @@ and gen_expr expr ?(is_param_ref : bool option) =
       build_call callee args_array "calltmp" builder
   | E_sgn_expr (sign, expr) -> (
       match sign with
-      | O_plus -> gen_expr expr ~is_param_ref:false
-      | O_minus -> build_neg (gen_expr expr ~is_param_ref:false) "minus" builder
+      | O_plus -> gen_expr ~is_param_ref:false expr
+      | O_minus -> build_neg (gen_expr ~is_param_ref:false expr) "minus" builder
       )
   | E_op_expr_expr (lhs, oper, rhs) -> (
-      let lhs_val = gen_expr lhs ~is_param_ref:false in
-      let rhs_val = gen_expr rhs ~is_param_ref:false in
+      let lhs_val = gen_expr ~is_param_ref:false lhs in
+      let rhs_val = gen_expr ~is_param_ref:false rhs in
       match oper with
       | O_plus -> build_add lhs_val rhs_val "addtmp" builder
       | O_minus -> build_sub lhs_val rhs_val "subtmp" builder
       | O_mul -> build_mul lhs_val rhs_val "multmp" builder
       | O_div -> build_sdiv lhs_val rhs_val "divtmp" builder
       | O_mod -> build_srem lhs_val rhs_val "modtmp" builder)
-  | E_expr_parenthesized expr -> gen_expr expr ~is_param_ref:false
+  | E_expr_parenthesized expr -> gen_expr ~is_param_ref:false expr
 
 and gen_stmt stmt =
   match stmt with
@@ -234,7 +234,7 @@ and gen_stmt stmt =
       match lv with
       | L_id id ->
           let lv_addr = Hashtbl.find named_values id in
-          let value = gen_expr expr ~is_param_ref:false in
+          let value = gen_expr ~is_param_ref:false expr in
           ignore (build_store value lv_addr builder)
       | _ -> failwith "tododd")
   | S_func_call fc ->
@@ -261,9 +261,9 @@ and gen_stmt stmt =
           (fun x ->
             let ith_elem = List.nth args_list !i in
             if x.ref = true then
-              res := gen_expr ith_elem ~is_param_ref:true :: !res
+              res := gen_expr ~is_param_ref:true ith_elem :: !res
             else
-              res := gen_expr ith_elem ~is_param_ref:false :: !res;
+              res := gen_expr ~is_param_ref:false ith_elem :: !res;
             incr i)
           fpar_def_list
       in
@@ -273,7 +273,7 @@ and gen_stmt stmt =
       match expr with
       | None -> ignore (build_ret_void builder)
       | Some e ->
-          let ll_expr = gen_expr e ~is_param_ref:false in
+          let ll_expr = gen_expr ~is_param_ref:false e in
           ignore (build_ret ll_expr builder))
   | _ -> failwith "todoaa"
 
