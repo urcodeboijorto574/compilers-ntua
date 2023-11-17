@@ -16,23 +16,23 @@ let bool_type = i1_type context
 let named_values : (string, llvalue) Hashtbl.t = Hashtbl.create 2000
 let named_functions = Hashtbl.create 2000
 
-let rec convert_to_llvm_type x =
+let rec llvm_type_of_t_type x =
   match x with
   | T_int -> int_type
   | T_char -> char_type
   | T_bool -> bool_type
-  | T_array (t, n) -> array_type (convert_to_llvm_type t) n
-  | T_func t -> convert_to_llvm_type t
+  | T_array (t, n) -> array_type (llvm_type_of_t_type t) n
+  | T_func t -> llvm_type_of_t_type t
   | T_none -> void_type context
 
 let rec convert_param_to_llvm_type x =
   let t_type = Types.t_type_of_dataType x.fpar_type.data_type in
   match x.ref with
-  | false -> convert_to_llvm_type t_type
+  | false -> llvm_type_of_t_type t_type
   | true ->
       (* TODO: need to add a check here whether type is
          array. Maybe need to change fparType and add type array there *)
-      pointer_type (convert_to_llvm_type t_type)
+      pointer_type (llvm_type_of_t_type t_type)
 
 (* Create an alloca instruction in the entry block of the function. This
  * is used for mutable variables etc. *)
@@ -55,7 +55,7 @@ let expand_fpar_def_list (def_list : fparDef list) : fparDef list =
 
 (* Create array of parameters. This array is of like:
    [llvm int, llvm char, llvm int *, ...]*)
-let gen_func_prototype (header : Ast.header) =
+let gen_header (header : Ast.header) =
   let name = header.id in
   let args = expand_fpar_def_list header.fpar_def_list in
   let args_array = Array.of_list args in
@@ -64,7 +64,7 @@ let gen_func_prototype (header : Ast.header) =
   let ret_type = header.ret_type in
   let param_types_list = List.map convert_param_to_llvm_type args in
   let param_types_array = Array.of_list param_types_list in
-  let return_type = convert_to_llvm_type (Types.t_type_of_retType ret_type) in
+  let return_type = llvm_type_of_t_type (Types.t_type_of_retType ret_type) in
   let ft = function_type return_type param_types_array in
   let f =
     match lookup_function name the_module with
@@ -105,7 +105,7 @@ let rec create_argument_allocas the_function header =
       (* if parameter NOT passed by ref, create alloca and add to symbol table *)
       | false ->
           let ith_param_ll_type =
-            convert_to_llvm_type
+            llvm_type_of_t_type
               (Types.t_type_of_dataType ith_param.fpar_type.data_type)
           in
           let alloca =
@@ -118,16 +118,16 @@ let rec create_argument_allocas the_function header =
       | true -> Hashtbl.add named_values var_name ai)
     (params the_function)
 
-and gen_func the_func =
+and gen_funcDef the_func =
   (* iterate functions in dfs order *)
-  let iterate x = match x with L_funcDef f -> gen_func f | _ -> () in
+  let iterate x = match x with L_funcDef f -> gen_funcDef f | _ -> () in
   List.iter iterate the_func.local_def_list;
   (* let the_func_ll =
        match lookup_function the_func.header.id the_module with
        | Some f -> f
        | None -> failwith "undeclared function"
      in *)
-  let the_func_ll = gen_func_prototype the_func.header in
+  let the_func_ll = gen_header the_func.header in
   let bb = append_block context "entry" the_func_ll in
   position_at_end bb builder;
   ignore (create_argument_allocas the_func_ll the_func.header);
@@ -137,15 +137,18 @@ and gen_func the_func =
       match local_def with
       | L_varDef v ->
           let ll_type =
-            convert_to_llvm_type (Types.t_type_of_dataType v.var_type.data_type)
+            llvm_type_of_t_type (Types.t_type_of_dataType v.var_type.data_type)
           in
           List.iter
             (fun x ->
               let alloca = create_entry_block_alloca the_func_ll x ll_type in
               Hashtbl.add named_values x alloca)
             v.id_list
-      | L_funcDef fd -> ()
-      | L_funcDecl fdl -> failwith "todo" (* TODO: Function Declarations *))
+      | L_funcDef fd ->
+          ()
+          (* gen_funcDef fd *)
+          (* TODO: to be checked semantically *)
+      | L_funcDecl fdl -> ())
     the_func.local_def_list;
 
   let stmt_list = match the_func.block with Block b -> b in
@@ -198,10 +201,7 @@ and gen_expr ?(is_param_ref : bool option) expr =
         List.iter
           (fun x ->
             let ith_elem = List.nth args_list !i in
-            if x.ref = true then
-              res := gen_expr ~is_param_ref:true ith_elem :: !res
-            else
-              res := gen_expr ~is_param_ref:false ith_elem :: !res;
+            res := gen_expr ~is_param_ref:x.ref ith_elem :: !res;
             incr i)
           fpar_def_list
       in
@@ -273,23 +273,10 @@ and gen_stmt stmt =
           ignore (build_ret ll_expr builder))
   | _ -> failwith "todoaa"
 
-(* and define_lib_func =
-   let fp_type = newFparType (ConstInt, []) in
-   let fp_def = newFparDef (false, [ "n" ], fp_type) in
-   let writeInteger_header =
-     newHeader ("writeInteger", [ fp_def ], Ast.Nothing)
-   in
-   gen_func_prototype writeInteger_header *)
-
-(* and define_lib_func (fp_type, fp_def, f_id, f_rtype) =
-   let fun_header = newHeader(f_id, [ fp_def ], f_rtype)
-   in
-   ignore(gen_func_prototype fun_header) *)
-
 let define_lib_funcs =
   let define_lib_func (fp_def_list, f_id, f_rtype) =
     let fun_header = newHeader (f_id, fp_def_list, f_rtype) in
-    ignore (gen_func_prototype fun_header)
+    ignore (gen_header fun_header)
   in
 
   let writeInteger_fp_type = newFparType (ConstInt, []) in
@@ -327,9 +314,10 @@ let define_lib_funcs =
 (* let writeString_fp_type = newFparType (ConstChar, [-1]) in
    let writeString_fp_def = newFparDef (true, [ "s" ], writeString_fp_type) in
    let writeString_f_rtype = Ast.Nothing in
-   let _ = define_lib_func writeString_fp_type writeString_fp_def "writeString" writeString_f_rtype in
-   () *)
+   ignore (
+     define_lib_func writeString_fp_type writeString_fp_def "writeString"
+       writeString_f_rtype) *)
 
 let gen_on asts =
   ignore define_lib_funcs;
-  gen_func asts
+  gen_funcDef asts
