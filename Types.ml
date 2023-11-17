@@ -4,9 +4,6 @@ type t_type =
   | T_array of t_type * int
   | T_none
   | T_func of t_type
-  (* ----- *)
-  (* added temporarily for trouble-shooting purposes only *)
-  | T_bool
 
 (* DEBUG *)
 let debugMode = false
@@ -17,7 +14,6 @@ let rec string_of_t_type = function
   | T_array (t, n) -> "array(" ^ string_of_int n ^ ") of " ^ string_of_t_type t
   | T_none -> "nothing"
   | T_func t -> string_of_t_type t ^ " (function)"
-  | T_bool -> failwith "will be deleted"
 
 let construct_array_type dimList endType =
   let rec helper cnt len dl =

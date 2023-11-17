@@ -4,8 +4,6 @@ type t_type =
   | T_array of t_type * int
   | T_none
   | T_func of t_type
-  (* T_bool added temporarily here *)
-  | T_bool
 
 (* DEBUG: delete when finished *)
 

@@ -20,7 +20,6 @@ let rec llvm_type_of_t_type x =
   match x with
   | T_int -> int_type
   | T_char -> char_type
-  | T_bool -> bool_type
   | T_array (t, n) -> array_type (llvm_type_of_t_type t) n
   | T_func t -> llvm_type_of_t_type t
   | T_none -> void_type context
