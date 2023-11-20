@@ -34,6 +34,7 @@ and funcDef = {
   mutable parent_func : funcDef option;
   (* stack frame of the function -- later will become a struct *)
   mutable stack_frame : Llvm.lltype option;
+  mutable stack_frame_addr : Llvm.llvalue option;
 }
 
 and header = {
@@ -126,6 +127,7 @@ let newFuncDef (a, b, c) =
     access_link = None;
     parent_func = None;
     stack_frame = None;
+    stack_frame_addr = None;
   }
 
 and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }

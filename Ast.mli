@@ -32,6 +32,7 @@ and funcDef = {
   mutable parent_func : funcDef option;
   (* stack frame of the function -- later will become a struct *)
   mutable stack_frame : Llvm.lltype option;
+  mutable stack_frame_addr : Llvm.llvalue option;
 }
 
 and header = {

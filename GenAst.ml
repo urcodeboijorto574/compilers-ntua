@@ -147,7 +147,7 @@ and create_argument_allocas the_function func_def stack_frame_alloca =
         ignore (build_store ai position builder))
     (params the_function)
 
-and gen_expr ?(is_param_ref = false) expr access_link stack_frame_ptr =
+and gen_expr is_param_ref expr access_link stack_frame_ptr stack_frame_length =
   (* let the_stack_frame = build_load stack_frame_ptr "stack_Frame" builder in *)
   match expr with
   | E_const_int x -> const_int int_type x
@@ -156,28 +156,29 @@ and gen_expr ?(is_param_ref = false) expr access_link stack_frame_ptr =
       match lv with
       | L_id id -> (
           (* let lv_addr =             *)
-          let iterate i stack_frame =
-            let stack_frame_length =
-              let frame_array = struct_element_types stack_frame in
-              Array.length frame_array
+          let lv_addr = 
+            let rec iterate i stack_frame =
+              let var_address =
+                build_struct_gep stack_frame_ptr i "stack_frame elem" builder
+              in
+              let var_name = value_name var_address in
+              if var_name = id then
+                var_address
+              else if i <= stack_frame_length then
+                iterate (i + 1) stack_frame
+              else
+                (* let parent_stack_frame = build_load access_link "parent stack frame" builder in *)
+                let the_access_link_not_list = 
+                  match access_link with
+                  | [] -> failwith "end"
+                  | [x] -> x
+                  | _ -> failwith "end"
+                in
+                iterate 0 the_access_link_not_list
             in
-            let var_address =
-              build_struct_gep stack_frame i "stack_frame elem" builder
-            in
-            let var_name = value_name var_address in
-            if var_name = id then
-              var_address
-            else if i <= stack_frame_length then
-              iterate (i + 1) stack_frame
-            else
-              (* let parent_stack_frame = build_load access_link "parent stack frame" builder in *)
-              iterate 0 access_link
+            iterate 0 stack_frame_ptr;
           in
-          iterate 0 stack_frame_ptr;
-          match is_param_ref with
-          | Some ref ->
-              if ref = false then build_load lv_addr id builder else lv_addr
-          | None -> build_load lv_addr id builder)
+          if is_param_ref = false then build_load lv_addr id builder else lv_addr)
       | L_comp (lv2, expr2) -> failwith "todo" (* TODO *)
       | _ -> failwith "tododd")
   | E_func_call fc ->
@@ -203,13 +204,14 @@ and gen_expr ?(is_param_ref = false) expr access_link stack_frame_ptr =
           (fun x ->
             let ith_elem = List.nth args_list !i in
             res :=
-              gen_expr ~is_param_ref:x.ref ith_elem access_link stack_frame_ptr
+              gen_expr x.ref ith_elem access_link stack_frame_ptr
               :: !res;
             incr i)
           fpar_def_list
       in
       (*List.iter(fun x -> Printf.printf("%d\n", x) ) !res;*)
-      let args_array = Array.of_list (List.rev !res) in
+      let rev_list = List.rev !res in
+      let args_array = Array.of_list (access_link @ rev_list) in
       build_call callee args_array "calltmp" builder
   | E_sgn_expr (sign, expr) -> (
       match sign with
@@ -227,17 +229,13 @@ and gen_expr ?(is_param_ref = false) expr access_link stack_frame_ptr =
       | O_mod -> build_srem lhs_val rhs_val "modtmp" builder)
   | E_expr_parenthesized expr -> gen_expr expr access_link stack_frame
 
-and gen_stmt stmt access_link stack_frame =
+and gen_stmt stmt access_link stack_frame stack_frame_length =
   match stmt with
   | S_assignment (lv, expr) -> (
       match lv with
       | L_id id ->
           let lv_address =
             let iterate i stack_frame =
-              let stack_frame_length =
-                let frame_array = struct_elements_types stack_frame in
-                Array.length frame_array
-              in
               let var_address =
                 build_struct_gep stack_frame i "stack_frame elem" builder
               in
@@ -247,10 +245,10 @@ and gen_stmt stmt access_link stack_frame =
               else if i <= stack_frame_length then
                 iterate (i + 1) stack_frame
               else
-                let parent_stack_frame =
+                (* let parent_stack_frame =
                   build_load access_link "parent stack frame" builder
-                in
-                iterate 0 parent_stack_frame
+                in *)
+                iterate 0 access_link
             in
             iterate 0 stack_frame
           in
@@ -279,7 +277,7 @@ and gen_stmt stmt access_link stack_frame =
           (fun x ->
             let ith_elem = List.nth args_list !i in
             res :=
-              gen_expr ~is_param_ref:x.ref ith_elem access_link stack_frame
+              gen_expr x.ref ith_elem access_link stack_frame
               :: !res;
             incr i)
           fpar_def_list
@@ -295,8 +293,13 @@ and gen_stmt stmt access_link stack_frame =
   | _ -> failwith "todoaa"
 
 and gen_funcDef func_def =
-  let access_link =
-    match func_def.access_link with Some x -> [ x ] | None -> []
+  let access_link_ptr =
+    match func_def.access_link with 
+    | Some x -> 
+      match func_def.parent_func with
+      | Some p -> [p.stack_frame_addr]
+      | None -> []
+    | None -> []
   in
   let the_func_ll = gen_header func_def.header access_link in
   let bb = append_block context "entry" the_func_ll in
@@ -307,8 +310,11 @@ and gen_funcDef func_def =
     | Some sf -> sf
     | None -> failwith "Fail. Stack frame for function not set."
   in
+  let stack_frame_length = struct_elements_types stack_frame in 
+  Array.length frame_array;
   let stack_frame_alloca = build_alloca stack_frame "stack_frame" builder in
   ignore (create_argument_allocas the_func_ll func_def stack_frame_alloca);
+  func_def.stack_frame_addr <- Some stack_frame_alloca;
   let struct_index = ref 0 in
   (* iterate functions in dfs order *)
   let iterate local_def =
@@ -330,13 +336,9 @@ and gen_funcDef func_def =
     | L_funcDecl fdl -> failwith "todo" (* TODO: Function Declarations *)
   in
   List.iter iterate func_def.local_def_list;
-  let pointer_to_me =
-    match func_def.stack_frame with
-    | Some x -> [ pointer_type x ]
-    | None -> failwith "stack frame not set"
-  in
+  let pointer_to_me = stack_frame_alloca in
   let stmt_list = match func_def.block with Block b -> b in
-  List.iter (fun stmt -> gen_stmt stmt access_link pointer_to_me) stmt_list;
+  List.iter (fun stmt -> gen_stmt stmt access_link_ptr pointer_to_me stack_frame_length) stmt_list;
   if block_terminator @@ insertion_block builder = None then
     ignore (build_ret_void builder);
   blocks_list :=
@@ -448,5 +450,5 @@ and set_stack_frames funcDef =
 
 and gen_on asts =
   ignore define_lib_funcs;
-  (* set_stack_frames asts; *)
+  set_stack_frames asts;
   gen_funcDef asts
