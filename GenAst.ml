@@ -24,7 +24,7 @@ let rec llvm_type_of_t_type x =
   | T_func t -> llvm_type_of_t_type t
   | T_none -> void_type context
 
-let rec convert_param_to_llvm_type x =
+let rec llvm_type_of_param x =
   let t_type = Types.t_type_of_dataType x.fpar_type.data_type in
   match x.ref with
   | false -> llvm_type_of_t_type t_type
@@ -58,10 +58,9 @@ let gen_header (header : Ast.header) =
   let name = header.id in
   let args = expand_fpar_def_list header.fpar_def_list in
   let args_array = Array.of_list args in
-  (* edw to in sunexizetai??*)
   Hashtbl.add named_functions (Hashtbl.hash name) args;
   let ret_type = header.ret_type in
-  let param_types_list = List.map convert_param_to_llvm_type args in
+  let param_types_list = List.map llvm_type_of_param args in
   let param_types_array = Array.of_list param_types_list in
   let return_type = llvm_type_of_t_type (Types.t_type_of_retType ret_type) in
   let ft = function_type return_type param_types_array in
@@ -90,7 +89,7 @@ let gen_header (header : Ast.header) =
 let rec create_argument_allocas the_function header =
   let args = expand_fpar_def_list header.fpar_def_list in
   let args_array = Array.of_list args in
-  let param_types_list = List.map convert_param_to_llvm_type args in
+  let param_types_list = List.map llvm_type_of_param args in
   let param_types_array = Array.of_list param_types_list in
   Array.iteri
     (fun i ai ->
