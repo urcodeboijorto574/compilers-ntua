@@ -26,6 +26,12 @@ and funcDef = {
   header : header;
   local_def_list : localDef list;
   block : block;
+  (* pointer to the stack frame of parent function *)
+  mutable access_link : Llvm.lltype option;
+  (* the parent funcDef of the function*)
+  mutable parent_func : funcDef option;
+  (* stack frame of the function -- later will become a struct *)
+  mutable stack_frame : Llvm.lltype option;
 }
 
 and header = {

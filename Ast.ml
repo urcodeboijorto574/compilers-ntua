@@ -1,4 +1,4 @@
-Open Llvm
+open Llvm
 
 type arithmOperator =
   | O_plus
@@ -28,8 +28,11 @@ and funcDef = {
   header : header;
   local_def_list : localDef list;
   block : block;
-  mutable access_link : LLvm.lltype option;
+  (* pointer to the stack frame of parent function *)
+  mutable access_link : Llvm.lltype option;
+  (* the parent funcDef of the function*)
   mutable parent_func : funcDef option;
+  (* stack frame of the function -- later will become a struct *)
   mutable stack_frame : Llvm.lltype option;
 }
 
@@ -115,7 +118,16 @@ and cond =
   | C_cond_parenthesized of cond
 
 (* Functions to construct the records above *)
-let newFuncDef (a, b, c) = { header = a; local_def_list = b; block = c }
+let newFuncDef (a, b, c) =
+  {
+    header = a;
+    local_def_list = b;
+    block = c;
+    access_link = None;
+    parent_func = None;
+    stack_frame = None;
+  }
+
 and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
 and newFparDef (a, b, c) = { ref = a; id_list = b; fpar_type = c }
 and newFparType (a, b) : fparType = { data_type = a; array_dimensions = b }
