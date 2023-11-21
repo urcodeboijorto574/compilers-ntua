@@ -215,19 +215,19 @@ and gen_expr is_param_ref expr access_link stack_frame_ptr stack_frame_length =
       build_call callee args_array "calltmp" builder
   | E_sgn_expr (sign, expr) -> (
       match sign with
-      | O_plus -> gen_expr expr access_link stack_frame
+      | O_plus -> gen_expr false expr access_link stack_frame
       | O_minus ->
-          build_neg (gen_expr expr access_link stack_frame) "minus" builder)
+          build_neg (gen_expr false expr access_link stack_frame) "minus" builder)
   | E_op_expr_expr (lhs, oper, rhs) -> (
-      let lhs_val = gen_expr lhs access_link stack_frame in
-      let rhs_val = gen_expr rhs access_link stack_frame in
+      let lhs_val = gen_expr false lhs access_link stack_frame in
+      let rhs_val = gen_expr false rhs access_link stack_frame in
       match oper with
       | O_plus -> build_add lhs_val rhs_val "addtmp" builder
       | O_minus -> build_sub lhs_val rhs_val "subtmp" builder
       | O_mul -> build_mul lhs_val rhs_val "multmp" builder
       | O_div -> build_sdiv lhs_val rhs_val "divtmp" builder
       | O_mod -> build_srem lhs_val rhs_val "modtmp" builder)
-  | E_expr_parenthesized expr -> gen_expr expr access_link stack_frame
+  | E_expr_parenthesized expr -> gen_expr false expr access_link stack_frame
 
 and gen_stmt stmt access_link stack_frame stack_frame_length =
   match stmt with
@@ -252,7 +252,7 @@ and gen_stmt stmt access_link stack_frame stack_frame_length =
             in
             iterate 0 stack_frame
           in
-          let lv_value = gen_expr expr access_link stack_frame in
+          let lv_value = gen_expr false expr access_link stack_frame in
           ignore (build_store value lv_address)
       | _ -> failwith "tododd")
   | S_func_call fc ->
@@ -288,7 +288,7 @@ and gen_stmt stmt access_link stack_frame stack_frame_length =
       match expr with
       | None -> ignore (build_ret_void builder)
       | Some e ->
-          let ll_expr = gen_expr e access_link stack_frame in
+          let ll_expr = gen_expr false e access_link stack_frame in
           ignore (build_ret ll_expr builder))
   | _ -> failwith "todoaa"
 
