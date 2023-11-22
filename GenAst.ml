@@ -59,10 +59,10 @@ and gen_header (header : Ast.header) access_link =
   let args_array = Array.of_list args in
   Hashtbl.add named_functions (Hashtbl.hash name) args;
   let ret_type = header.ret_type in
-  let access_link_list = match access_link with
-    | Some x -> [x]
-    | None -> []
+  let access_link_list =
+    match access_link with Some x -> [ x ] | None -> Printf.printf("emptu"); []
   in
+
   let param_types_list = access_link_list @ List.map llvm_type_of_param args in
   let param_types_array = Array.of_list param_types_list in
   let return_type = llvm_type_of_t_type (Types.t_type_of_retType ret_type) in
@@ -72,21 +72,30 @@ and gen_header (header : Ast.header) access_link =
     | None -> declare_function name ft the_module
     | Some x -> failwith "semantic analysis error: function already defined"
   in
+  Printf.printf("we cool\n");
   (* Set names for all arguments. *)
+  Printf.printf "%d\n" (Array.length args_array); 
+  Printf.printf "%d\n" (Array.length (params f)); 
+  Printf.printf "%s\n" name;
+
   Array.iteri
     (fun i a ->
-      let n =
-        match args_array.(i).id_list with
-        | [ id ] -> id
-        (* will never reach here, becaues id_list has certainly only one element *)
-        | _ -> failwith "error in list"
-      in
-      (* Set the name of each argument which is an llvalue, to a string *)
-      set_value_name n a;
-      Hashtbl.add named_values n a)
+      if Array.length args_array > 0 then 
+      begin
+        let n =
+          match args_array.(i).id_list with
+          | [ id ] -> id
+          (* will never reach here, becaues id_list has certainly only one element *)
+          | _ -> failwith "error in list"
+        in
+        (* Set the name of each argument which is an llvalue, to a string *)
+        set_value_name n a;
+        Hashtbl.add named_values n a
+      end
+    )
     (params f);
   f (* why is this 'f' alone here? *)
-
+    
 (* Create array of parameters. This array is of like:
    [llvm int, llvm char, llvm int *, ...]*)
 and gen_header_lib (header : Ast.header) =
@@ -138,8 +147,11 @@ and create_argument_allocas the_function func_def stack_frame_alloca =
       in
       (* i = 0 corresponds to the access link*)
       if i = 0 then (
-        set_value_name "access_link" position;
-        ignore (build_store ai position builder))
+        match access_link_list with
+        | [] -> ()
+        | list -> 
+          set_value_name "access_link" position;
+          ignore (build_store ai position builder))
       else
         let ith_param = args_array.(i - 1) in
         let var_name =
@@ -148,17 +160,19 @@ and create_argument_allocas the_function func_def stack_frame_alloca =
           | _ -> failwith "error in list"
         in
         set_value_name var_name position;
-        ignore (build_store ai position builder))
-    (params the_function)
+        ignore (build_store ai position builder)
+      )
+  (params the_function)
 
-and gen_expr is_param_ref expr access_link_ptr stack_frame_alloca stack_frame_length =
+and gen_expr is_param_ref expr access_link_ptr stack_frame_alloca
+    stack_frame_length =
   (* let the_stack_frame = build_load stack_frame_ptr "stack_Frame" builder in *)
   match expr with
   | E_const_int x -> const_int int_type x
   | E_const_char x -> const_int char_type (int_of_char x)
   | E_lvalue lv -> (
       match lv with
-      | L_id id -> (
+      | L_id id ->
           let lv_address =
             let rec iterate i stack_frame =
               let var_address =
@@ -171,18 +185,22 @@ and gen_expr is_param_ref expr access_link_ptr stack_frame_alloca stack_frame_le
                 iterate (i + 1) stack_frame
               else
                 (* let parent_stack_frame =
-                  build_load access_link "parent stack frame" builder
-                in *)
-                let access_link = 
+                     build_load access_link "parent stack frame" builder
+                   in *)
+                let access_link =
                   match access_link_ptr with
-                  | None -> failwith "fail. variable not found. sem analysis error"
+                  | None ->
+                      failwith "fail. variable not found. sem analysis error"
                   | Some x -> x
                 in
                 iterate 0 access_link
             in
             iterate 0 stack_frame_alloca
           in
-          if is_param_ref = false then build_load lv_address id builder else lv_address)
+          if is_param_ref = false then
+            build_load lv_address id builder
+          else
+            lv_address
       | L_comp (lv2, expr2) -> failwith "todo" (* TODO *)
       | _ -> failwith "tododd")
   | E_func_call fc ->
@@ -208,35 +226,44 @@ and gen_expr is_param_ref expr access_link_ptr stack_frame_alloca stack_frame_le
           (fun x ->
             let ith_elem = List.nth args_list !i in
             res :=
-              gen_expr x.ref ith_elem access_link_ptr stack_frame_alloca stack_frame_length
+              gen_expr x.ref ith_elem access_link_ptr stack_frame_alloca
+                stack_frame_length
               :: !res;
             incr i)
           fpar_def_list
       in
       (*List.iter(fun x -> Printf.printf("%d\n", x) ) !res;*)
       let rev_list = List.rev !res in
-      let access_link_ptr_list = 
-        match access_link_ptr with
-        | Some x -> [x]
-        | None -> []
+      let access_link_ptr_list =
+        match access_link_ptr with Some x -> [ x ] | None -> []
       in
       let args_array = Array.of_list (access_link_ptr_list @ rev_list) in
       build_call callee args_array "calltmp" builder
   | E_sgn_expr (sign, expr) -> (
       match sign with
-      | O_plus -> gen_expr false expr access_link_ptr stack_frame_alloca stack_frame_length
+      | O_plus ->
+          gen_expr false expr access_link_ptr stack_frame_alloca
+            stack_frame_length
       | O_minus ->
-          build_neg (gen_expr false expr access_link_ptr stack_frame_alloca stack_frame_length) "minus" builder)
+          build_neg
+            (gen_expr false expr access_link_ptr stack_frame_alloca
+               stack_frame_length)
+            "minus" builder)
   | E_op_expr_expr (lhs, oper, rhs) -> (
-      let lhs_val = gen_expr false lhs access_link_ptr stack_frame_alloca stack_frame_length in
-      let rhs_val = gen_expr false rhs access_link_ptr stack_frame_alloca stack_frame_length in
+      let lhs_val =
+        gen_expr false lhs access_link_ptr stack_frame_alloca stack_frame_length
+      in
+      let rhs_val =
+        gen_expr false rhs access_link_ptr stack_frame_alloca stack_frame_length
+      in
       match oper with
       | O_plus -> build_add lhs_val rhs_val "addtmp" builder
       | O_minus -> build_sub lhs_val rhs_val "subtmp" builder
       | O_mul -> build_mul lhs_val rhs_val "multmp" builder
       | O_div -> build_sdiv lhs_val rhs_val "divtmp" builder
       | O_mod -> build_srem lhs_val rhs_val "modtmp" builder)
-  | E_expr_parenthesized expr -> gen_expr false expr access_link_ptr stack_frame_alloca stack_frame_length
+  | E_expr_parenthesized expr ->
+      gen_expr false expr access_link_ptr stack_frame_alloca stack_frame_length
 
 and gen_stmt stmt access_link_ptr stack_frame_alloca stack_frame_length =
   match stmt with
@@ -255,18 +282,22 @@ and gen_stmt stmt access_link_ptr stack_frame_alloca stack_frame_length =
                 iterate (i + 1) stack_frame
               else
                 (* let parent_stack_frame =
-                  build_load access_link "parent stack frame" builder
-                in *)
-                let access_link = 
+                     build_load access_link "parent stack frame" builder
+                   in *)
+                let access_link =
                   match access_link_ptr with
-                  | None -> failwith "fail. variable not found. sem analysis error"
+                  | None ->
+                      failwith "fail. variable not found. sem analysis error"
                   | Some x -> x
                 in
                 iterate 0 access_link
             in
             iterate 0 stack_frame_alloca
           in
-          let lv_value = gen_expr false expr access_link_ptr stack_frame_alloca stack_frame_length in
+          let lv_value =
+            gen_expr false expr access_link_ptr stack_frame_alloca
+              stack_frame_length
+          in
           ignore (build_store lv_value lv_address)
       | _ -> failwith "tododd")
   | S_func_call fc ->
@@ -291,23 +322,26 @@ and gen_stmt stmt access_link_ptr stack_frame_alloca stack_frame_length =
           (fun x ->
             let ith_elem = List.nth args_list !i in
             res :=
-              gen_expr x.ref ith_elem access_link_ptr stack_frame_alloca stack_frame_length
+              gen_expr x.ref ith_elem access_link_ptr stack_frame_alloca
+                stack_frame_length
               :: !res;
             incr i)
           fpar_def_list
       in
-      let access_link_ptr_list = 
-        match access_link_ptr with
-        | Some x -> [x]
-        | None -> []
+      let rev_list = List.rev !res in
+      let access_link_ptr_list =
+        match access_link_ptr with Some x -> Printf.printf "%s" fc.id; [ x ] | None -> []
       in
-      let args_array = Array.of_list (access_link_ptr_list @ !res) in
+      let args_array = Array.of_list (access_link_ptr_list @ rev_list) in
       ignore (build_call callee args_array "" builder)
   | S_return expr -> (
       match expr with
       | None -> ignore (build_ret_void builder)
       | Some e ->
-          let ll_expr = gen_expr false e access_link_ptr stack_frame_alloca stack_frame_length in
+          let ll_expr =
+            gen_expr false e access_link_ptr stack_frame_alloca
+              stack_frame_length
+          in
           ignore (build_ret ll_expr builder))
   | _ -> failwith "todoaa"
 
@@ -317,6 +351,7 @@ and gen_funcDef func_def =
     | Some p -> p.stack_frame_addr
     | None -> None
   in
+  Printf.printf("hereeeee\n");
   let the_func_ll = gen_header func_def.header func_def.access_link in
   let bb = append_block context "entry" the_func_ll in
   position_at_end bb builder;
@@ -326,7 +361,7 @@ and gen_funcDef func_def =
     | Some sf -> sf
     | None -> failwith "Fail. Stack frame for function not set."
   in
-  let frame_array = struct_element_types stack_frame in 
+  let frame_array = struct_element_types stack_frame in
   let stack_frame_length = Array.length frame_array in
   let stack_frame_alloca = build_alloca stack_frame "stack_frame" builder in
   ignore (create_argument_allocas the_func_ll func_def stack_frame_alloca);
@@ -354,7 +389,10 @@ and gen_funcDef func_def =
   List.iter iterate func_def.local_def_list;
   (* let pointer_to_me = stack_frame_alloca in *)
   let stmt_list = match func_def.block with Block b -> b in
-  List.iter (fun stmt -> gen_stmt stmt access_link_ptr stack_frame_alloca stack_frame_length) stmt_list;
+  List.iter
+    (fun stmt ->
+      gen_stmt stmt access_link_ptr stack_frame_alloca stack_frame_length)
+    stmt_list;
   if block_terminator @@ insertion_block builder = None then
     ignore (build_ret_void builder);
   blocks_list :=
@@ -362,7 +400,7 @@ and gen_funcDef func_def =
   if !blocks_list <> [] then
     position_at_end (List.hd !blocks_list) builder
 
-and define_lib_funcs =
+let define_lib_funcs =
   let define_lib_func (fp_def_list, f_id, f_rtype) =
     let fun_header = newHeader (f_id, fp_def_list, f_rtype) in
     ignore (gen_header_lib fun_header)
@@ -408,7 +446,7 @@ and define_lib_funcs =
        writeString_f_rtype) *)
 
 (* set parent function of each function *)
-and set_func_parents fd =
+let rec set_func_parents fd =
   let traverse_dfs child =
     match child with
     | L_funcDef c ->
@@ -416,7 +454,7 @@ and set_func_parents fd =
         set_func_parents c
     | _ -> ()
   in
-  List.iter traverse_dfs fd.local_def_list
+  List.iter traverse_dfs fd.local_def_list;
 
 (* take a func definition and do the following
    - create the stack frame containing the access link, parameters and local variables *)
@@ -428,13 +466,18 @@ and set_stack_frame funcDef =
       | [] -> []
       | hd :: tail -> (
           match hd with
-          | L_varDef vd -> llvm_type_of_param vd :: helper tail acc
+          | L_varDef vd ->
+              let vd_type =
+                llvm_type_of_t_type (t_type_of_dataType vd.var_type.data_type)
+              in
+              let list_types = List.map (fun x -> vd_type) vd.id_list in
+              list_types @ helper tail acc
           | _ -> helper tail acc)
     in
     helper funcDef.local_def_list []
   in
-  let params_list = expand_fpar_def_list func_def.header.fpar_def_list in
-  let param_types_list = List.map llvm_type_of_param args in
+  let params_list = expand_fpar_def_list funcDef.header.fpar_def_list in
+  let param_types_list = List.map llvm_type_of_param params_list in
 
   (* create the stack frame in field stack_frame for funcDef*)
   let stack_frame_ll =
@@ -443,13 +486,15 @@ and set_stack_frame funcDef =
   funcDef.stack_frame <- Some stack_frame_ll;
 
   let access_link =
-    let the_parent = funcDef.parent_func in
-    match the_parent with
-    | Some _ ->
-        let parent_stack_frame = the_parent.stack_frame in
-        let pointer = pointer_type parent_stack_frame in
-        the_parent.access_link <- Some pointer;
-        [ pointer_type parent_stack_frame ]
+    match funcDef.parent_func with
+    | Some p -> (
+        let parent_stack_frame = p.stack_frame in
+        match parent_stack_frame with
+        | Some x ->
+            let pointer = pointer_type x in
+            funcDef.access_link <- Some pointer;
+            [ pointer_type x ]
+        | None -> [])
     | None -> []
   in
   let stack_frame_records = access_link @ param_types_list @ var_types_list in
@@ -458,12 +503,30 @@ and set_stack_frame funcDef =
 
 and set_stack_frames funcDef =
   set_func_parents funcDef;
+  match funcDef.access_link with
+  | Some x -> Printf.printf("some")
+  | None -> Printf.printf("None");
   set_stack_frame funcDef;
-  List.iter
-    (fun x -> List.iter set_stack_frame x.local_def_list)
-    set_stack_frame funcDef.local_def_list
+  match funcDef.access_link with
+  | Some x -> Printf.printf("some")
+  | None -> Printf.printf("None");
+  let rec iterate local_def =
+    match local_def with
+    | L_funcDef fd ->
+        set_stack_frame fd;
+        List.iter iterate fd.local_def_list
+    | _ -> ()
+  in
+  List.iter iterate funcDef.local_def_list;
+  match funcDef.access_link with
+  | Some x -> Printf.printf("some")
+  | None -> Printf.printf("None");
+  
 
 and gen_on asts =
-  ignore define_lib_funcs;
+  Printf.printf("we cool\n");
+
+  define_lib_funcs;
   set_stack_frames asts;
+
   gen_funcDef asts
