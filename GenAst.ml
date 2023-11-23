@@ -12,6 +12,8 @@ let int_type = i64_type context
 let char_type = i8_type context
 let bool_type = i1_type context
 
+let lib_function_names = ["writeInteger"; "writeString"; "writeByte"]
+
 (* Symbol table that holds the memory location of the variable in question*)
 let named_values : (string, llvalue) Hashtbl.t = Hashtbl.create 2000
 let named_functions = Hashtbl.create 2000
@@ -329,11 +331,18 @@ and gen_stmt stmt access_link_ptr stack_frame_alloca stack_frame_length =
           fpar_def_list
       in
       let rev_list = List.rev !res in
-      let access_link_ptr_list =
-        match access_link_ptr with Some x -> Printf.printf "%s" fc.id; [ x ] | None -> []
+      (* let stack_frame_alloca_list =
+        match stack_frame_alloca with 
+        | Some x -> Printf.printf "%s" fc.id; [ x ] 
+        | None -> []
+      in *)
+      let args_array =
+        if (List.mem fc.id lib_function_names) = false then Array.of_list ([stack_frame_alloca] @ rev_list) 
+        else Array.of_list rev_list
       in
-      let args_array = Array.of_list (access_link_ptr_list @ rev_list) in
       ignore (build_call callee args_array "" builder)
+      
+
   | S_return expr -> (
       match expr with
       | None -> ignore (build_ret_void builder)
