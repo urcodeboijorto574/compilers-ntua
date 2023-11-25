@@ -19,7 +19,7 @@ indicate-nested-or-patterns = space
 
 let-and = sparse
 
-line-endings = crlf
+line-endings = lf
 
 parse-docstrings = true
 
