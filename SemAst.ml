@@ -466,11 +466,8 @@ and sem_lvalue = function
         Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
       entryType
   | L_string s ->
-      Types.T_array (Types.T_char, -1)
-      (* TODO: the size of the array must be the length of the string plus 1 for
-         the empty character ('\0') *)
-      (* Types.(T_array (T_char, String.length s + 1)) *)
-      (* TODO: check what happens with the size of all character arrays *)
+      Types.T_array (Types.T_char, String.length s)
+      (* Note: the last character of a string literal is not the '\0' character. *)
   | L_comp (lv, e) -> (
       if Types.debugMode then
         Printf.printf
