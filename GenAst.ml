@@ -215,6 +215,7 @@ and gen_stmt stmt stack_frame_alloca stack_frame_length funcDef =
 
 
 and gen_header (header : Ast.header) access_link =
+  Printf.printf("gen header\n%!");
   let name = header.id in
   let args = expand_fpar_def_list header.fpar_def_list in
   let args_array = Array.of_list args in
@@ -233,44 +234,32 @@ and gen_header (header : Ast.header) access_link =
     | None -> declare_function name ft the_module
     | Some x -> failwith "semantic analysis error: function already defined"
   in
-  (* Set names for all arguments. *)
-  Printf.printf "%d\n%!" (Array.length (params f)); 
-  Printf.printf "%s\n%!" name; 
+  f
 
-  Array.iteri
-    (fun i a ->
-      if i = 0 then set_value_name "access_link" a
-      else
-      begin
-        let n =
-          match args_array.(i - 1).id_list with
-          | [ id ] -> id
-          (* will never reach here, becaues id_list has certainly only one element *)
-          | _ -> failwith "error in list"
-        in
-        (* Set the name of each argument which is an llvalue, to a string *)
-        set_value_name n a;
-        Hashtbl.add named_values n a
-      end
-    )
-    (params f);
-    Printf.printf("wefiuaehrgiuhaeirughaeoirg\n%!");
-  f (* why is this 'f' alone here? *)
-    
-
-(* Create an alloca for each argument and register the argument in the symbol
-   * table so that references to it will succeed. *)
-and create_argument_allocas the_function func_def stack_frame_alloca =
-  let args = expand_fpar_def_list func_def.header.fpar_def_list in
+and gen_funcDef funcDef =
+  let funcDef_ll = gen_header funcDef.header funcDef.access_link in
+  let bb = append_block context "entry" funcDef_ll in
+  position_at_end bb builder;
+  blocks_list := bb :: !blocks_list;
+  Printf.printf("gen fdef1\n%!");
+  let params_length = Array.length (params funcDef_ll) in
+  let params_records = ref [] in
+  let stack_frame =
+    match funcDef.stack_frame with
+    | Some sf -> sf
+    | None -> failwith "Fail. Stack frame for function not set."
+  in
+  (* ignore (create_argument_allocas the_func_ll funcDef stack_frame_alloca); *)
+  let frame_array = struct_element_types stack_frame in
+  let stack_frame_length = Array.length frame_array in
+  Printf.printf "stack_frame_length %d\n%!" stack_frame_length;
+  let stack_frame_alloca = build_alloca stack_frame ("stack_frame_" ^ funcDef.header.id) builder 
+  in
+  let args = expand_fpar_def_list funcDef.header.fpar_def_list in
   let args_array = Array.of_list args in
   let access_link_list =
-    match func_def.access_link with Some al -> [ al ] | None -> []
+    match funcDef.access_link with Some al -> [ al ] | None -> []
   in
-  let param_types_list = access_link_list @ List.map llvm_type_of_param args in
-  let param_types_array = Array.of_list param_types_list in
-  (* The problem here is that in params there is also the access link but in fpar def list it does not exist. So in fact params contain one more element than args_array*)
-  let params_length = Array.length (params the_function) in
-  let params_records = ref [] in
   Array.iteri
     (fun i ai ->
       let position =
@@ -296,26 +285,13 @@ and create_argument_allocas the_function func_def stack_frame_alloca =
         params_records := (var_name, i) :: !params_records;
         ignore (build_store ai position builder)
     )
-  (params the_function);
-  func_def.var_records <- !params_records
-
-
-and gen_funcDef func_def =
-  let the_func_ll = gen_header func_def.header func_def.access_link in
-  let bb = append_block context "entry" the_func_ll in
-  position_at_end bb builder;
-  blocks_list := bb :: !blocks_list;
-  let stack_frame =
-    match func_def.stack_frame with
-    | Some sf -> sf
-    | None -> failwith "Fail. Stack frame for function not set."
-  in
-  let frame_array = struct_element_types stack_frame in
-  let stack_frame_length = Array.length frame_array in
-  let stack_frame_alloca = build_alloca stack_frame ("stack_frame_" ^ func_def.header.id) builder in
-  ignore (create_argument_allocas the_func_ll func_def stack_frame_alloca);
-  func_def.stack_frame_addr <- Some stack_frame_alloca;
-  let params_length = Array.length (params the_func_ll) in
+  (params funcDef_ll);
+  funcDef.var_records <- !params_records;
+  
+  Printf.printf("gen fdef2\n%!");
+  funcDef.stack_frame_addr <- Some stack_frame_alloca;
+ 
+  let params_length = Array.length (params funcDef_ll) in
   let struct_index = ref (params_length) in
   let local_var_records = ref [] in
   (* iterate functions in dfs order *)
@@ -335,18 +311,18 @@ and gen_funcDef func_def =
             local_var_records := (x, !struct_index) :: !local_var_records;
             struct_index := !struct_index + 1)
           v.id_list;
-        func_def.var_records <- (func_def.var_records @ !local_var_records);
+        funcDef.var_records <- (funcDef.var_records @ !local_var_records);
 
     | L_funcDef fd -> gen_funcDef fd
     | L_funcDecl fdl -> failwith "todo" (* TODO: Function Declarations *)
   in
-  List.iter iterate func_def.local_def_list;
-  func_def.var_records <- List.rev func_def.var_records;
-  let list_length = List.length func_def.var_records in
-  let stmt_list = match func_def.block with Block b -> b in
+  List.iter iterate funcDef.local_def_list;
+  funcDef.var_records <- List.rev funcDef.var_records;
+  let list_length = List.length funcDef.var_records in
+  let stmt_list = match funcDef.block with Block b -> b in
   List.iter
     (fun stmt ->
-      gen_stmt stmt stack_frame_alloca stack_frame_length func_def)
+      gen_stmt stmt stack_frame_alloca stack_frame_length funcDef)
     stmt_list;
 
     if block_terminator @@ insertion_block builder = None then
