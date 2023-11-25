@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Execute 'make format'
+make format
+
 # Execute 'make clean'
 make clean
 
