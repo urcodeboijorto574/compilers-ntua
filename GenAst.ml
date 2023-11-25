@@ -74,18 +74,17 @@ and gen_header (header : Ast.header) access_link =
     | None -> declare_function name ft the_module
     | Some x -> failwith "semantic analysis error: function already defined"
   in
-  (* Printf.printf("we cool\n");
   (* Set names for all arguments. *)
-  Printf.printf "%d\n" (Array.length args_array); 
-  Printf.printf "%d\n" (Array.length (params f)); 
-  Printf.printf "%s\n" name; *)
+  Printf.printf "%d\n%!" (Array.length (params f)); 
+  Printf.printf "%s\n%!" name; 
 
-  (* Array.iteri
+  Array.iteri
     (fun i a ->
-      if Array.length args_array > 0 then 
+      if i = 0 then set_value_name "access_link" a
+      else
       begin
         let n =
-          match args_array.(i).id_list with
+          match args_array.(i - 1).id_list with
           | [ id ] -> id
           (* will never reach here, becaues id_list has certainly only one element *)
           | _ -> failwith "error in list"
@@ -95,7 +94,8 @@ and gen_header (header : Ast.header) access_link =
         Hashtbl.add named_values n a
       end
     )
-    (params f); *)
+    (params f);
+    Printf.printf("wefiuaehrgiuhaeirughaeoirg\n%!");
   f (* why is this 'f' alone here? *)
     
 (* Create array of parameters. This array is of like:
@@ -171,6 +171,40 @@ and create_argument_allocas the_function func_def stack_frame_alloca =
   (params the_function);
   func_def.var_records <- !params_records
 
+and gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length =
+  let rec iterate i stack_frame funcDef =
+    Printf.printf "index: %d\n%!" i;
+    Printf.printf "stack frame length: %d\n%!" stack_frame_length;
+    Printf.printf "var records length: %d\n%!" (List.length funcDef.var_records);
+
+    let tuple = List.nth funcDef.var_records i in
+    let var_name = fst tuple in
+    Printf.printf "%s\n%!" var_name;
+    if var_name = id then
+      build_struct_gep stack_frame i var_name builder
+      (* let addr = build_struct_gep stack_frame i var_name builder in
+      build_load addr id builder *)
+
+    else if i + 1 < stack_frame_length then
+      iterate (i + 1) stack_frame funcDef
+    else
+      match funcDef.parent_func with
+      | Some p -> 
+        Printf.printf("got in here\n%!");
+
+        let access_link = build_struct_gep stack_frame 0 "access_link_ptr" builder
+          (* match access_link_ptr with
+          | None ->
+            failwith "fail. variable not found. sem analysis error"
+          | Some x -> x *)
+        in
+        let the_access_link = build_load access_link "access_link_val" builder in
+        iterate 0 the_access_link p
+      | None -> failwith "fail variable not found"
+  in
+  Printf.printf "bliat\n%!";
+  iterate 0 stack_frame_alloca funcDef
+
 
 and gen_expr is_param_ref expr access_link_ptr stack_frame_alloca
     stack_frame_length funcDef =
@@ -181,33 +215,7 @@ and gen_expr is_param_ref expr access_link_ptr stack_frame_alloca
   | E_lvalue lv -> (
       match lv with
       | L_id id ->
-          let lv_address = 
-            let rec iterate i stack_frame funcDef =
-              Printf.printf "index: %d\n%!" i;
-              Printf.printf "stack frame length: %d\n%!" stack_frame_length;
-              Printf.printf "var records length: %d\n%!" (List.length funcDef.var_records);
-
-              let tuple = List.nth funcDef.var_records i in
-              let var_name = fst tuple in
-              Printf.printf "%s\n%!" var_name;
-              if var_name = id then
-                build_struct_gep stack_frame i "address" builder
-              else if i + 1 < stack_frame_length then
-                iterate (i + 1) stack_frame funcDef
-              else
-                match funcDef.parent_func with
-                | Some p -> 
-                  let access_link =
-                    match access_link_ptr with
-                    | None ->
-                      failwith "fail. variable not found. sem analysis error"
-                    | Some x -> x
-                  in
-                  iterate 0 access_link p
-                | None -> failwith "fail variable not found"
-            in
-            iterate 0 stack_frame_alloca funcDef
-          in
+          let lv_address = gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length in
           if is_param_ref = false then
             build_load lv_address id builder
           else
@@ -286,41 +294,13 @@ and gen_stmt stmt access_link_ptr stack_frame_alloca stack_frame_length funcDef 
   | S_assignment (lv, expr) -> (
       match lv with
       | L_id id ->
-        Printf.printf("segfault1\n%!");
-          let lv_address = 
-            let rec iterate i stack_frame funcDef =
-              Printf.printf "index: %d\n%!" i;
-              Printf.printf "stack frame length: %d\n%!" stack_frame_length;
-              Printf.printf "%s var records length: %d\n%!" funcDef.header.id (List.length funcDef.var_records);
-              let tuple = List.nth funcDef.var_records i in
-              let var_name = fst tuple in
-              Printf.printf "%s\n%!" var_name;
-              if var_name = id then
-                build_struct_gep stack_frame i "address_found" builder
-              else if i + 1 < stack_frame_length then
-                iterate (i + 1) stack_frame funcDef
-              else
-                match funcDef.parent_func with
-                | Some p -> 
-                  Printf.printf("got in here\n%!");
-
-                  let access_link =
-                    match access_link_ptr with
-                    | None ->
-                      failwith "fail. variable not found. sem analysis error"
-                    | Some x -> x
-                  in
-                  iterate 0 access_link p
-                | None -> failwith "fail variable not found"
-
-            in
-            iterate 0 stack_frame_alloca funcDef
-          in
-          let lv_value =
-            gen_expr false expr access_link_ptr stack_frame_alloca
-              stack_frame_length funcDef
-          in
-          ignore (build_store lv_value lv_address builder)
+        let lv_address = gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length
+        in            
+        let lv_value =
+          gen_expr false expr access_link_ptr stack_frame_alloca
+            stack_frame_length funcDef
+        in
+        ignore (build_store lv_value lv_address builder)
       | _ -> failwith "tododd")
   | S_func_call fc ->
       (* get this list here:
@@ -425,7 +405,7 @@ and gen_funcDef func_def =
   let list_length = List.length func_def.var_records in
   (* let pointer_to_me = stack_frame_alloca in *)
   let stmt_list = match func_def.block with Block b -> b in
-  let stack_frame_alloca = param the_func_ll 0 in
+  (* let stack_frame_alloca = param the_func_ll 0 in *)
   List.iter
     (fun stmt ->
       gen_stmt stmt access_link_ptr stack_frame_alloca stack_frame_length func_def)
