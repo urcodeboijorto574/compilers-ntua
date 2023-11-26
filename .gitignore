@@ -35,7 +35,4 @@
 
 !lib
 !lib.c
-!lib.a
-!lib.o
 !buildlib.sh
-
