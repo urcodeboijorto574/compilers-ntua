@@ -83,15 +83,15 @@ let rec sem_funcDef = function
 
       let isMainProgram = !current_scope.depth = 1 in
       if isMainProgram then begin
-        let funcIdListOption = Symbol.get_undefined_functions () in
-        if funcIdListOption <> None then (
+        let funcIdList = Symbol.get_undefined_functions () in
+        if funcIdList <> [] then (
           List.iter
             (fun fid ->
               Printf.eprintf
                 "\027[31mError\027[0m: Function '%s' is declared, but not \
                  defined.\n"
                 fid)
-            (Option.get funcIdListOption);
+            funcIdList;
           failwith "Undefined function")
       end;
       let expectedReturnType = Types.t_type_of_retType h.ret_type in
@@ -144,11 +144,14 @@ and sem_header isPartOfAFuncDef = function
         end
       in
       let resultLookUpOption = look_up_entry ident in
-      if resultLookUpOption = None then (
+      let enter_function_in_symbolTable () =
         enter_function ident (sem_fparDefList fpdl)
           (Types.t_type_of_retType rt)
-          Symbol.(if isPartOfAFuncDef = true then DEFINED else DECLARED);
-        add_params_to_scope ())
+          Symbol.(if isPartOfAFuncDef then DEFINED else DECLARED);
+        add_params_to_scope ()
+      in
+      if resultLookUpOption = None then
+        enter_function_in_symbolTable ()
       else
         try
           let functionEntry =
@@ -231,11 +234,8 @@ and sem_header isPartOfAFuncDef = function
             not
               (Symbol.equal_scopes (Option.get resultLookUpOption).scope
                  !current_scope)
-          then (
-            enter_function ident (sem_fparDefList fpdl)
-              (Types.t_type_of_retType rt)
-              Symbol.(if isPartOfAFuncDef then DEFINED else DECLARED);
-            add_params_to_scope ())
+          then
+            enter_function_in_symbolTable ()
           else if not matchingNumOfParams then
             raise Overloaded_functions
           else if functionEntry.return_type <> returnTypeFromHeader then
@@ -327,7 +327,8 @@ and sem_varDef = function
           "\027[31mError\027[0m: Array declared to have size a non-positive \
            number.\n";
         failwith "Array of zero size");
-      List.iter (fun i -> enter_variable i (Types.t_type_of_varType vt)) idl
+      let variable_type = Types.t_type_of_varType vt in
+      List.iter (fun i -> enter_variable i variable_type) idl
 
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
     block [bl]. Returns [Types.t_type option]. *)

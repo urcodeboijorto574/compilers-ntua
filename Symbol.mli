@@ -98,7 +98,6 @@ val add_standard_library : unit -> unit
     is thrown. *)
 val look_up_entry : string -> entry option
 
-(** [get_undefined_functions] returns [None] if no declared function is
-    undefined or [Some sl] with [sl] being a list of the names of the functions
-    that are not defined. *)
-val get_undefined_functions : unit -> string list option
+(** [get_undefined_functions] returns a list of the names of the functions that
+    are not defined. *)
+val get_undefined_functions : unit -> string list

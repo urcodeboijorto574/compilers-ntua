@@ -218,14 +218,12 @@ let look_up_entry (id : string) =
 
 let get_undefined_functions () =
   let undefinedFunctionsList = ref [] in
-  begin
-    Hashtbl.iter
-      (fun i e ->
-        match e.kind with
-        | ENTRY_function ef ->
-            if ef.state = DECLARED then
-              undefinedFunctionsList := i :: !undefinedFunctionsList
-        | ENTRY_variable _ | ENTRY_parameter _ -> ())
-      !symbolTable
-  end;
-  match !undefinedFunctionsList with [] -> None | l -> Some l
+  Hashtbl.iter
+    (fun i e ->
+      match e.kind with
+      | ENTRY_function ef ->
+          if ef.state = DECLARED then
+            undefinedFunctionsList := i :: !undefinedFunctionsList
+      | ENTRY_variable _ | ENTRY_parameter _ -> ())
+    !symbolTable;
+  !undefinedFunctionsList
