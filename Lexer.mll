@@ -108,7 +108,7 @@ and strings = parse
         | "\\n" -> '\n'
         | "\\t" -> '\t'
         | "\\r" -> '\r'
-        | "\\0" -> failwith "don't know what to do here" (* '\0' *)
+        | "\\0" -> '\000'
         | "\\\\" -> '\\'
         | "\\\'" -> '\''
         | "\\\"" -> '\"'
@@ -129,11 +129,11 @@ and characters = parse
         | "\\n" -> '\n'
         | "\\t" -> '\t'
         | "\\r" -> '\r'
-        (* | "\\0" -> '\0' *)
+        | "\\0" -> '\000'
         | "\\\\" -> '\\'
         | "\\\'" -> '\''
         | "\\\"" -> '\"'
-        | _ -> failwith "hex or smth else"
+        | _ -> failwith "this case will never happen"
         (* hex case is caught in previous rule *))
     }
   | (char_not_escape as c) '\'' { T_chr (String.get c 1) }
