@@ -13,6 +13,10 @@ let char_type = i8_type context
 let bool_type = i1_type context
 let lib_function_names = [ "writeInteger"; "writeString"; "writeByte" ]
 
+let build_nop () =
+  let zero = const_int bool_type 0 in
+  build_add zero zero "nop" builder
+
 (* Symbol table that holds the memory location of the variable in question*)
 let named_values : (string, llvalue) Hashtbl.t = Hashtbl.create 2000
 let named_functions = Hashtbl.create 2000
