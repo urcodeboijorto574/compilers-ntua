@@ -241,8 +241,31 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
                (gen_stmt stack_frame_alloca stack_frame_length funcDef)
                l)
     end
-  | S_return expr -> (
-      match expr with
+  | S_if (c, s) ->
+      let start_basic_block = insertion_block builder in
+      let function_bb = block_parent start_basic_block in
+      let then_basic_block = append_block context "then" function_bb in
+      let merge_basic_block = append_block context "if_then_cont" function_bb in
+
+      position_at_end start_basic_block builder;
+      let cond_val () =
+        let zero = const_int bool_type 0 in
+        let ll_c = gen_cond stack_frame_alloca stack_frame_length funcDef c in
+        build_icmp Ne zero ll_c "if_then_cond" builder
+      in
+      ignore
+        (build_cond_br (cond_val ()) then_basic_block merge_basic_block builder);
+
+      position_at_end then_basic_block builder;
+      ignore (gen_stmt stack_frame_alloca stack_frame_length funcDef s);
+      let new_then_basic_block = insertion_block builder in
+
+      position_at_end new_then_basic_block builder;
+      let result_llvalue = build_br merge_basic_block builder in
+      position_at_end merge_basic_block builder;
+      result_llvalue
+  | S_return expr_opt -> (
+      match expr_opt with
       | None -> build_ret_void builder
       | Some e ->
           let ll_expr =
