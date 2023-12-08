@@ -330,7 +330,7 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
             gen_expr false stack_frame_alloca stack_frame_length funcDef e
           in
           build_ret ll_expr builder)
-  | _ -> failwith "todoaa"
+  | S_semicolon -> build_nop ()
 
 and gen_header (header : Ast.header) access_link =
   let name = header.id in
