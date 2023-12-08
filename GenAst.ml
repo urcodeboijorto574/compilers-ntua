@@ -297,6 +297,31 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
 
       position_at_end merge_basic_block builder;
       build_nop ()
+  | S_while (c, s) ->
+      let start_basic_block = insertion_block builder in
+      let function_bb = block_parent start_basic_block in
+      let while_basic_block = append_block context "while" function_bb in
+      let cont_basic_block = append_block context "while_cont" function_bb in
+
+      let cond_val () =
+        let zero = const_int bool_type 0 in
+        let ll_c = gen_cond stack_frame_alloca stack_frame_length funcDef c in
+        build_icmp Ne zero ll_c "while_cond" builder
+      in
+      position_at_end start_basic_block builder;
+      ignore
+        (build_cond_br (cond_val ()) while_basic_block cont_basic_block builder);
+      position_at_end while_basic_block builder;
+      ignore (gen_stmt stack_frame_alloca stack_frame_length funcDef s);
+
+      let new_while_basic_block = insertion_block builder in
+      position_at_end new_while_basic_block builder;
+      let result_llvalue =
+        build_cond_br (cond_val ()) while_basic_block cont_basic_block builder
+      in
+
+      position_at_end cont_basic_block builder;
+      result_llvalue
   | S_return expr_opt -> (
       match expr_opt with
       | None -> build_ret_void builder
