@@ -264,6 +264,39 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
       let result_llvalue = build_br merge_basic_block builder in
       position_at_end merge_basic_block builder;
       result_llvalue
+  | S_if_else (c, s1, s2) ->
+      let start_basic_block = insertion_block builder in
+      let function_bb = block_parent start_basic_block in
+      let then_basic_block = append_block context "then" function_bb in
+      let else_basic_block = append_block context "else" function_bb in
+      let merge_basic_block =
+        append_block context "if_then_else_cont" function_bb
+      in
+
+      let cond_val () =
+        let zero = const_int bool_type 0 in
+        let ll_c = gen_cond stack_frame_alloca stack_frame_length funcDef c in
+        build_icmp Ne zero ll_c "if_then_else_cond" builder
+      in
+      position_at_end start_basic_block builder;
+      ignore
+        (build_cond_br (cond_val ()) then_basic_block else_basic_block builder);
+
+      let gen_stmt = gen_stmt stack_frame_alloca stack_frame_length funcDef in
+      position_at_end then_basic_block builder;
+      ignore (gen_stmt s1);
+      let new_then_basic_block = insertion_block builder in
+      position_at_end new_then_basic_block builder;
+      ignore (build_br merge_basic_block builder);
+
+      position_at_end else_basic_block builder;
+      ignore (gen_stmt s2);
+      let new_else_basic_block = insertion_block builder in
+      position_at_end new_else_basic_block builder;
+      ignore (build_br merge_basic_block builder);
+
+      position_at_end merge_basic_block builder;
+      build_nop ()
   | S_return expr_opt -> (
       match expr_opt with
       | None -> build_ret_void builder
