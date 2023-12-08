@@ -131,7 +131,7 @@ let newFuncDef (a, b, c) =
     stack_frame = None;
     stack_frame_addr = None;
     var_records = [];
-    stack_frame_length = 0
+    stack_frame_length = 0;
   }
 
 and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
