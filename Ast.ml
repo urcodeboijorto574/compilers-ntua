@@ -36,6 +36,7 @@ and funcDef = {
   mutable stack_frame : Llvm.lltype option;
   mutable stack_frame_addr : Llvm.llvalue option;
   mutable var_records : (string * int * bool) list;
+  mutable stack_frame_length : int;
 }
 
 and header = {
@@ -129,7 +130,8 @@ let newFuncDef (a, b, c) =
     parent_func = None;
     stack_frame = None;
     stack_frame_addr = None;
-    var_records = []
+    var_records = [];
+    stack_frame_length = 0
   }
 
 and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
