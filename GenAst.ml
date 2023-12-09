@@ -11,7 +11,22 @@ let builder = builder context
 let int_type = i64_type context
 let char_type = i8_type context
 let bool_type = i1_type context
-let lib_function_names = [ "writeInteger"; "writeString"; "writeByte" ]
+
+let lib_function_names =
+  [
+    "writeInteger";
+    "writeChar";
+    "writeString";
+    "readInteger";
+    "readChar";
+    "readString";
+    "ascii";
+    "chr";
+    "strlen";
+    "strcmp";
+    "strcpy";
+    "strcat";
+  ]
 
 let build_nop () =
   let zero = const_int bool_type 0 in
