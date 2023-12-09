@@ -485,28 +485,67 @@ let define_lib_funcs =
     ignore (gen_header_lib fun_header)
   in
 
+  (* writeInteger (n : int) : nothing *)
   let writeInteger_fp_type = newFparType (ConstInt, []) in
   let writeInteger_fp_def_list =
-    [ newFparDef (false, [ "n" ], writeInteger_fp_type) ]
-  in
-  let writeInteger_f_rtype = Ast.Nothing in
+    [ newFparDef (false, [ "x" ], writeInteger_fp_type) ]
+  and writeInteger_f_rtype = Nothing in
 
+  (* writeChar (c : char) : nothing *)
   let writeChar_fp_type = newFparType (ConstChar, []) in
-  let writeChar_fp_def_list =
-    [ newFparDef (false, [ "c" ], writeChar_fp_type) ]
-  in
-  let writeChar_f_rtype = Ast.Nothing in
+  let writeChar_fp_def_list = [ newFparDef (false, [ "x" ], writeChar_fp_type) ]
+  and writeChar_f_rtype = Nothing in
 
-  let writeString_fp_type = newFparType (ConstChar, [ -1 ]) in
+  (* writeString (s char[]) : nothing *)
   let writeString_fp_def_list =
-    [ newFparDef (true, [ "s" ], writeString_fp_type) ]
-  in
-  let writeString_f_rtype = Ast.Nothing in
+    [ newFparDef (true, [ "s" ], newFparType (ConstChar, [ -1 ])) ]
+  and writeString_f_rtype = Nothing in
 
-  (* this value is dummy *)
-  (* let readInteger_fp_type = newFparType (Nothing, []) in *)
-  let readInteger_fp_def_list = [] in
-  let readInteger_f_rtype = Ast.RetDataType Ast.ConstInt in
+  (* readInteger () : int *)
+  let readInteger_fp_def_list = []
+  and readInteger_f_rtype = RetDataType ConstInt in
+
+  (* readChar () : char *)
+  let readChar_fp_def_list = []
+  and readChar_f_rtype = RetDataType ConstChar in
+
+  (* readString (n : int; ref s : char[]) : nothing *)
+  let readString_fp_def_list =
+    [
+      newFparDef (false, [ "n" ], newFparType (ConstInt, []));
+      newFparDef (true, [ "s" ], newFparType (ConstChar, [ -1 ]));
+    ]
+  and readString_f_rtype = Nothing in
+
+  (* ascii (c : char) : int *)
+  let ascii_fp_def_list =
+    [ newFparDef (false, [ "c" ], newFparType (ConstChar, [])) ]
+  and ascii_f_rtype = RetDataType ConstInt in
+
+  (* chr (n : int) : char *)
+  let chr_fp_def_list =
+    [ newFparDef (false, [ "n" ], newFparType (ConstInt, [])) ]
+  and chr_f_rtype = RetDataType ConstChar in
+
+  (* strlen (ref s : char[]) : int *)
+  let strlen_fp_def_list =
+    [ newFparDef (true, [ "s" ], newFparType (ConstChar, [ -1 ])) ]
+  and strlen_f_rtype = RetDataType ConstInt in
+
+  (* strcmp (ref s1, s2 : char[]) : int *)
+  let strcmp_fp_def_list =
+    [ newFparDef (true, [ "s1"; "s2" ], newFparType (ConstChar, [ -1 ])) ]
+  and strcmp_f_rtype = RetDataType ConstInt in
+
+  (* strcpy (ref trg, src : char[]) : nothing *)
+  let strcpy_fp_def_list =
+    [ newFparDef (true, [ "trg"; "src" ], newFparType (ConstChar, [ -1 ])) ]
+  and strcpy_f_rtype = Nothing in
+
+  (* strcat (ref trg, src : char[]) : nothing *)
+  let strcat_fp_def_list =
+    [ newFparDef (true, [ "trg"; "src" ], newFparType (ConstChar, [ -1 ])) ]
+  and strcat_f_rtype = Nothing in
 
   let lib_list =
     [
@@ -514,6 +553,14 @@ let define_lib_funcs =
       (writeChar_fp_def_list, "writeChar", writeChar_f_rtype);
       (writeString_fp_def_list, "writeString", writeString_f_rtype);
       (readInteger_fp_def_list, "readInteger", readInteger_f_rtype);
+      (readChar_fp_def_list, "readChar", readChar_f_rtype);
+      (readString_fp_def_list, "readString", readString_f_rtype);
+      (ascii_fp_def_list, "ascii", ascii_f_rtype);
+      (chr_fp_def_list, "chr", chr_f_rtype);
+      (strlen_fp_def_list, "strlen", strlen_f_rtype);
+      (strcmp_fp_def_list, "strcmp", strcmp_f_rtype);
+      (strcpy_fp_def_list, "strcpy", strcpy_f_rtype);
+      (strcat_fp_def_list, "strcat", strcat_f_rtype);
     ]
   in
   List.iter define_lib_func lib_list
