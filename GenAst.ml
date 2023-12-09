@@ -391,14 +391,20 @@ and gen_funcDef funcDef =
   let frame_array = struct_element_types stack_frame_type in
   let stack_frame_length = Array.length frame_array in
   funcDef.stack_frame_length <- stack_frame_length;
-  let stack_frame_alloca =
-    build_alloca stack_frame_type ("stack_frame_" ^ funcDef.header.id) builder
-  in
-  let args = expand_fpar_def_list funcDef.header.fpar_def_list in
-  let args_array = Array.of_list args in
   let access_link_list =
     match funcDef.access_link with Some al -> [ al ] | None -> []
   in
+  let stack_frame_alloca =
+    let stack_frame_name =
+      match access_link_list with
+        | [] -> "main"
+        | list -> funcDef.header.id
+    in
+    build_alloca stack_frame_type ("stack_frame_" ^ stack_frame_name) builder
+  in
+  let args = expand_fpar_def_list funcDef.header.fpar_def_list in
+  let args_array = Array.of_list args in
+  
   Array.iteri
     (fun i ai ->
       let position =
@@ -614,7 +620,12 @@ let rec set_func_parents fd =
 and set_stack_frame funcDef =
   (* create the stack frame in field stack_frame for funcDef*)
   let stack_frame_ll =
-    named_struct_type context ("frame_" ^ funcDef.header.id)
+    let frame_name = 
+      match funcDef.parent_func with
+        | Some p -> funcDef.header.id
+        | None -> "main"
+    in
+    named_struct_type context ("frame_" ^ frame_name)
   in
   funcDef.stack_frame <- Some stack_frame_ll;
   let access_link =
@@ -635,9 +646,9 @@ and set_stack_frame funcDef =
   let param_types_list = List.map llvm_type_of_param params_list in
   (* gather local var definitions in a list for funcDef *)
   let params_length =
-    match funcDef.header.id with
-    | "main" -> List.length params_list
-    | _ -> List.length params_list + 1
+    match funcDef.parent_func with
+      | Some p -> List.length params_list + 1
+      | None -> List.length params_list
   in
   ignore (match funcDef.access_link with Some al -> [ al ] | None -> []);
 
@@ -704,23 +715,23 @@ and add_opts pm =
       add_global_optimizer; add_global_dce;
       add_aggressive_dce; add_cfg_simplification; add_instruction_combination;
       add_dead_store_elimination; add_loop_vectorize; add_slp_vectorize;
-      add_strip_dead_prototypes; add_global_dce; add_constant_propagation;
+      add_strip_dead_prototypes; add_global_dce; (* add_constant_propagation; *)
       add_cfg_simplification
   ] in
   List.iter (fun f -> f pm) opts
 
 and gen_on asts =
-  Llvm_all_backends.initialize ();
+  (* Llvm_all_backends.initialize ();
   let triple = Target.default_triple () in
   set_target_triple triple the_module;
   let target = Target.by_triple triple in
   let machine = TargetMachine.create ~triple:triple target in
   let dly = TargetMachine.data_layout machine in
-  set_data_layout (DataLayout.as_string dly) the_module;
+  set_data_layout (DataLayout.as_string dly) the_module; *)
   define_lib_funcs;
   set_stack_frames asts;
-  gen_funcDef asts;
-  let mpm = PassManager.create () in
+  gen_funcDef asts
+  (* let mpm = PassManager.create () in
   add_opts mpm;
   ignore(PassManager.run_module the_module mpm);
-  assert_valid_module the_module
+  assert_valid_module the_module *)
