@@ -151,7 +151,7 @@ and gen_expr is_param_ref expr stack_frame_alloca stack_frame_length funcDef =
   | E_expr_parenthesized expr ->
       gen_expr false expr stack_frame_alloca stack_frame_length funcDef
 
-and gen_stmt stmt stack_frame_alloca stack_frame_length funcDef =
+and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
   match stmt with
   | S_assignment (lv, expr) -> (
       match lv with
@@ -203,8 +203,10 @@ and gen_stmt stmt stack_frame_alloca stack_frame_length funcDef =
             | [] -> assert false
             | l -> List.(hd (rev l))
           in
-          let f s = gen_stmt s stack_frame_alloca stack_frame_length funcDef in
-          get_last_elem (List.map f l)
+          get_last_elem
+            (List.map
+               (gen_stmt stack_frame_alloca stack_frame_length funcDef)
+               l)
     end
   | S_return expr -> (
       match expr with
@@ -327,7 +329,7 @@ and gen_funcDef funcDef =
   let stmt_list = match funcDef.block with Block b -> b in
   ignore
     (List.map
-       (fun stmt -> gen_stmt stmt stack_frame_alloca stack_frame_length funcDef)
+       (gen_stmt stack_frame_alloca stack_frame_length funcDef)
        stmt_list);
 
   if block_terminator @@ insertion_block builder = None then
