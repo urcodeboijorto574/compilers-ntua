@@ -162,7 +162,7 @@ and gen_stmt stmt stack_frame_alloca stack_frame_length funcDef =
           let lv_value =
             gen_expr false expr stack_frame_alloca stack_frame_length funcDef
           in
-          ignore (build_store lv_value lv_address builder)
+          build_store lv_value lv_address builder
       | _ -> failwith "tododd")
   | S_func_call fc ->
       let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
@@ -194,22 +194,26 @@ and gen_stmt stmt stack_frame_alloca stack_frame_length funcDef =
         else
           Array.of_list rev_list
       in
-      ignore (build_call callee args_array "" builder)
+      build_call callee args_array "" builder
   | S_block b -> begin
       match b with
-      | Block [] -> ()
+      | Block [] -> build_nop ()
       | Block l ->
+          let get_last_elem = function
+            | [] -> assert false
+            | l -> List.(hd (rev l))
+          in
           let f s = gen_stmt s stack_frame_alloca stack_frame_length funcDef in
-          List.iter f l
+          get_last_elem (List.map f l)
     end
   | S_return expr -> (
       match expr with
-      | None -> ignore (build_ret_void builder)
+      | None -> build_ret_void builder
       | Some e ->
           let ll_expr =
             gen_expr false e stack_frame_alloca stack_frame_length funcDef
           in
-          ignore (build_ret ll_expr builder))
+          build_ret ll_expr builder)
   | _ -> failwith "todoaa"
 
 and gen_header (header : Ast.header) access_link =
@@ -321,9 +325,10 @@ and gen_funcDef funcDef =
 
   let list_length = List.length funcDef.var_records in
   let stmt_list = match funcDef.block with Block b -> b in
-  List.iter
-    (fun stmt -> gen_stmt stmt stack_frame_alloca stack_frame_length funcDef)
-    stmt_list;
+  ignore
+    (List.map
+       (fun stmt -> gen_stmt stmt stack_frame_alloca stack_frame_length funcDef)
+       stmt_list);
 
   if block_terminator @@ insertion_block builder = None then
     ignore (build_ret_void builder);
