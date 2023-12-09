@@ -79,7 +79,7 @@ and gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length =
   in
   iterate 0 stack_frame_alloca funcDef
 
-and gen_expr is_param_ref expr stack_frame_alloca stack_frame_length funcDef =
+and gen_expr is_param_ref stack_frame_alloca stack_frame_length funcDef expr =
   match expr with
   | E_const_int x -> const_int int_type x
   | E_const_char x -> const_int char_type (int_of_char x)
@@ -113,8 +113,8 @@ and gen_expr is_param_ref expr stack_frame_alloca stack_frame_length funcDef =
           (fun x ->
             let ith_elem = List.nth args_list !i in
             res :=
-              gen_expr x.ref ith_elem stack_frame_alloca stack_frame_length
-                funcDef
+              gen_expr x.ref stack_frame_alloca stack_frame_length funcDef
+                ith_elem
               :: !res;
             incr i)
           fpar_def_list
@@ -130,17 +130,17 @@ and gen_expr is_param_ref expr stack_frame_alloca stack_frame_length funcDef =
   | E_sgn_expr (sign, expr) -> (
       match sign with
       | O_plus ->
-          gen_expr false expr stack_frame_alloca stack_frame_length funcDef
+          gen_expr false stack_frame_alloca stack_frame_length funcDef expr
       | O_minus ->
           build_neg
-            (gen_expr false expr stack_frame_alloca stack_frame_length funcDef)
+            (gen_expr false stack_frame_alloca stack_frame_length funcDef expr)
             "minus" builder)
   | E_op_expr_expr (lhs, oper, rhs) -> (
       let lhs_val =
-        gen_expr false lhs stack_frame_alloca stack_frame_length funcDef
+        gen_expr false stack_frame_alloca stack_frame_length funcDef lhs
       in
       let rhs_val =
-        gen_expr false rhs stack_frame_alloca stack_frame_length funcDef
+        gen_expr false stack_frame_alloca stack_frame_length funcDef rhs
       in
       match oper with
       | O_plus -> build_add lhs_val rhs_val "addtmp" builder
@@ -149,7 +149,7 @@ and gen_expr is_param_ref expr stack_frame_alloca stack_frame_length funcDef =
       | O_div -> build_sdiv lhs_val rhs_val "divtmp" builder
       | O_mod -> build_srem lhs_val rhs_val "modtmp" builder)
   | E_expr_parenthesized expr ->
-      gen_expr false expr stack_frame_alloca stack_frame_length funcDef
+      gen_expr false stack_frame_alloca stack_frame_length funcDef expr
 
 and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
   match stmt with
@@ -160,7 +160,7 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
             gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length
           in
           let lv_value =
-            gen_expr false expr stack_frame_alloca stack_frame_length funcDef
+            gen_expr false stack_frame_alloca stack_frame_length funcDef expr
           in
           build_store lv_value lv_address builder
       | _ -> failwith "tododd")
@@ -181,8 +181,8 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
           (fun x ->
             let ith_elem = List.nth args_list !i in
             res :=
-              gen_expr x.ref ith_elem stack_frame_alloca stack_frame_length
-                funcDef
+              gen_expr x.ref stack_frame_alloca stack_frame_length funcDef
+                ith_elem
               :: !res;
             incr i)
           fpar_def_list
@@ -213,7 +213,7 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
       | None -> build_ret_void builder
       | Some e ->
           let ll_expr =
-            gen_expr false e stack_frame_alloca stack_frame_length funcDef
+            gen_expr false stack_frame_alloca stack_frame_length funcDef e
           in
           build_ret ll_expr builder)
   | _ -> failwith "todoaa"
