@@ -1,4 +1,11 @@
 open Llvm
+open Llvm_analysis
+open Llvm_scalar_opts
+open Llvm_ipo
+open Llvm_vectorize
+open Llvm_target
+open Llvm.PassManager
+open Llvm_passmgr_builder
 open Ast
 open Symbol
 open Types
@@ -361,7 +368,11 @@ and gen_header (header : Ast.header) access_link =
   let ft = function_type return_type param_types_array in
   let f =
     match lookup_function name the_module with
-    | None -> declare_function name ft the_module
+    | None -> 
+      (* if access_link is None then function is main, so give the name name to llvm for global function *)
+      (match access_link with
+      | Some a -> declare_function name ft the_module
+      | None -> declare_function "main" ft the_module)
     | Some x -> failwith "semantic analysis error: function already defined"
   in
   f
@@ -680,7 +691,36 @@ and set_stack_frames funcDef =
   in
   List.iter iterate funcDef.local_def_list
 
+and add_opts pm =
+  let opts = [
+      add_ipsccp; add_memory_to_register_promotion; add_dead_arg_elimination;
+      add_instruction_combination; add_cfg_simplification;
+      add_function_inlining; add_function_attrs; add_scalar_repl_aggregation;
+      add_early_cse; add_cfg_simplification; add_instruction_combination;
+      add_tail_call_elimination; add_reassociation; add_loop_rotation;
+      add_loop_unswitch; add_instruction_combination; add_cfg_simplification;
+      add_ind_var_simplification; add_loop_idiom; add_loop_deletion;
+      add_loop_unroll; add_gvn; add_memcpy_opt; add_sccp; add_licm;
+      add_global_optimizer; add_global_dce;
+      add_aggressive_dce; add_cfg_simplification; add_instruction_combination;
+      add_dead_store_elimination; add_loop_vectorize; add_slp_vectorize;
+      add_strip_dead_prototypes; add_global_dce; add_constant_propagation;
+      add_cfg_simplification
+  ] in
+  List.iter (fun f -> f pm) opts
+
 and gen_on asts =
+  Llvm_all_backends.initialize ();
+  let triple = Target.default_triple () in
+  set_target_triple triple the_module;
+  let target = Target.by_triple triple in
+  let machine = TargetMachine.create ~triple:triple target in
+  let dly = TargetMachine.data_layout machine in
+  set_data_layout (DataLayout.as_string dly) the_module;
   define_lib_funcs;
   set_stack_frames asts;
-  gen_funcDef asts
+  gen_funcDef asts;
+  let mpm = PassManager.create () in
+  add_opts mpm;
+  ignore(PassManager.run_module the_module mpm);
+  assert_valid_module the_module
