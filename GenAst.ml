@@ -105,20 +105,18 @@ and gen_expr is_param_ref stack_frame_alloca stack_frame_length funcDef expr =
         | Some callee -> callee
         | None -> raise (Error "unknown function referenced")
       in
-      let params = params callee in
+      ignore (params callee);
       let i = ref 0 in
       let res = ref [] in
-      let args =
-        List.iter
-          (fun x ->
-            let ith_elem = List.nth args_list !i in
-            res :=
-              gen_expr x.ref stack_frame_alloca stack_frame_length funcDef
-                ith_elem
-              :: !res;
-            incr i)
-          fpar_def_list
-      in
+      List.iter
+        (fun x ->
+          let ith_elem = List.nth args_list !i in
+          res :=
+            gen_expr x.ref stack_frame_alloca stack_frame_length funcDef
+              ith_elem
+            :: !res;
+          incr i)
+        fpar_def_list;
       let rev_list = List.rev !res in
       let args_array =
         if List.mem fc.id lib_function_names = false then
@@ -206,20 +204,19 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
         | Some callee -> callee
         | None -> raise (Error "unknown function referenced")
       in
-      let params = params callee in
+      ignore (params callee);
       let i = ref 0 in
       let res = ref [] in
-      let args =
-        List.iter
-          (fun x ->
-            let ith_elem = List.nth args_list !i in
-            res :=
-              gen_expr x.ref stack_frame_alloca stack_frame_length funcDef
-                ith_elem
-              :: !res;
-            incr i)
-          fpar_def_list
-      in
+
+      List.iter
+        (fun x ->
+          let ith_elem = List.nth args_list !i in
+          res :=
+            gen_expr x.ref stack_frame_alloca stack_frame_length funcDef
+              ith_elem
+            :: !res;
+          incr i)
+        fpar_def_list;
       let rev_list = List.rev !res in
       let args_array =
         if List.mem fc.id lib_function_names = false then
@@ -335,7 +332,7 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
 and gen_header (header : Ast.header) access_link =
   let name = header.id in
   let args = expand_fpar_def_list header.fpar_def_list in
-  let args_array = Array.of_list args in
+  ignore (Array.of_list args);
   Hashtbl.add named_functions (Hashtbl.hash name) args;
   let ret_type = header.ret_type in
   let access_link_list =
@@ -422,10 +419,9 @@ and gen_funcDef funcDef =
   let iterate local_def =
     match local_def with
     | L_varDef v ->
-        let ll_type =
-          llvm_type_of_t_type (Types.t_type_of_dataType v.var_type.data_type)
-        in
-        let a = List.nth v.id_list 0 in
+        ignore
+          (llvm_type_of_t_type (Types.t_type_of_dataType v.var_type.data_type));
+        ignore (List.nth v.id_list 0);
         List.iter
           (fun x ->
             let position =
@@ -439,7 +435,7 @@ and gen_funcDef funcDef =
   in
   List.iter iterate funcDef.local_def_list;
 
-  let list_length = List.length funcDef.var_records in
+  ignore (List.length funcDef.var_records);
   let stmt_list = match funcDef.block with Block b -> b in
   ignore
     (List.map
@@ -569,9 +565,7 @@ and set_stack_frame funcDef =
     | "main" -> List.length params_list
     | _ -> List.length params_list + 1
   in
-  let access_link_list =
-    match funcDef.access_link with Some al -> [ al ] | None -> []
-  in
+  ignore (match funcDef.access_link with Some al -> [ al ] | None -> []);
 
   let index = ref params_length in
   let vars_array = Array.of_list funcDef.local_def_list in
