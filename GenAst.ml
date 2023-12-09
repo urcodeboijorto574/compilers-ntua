@@ -151,6 +151,39 @@ and gen_expr is_param_ref stack_frame_alloca stack_frame_length funcDef expr =
   | E_expr_parenthesized expr ->
       gen_expr false stack_frame_alloca stack_frame_length funcDef expr
 
+and gen_cond stack_frame_alloca stack_frame_length funcDef = function
+  | C_not_cond (lo, c) ->
+      let ll_cond = gen_cond stack_frame_alloca stack_frame_length funcDef c in
+      build_not ll_cond "not" builder
+  | C_cond_cond (c1, lo, c2) -> (
+      (* TODO: short-circuiting *)
+      let gen_cond = gen_cond stack_frame_alloca stack_frame_length funcDef in
+      let lhs_val = gen_cond c1 in
+      let rhs_val = gen_cond c2 in
+      match lo with
+      | O_and -> build_and lhs_val rhs_val "and" builder
+      | O_or -> build_or lhs_val rhs_val "or" builder
+      | O_not -> assert false)
+  | C_expr_expr (e1, co, e2) -> (
+      let gen_expr =
+        gen_expr false stack_frame_alloca stack_frame_length funcDef
+      in
+      let lhs_val = gen_expr e1 in
+      let rhs_val = gen_expr e2 in
+      let open Icmp in
+      let build_comp predicate instr_name =
+        build_icmp predicate lhs_val rhs_val instr_name builder
+      in
+      match co with
+      | O_equal -> build_comp Eq "equal"
+      | O_less -> build_comp Slt "less"
+      | O_greater -> build_comp Sgt "greater"
+      | O_less_eq -> build_comp Sle "less_eq"
+      | O_greater_eq -> build_comp Sge "greater_eq"
+      | O_not_equal -> build_comp Ne "not_equal")
+  | C_cond_parenthesized c ->
+      gen_cond stack_frame_alloca stack_frame_length funcDef c
+
 and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
   match stmt with
   | S_assignment (lv, expr) -> (
