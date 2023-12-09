@@ -480,7 +480,7 @@ let define_lib_funcs =
       (params f);
     f (* why is this 'f' alone here? *)
   in
-  let define_lib_func (fp_def_list, f_id, f_rtype) =
+  let define_lib_func (f_id, fp_def_list, f_rtype) =
     let fun_header = newHeader (f_id, fp_def_list, f_rtype) in
     ignore (gen_header_lib fun_header)
   in
@@ -549,18 +549,18 @@ let define_lib_funcs =
 
   let lib_list =
     [
-      (writeInteger_fp_def_list, "writeInteger", writeInteger_f_rtype);
-      (writeChar_fp_def_list, "writeChar", writeChar_f_rtype);
-      (writeString_fp_def_list, "writeString", writeString_f_rtype);
-      (readInteger_fp_def_list, "readInteger", readInteger_f_rtype);
-      (readChar_fp_def_list, "readChar", readChar_f_rtype);
-      (readString_fp_def_list, "readString", readString_f_rtype);
-      (ascii_fp_def_list, "ascii", ascii_f_rtype);
-      (chr_fp_def_list, "chr", chr_f_rtype);
-      (strlen_fp_def_list, "strlen", strlen_f_rtype);
-      (strcmp_fp_def_list, "strcmp", strcmp_f_rtype);
-      (strcpy_fp_def_list, "strcpy", strcpy_f_rtype);
-      (strcat_fp_def_list, "strcat", strcat_f_rtype);
+      ("writeInteger", writeInteger_fp_def_list, writeInteger_f_rtype);
+      ("writeChar", writeChar_fp_def_list, writeChar_f_rtype);
+      ("writeString", writeString_fp_def_list, writeString_f_rtype);
+      ("readInteger", readInteger_fp_def_list, readInteger_f_rtype);
+      ("readChar", readChar_fp_def_list, readChar_f_rtype);
+      ("readString", readString_fp_def_list, readString_f_rtype);
+      ("ascii", ascii_fp_def_list, ascii_f_rtype);
+      ("chr", chr_fp_def_list, chr_f_rtype);
+      ("strlen", strlen_fp_def_list, strlen_f_rtype);
+      ("strcmp", strcmp_fp_def_list, strcmp_f_rtype);
+      ("strcpy", strcpy_fp_def_list, strcpy_f_rtype);
+      ("strcat", strcat_fp_def_list, strcat_f_rtype);
     ]
   in
   List.iter define_lib_func lib_list
