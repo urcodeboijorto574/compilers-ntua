@@ -195,6 +195,13 @@ and gen_stmt stmt stack_frame_alloca stack_frame_length funcDef =
           Array.of_list rev_list
       in
       ignore (build_call callee args_array "" builder)
+  | S_block b -> begin
+      match b with
+      | Block [] -> ()
+      | Block l ->
+          let f s = gen_stmt s stack_frame_alloca stack_frame_length funcDef in
+          List.iter f l
+    end
   | S_return expr -> (
       match expr with
       | None -> ignore (build_ret_void builder)
