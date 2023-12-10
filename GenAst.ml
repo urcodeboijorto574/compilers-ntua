@@ -108,8 +108,8 @@ and gen_expr is_param_ref stack_frame_alloca stack_frame_length funcDef expr =
             build_load lv_address id builder
           else
             lv_address
-      | L_comp (lv2, expr2) -> failwith "todo" (* TODO *)
-      | _ -> failwith "tododd")
+      | L_comp (lv2, expr2) -> failwith "TODO gen_expr (E_lvalue (L_comp _))"
+      | L_string _ -> failwith "TODO gen_expr (E_lvalue (L_string _))")
   | E_func_call fc ->
       let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
       (* TODO: may need some work here *)
@@ -209,7 +209,8 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
             gen_expr false stack_frame_alloca stack_frame_length funcDef expr
           in
           build_store lv_value lv_address builder
-      | _ -> failwith "tododd")
+      | L_comp _ -> failwith "TODO gen_stmt (S_assignment (L_comp _))"
+      | L_string _ -> failwith "TODO gen_stmt (S_assignment (L_string _))")
   | S_func_call fc ->
       let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
       let callee = fc.id in
@@ -446,7 +447,7 @@ and gen_funcDef funcDef =
             incr struct_index)
           v.id_list
     | L_funcDef fd -> gen_funcDef fd
-    | L_funcDecl fdl -> failwith "todo" (* TODO: Function Declarations *)
+    | L_funcDecl fdl -> failwith "TODO gen_funcDef: iterate (L_funcDecl _)"
   in
   List.iter iterate funcDef.local_def_list;
 
