@@ -2,7 +2,6 @@ open Llvm
 open GenAst
 
 let main =
-  Printf.printf "here\n";
   let lexbuf = Lexing.from_channel stdin in
   try
     let asts = Parser.program Lexer.lexer lexbuf in

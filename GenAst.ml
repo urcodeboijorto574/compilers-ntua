@@ -368,11 +368,11 @@ and gen_header (header : Ast.header) access_link =
   let ft = function_type return_type param_types_array in
   let f =
     match lookup_function name the_module with
-    | None -> 
-      (* if access_link is None then function is main, so give the name name to llvm for global function *)
-      (match access_link with
-      | Some a -> declare_function name ft the_module
-      | None -> declare_function "main" ft the_module)
+    | None -> (
+        (* if access_link is None then function is main, so give the name name to llvm for global function *)
+        match access_link with
+        | Some a -> declare_function name ft the_module
+        | None -> declare_function "main" ft the_module)
     | Some x -> failwith "semantic analysis error: function already defined"
   in
   f
@@ -396,15 +396,13 @@ and gen_funcDef funcDef =
   in
   let stack_frame_alloca =
     let stack_frame_name =
-      match access_link_list with
-        | [] -> "main"
-        | list -> funcDef.header.id
+      match access_link_list with [] -> "main" | list -> funcDef.header.id
     in
     build_alloca stack_frame_type ("stack_frame_" ^ stack_frame_name) builder
   in
   let args = expand_fpar_def_list funcDef.header.fpar_def_list in
   let args_array = Array.of_list args in
-  
+
   Array.iteri
     (fun i ai ->
       let position =
@@ -620,10 +618,10 @@ let rec set_func_parents fd =
 and set_stack_frame funcDef =
   (* create the stack frame in field stack_frame for funcDef*)
   let stack_frame_ll =
-    let frame_name = 
+    let frame_name =
       match funcDef.parent_func with
-        | Some p -> funcDef.header.id
-        | None -> "main"
+      | Some p -> funcDef.header.id
+      | None -> "main"
     in
     named_struct_type context ("frame_" ^ frame_name)
   in
@@ -647,8 +645,8 @@ and set_stack_frame funcDef =
   (* gather local var definitions in a list for funcDef *)
   let params_length =
     match funcDef.parent_func with
-      | Some p -> List.length params_list + 1
-      | None -> List.length params_list
+    | Some p -> List.length params_list + 1
+    | None -> List.length params_list
   in
   ignore (match funcDef.access_link with Some al -> [ al ] | None -> []);
 
@@ -703,35 +701,61 @@ and set_stack_frames funcDef =
   List.iter iterate funcDef.local_def_list
 
 and add_opts pm =
-  let opts = [
-      add_ipsccp; add_memory_to_register_promotion; add_dead_arg_elimination;
-      add_instruction_combination; add_cfg_simplification;
-      add_function_inlining; add_function_attrs; add_scalar_repl_aggregation;
-      add_early_cse; add_cfg_simplification; add_instruction_combination;
-      add_tail_call_elimination; add_reassociation; add_loop_rotation;
-      add_loop_unswitch; add_instruction_combination; add_cfg_simplification;
-      add_ind_var_simplification; add_loop_idiom; add_loop_deletion;
-      add_loop_unroll; add_gvn; add_memcpy_opt; add_sccp; add_licm;
-      add_global_optimizer; add_global_dce;
-      add_aggressive_dce; add_cfg_simplification; add_instruction_combination;
-      add_dead_store_elimination; add_loop_vectorize; add_slp_vectorize;
-      add_strip_dead_prototypes; add_global_dce; (* add_constant_propagation; *)
-      add_cfg_simplification
-  ] in
+  let opts =
+    [
+      add_ipsccp;
+      add_memory_to_register_promotion;
+      add_dead_arg_elimination;
+      add_instruction_combination;
+      add_cfg_simplification;
+      add_function_inlining;
+      add_function_attrs;
+      add_scalar_repl_aggregation;
+      add_early_cse;
+      add_cfg_simplification;
+      add_instruction_combination;
+      add_tail_call_elimination;
+      add_reassociation;
+      add_loop_rotation;
+      add_loop_unswitch;
+      add_instruction_combination;
+      add_cfg_simplification;
+      add_ind_var_simplification;
+      add_loop_idiom;
+      add_loop_deletion;
+      add_loop_unroll;
+      add_gvn;
+      add_memcpy_opt;
+      add_sccp;
+      add_licm;
+      add_global_optimizer;
+      add_global_dce;
+      add_aggressive_dce;
+      add_cfg_simplification;
+      add_instruction_combination;
+      add_dead_store_elimination;
+      add_loop_vectorize;
+      add_slp_vectorize;
+      add_strip_dead_prototypes;
+      add_global_dce;
+      (* add_constant_propagation; *)
+      add_cfg_simplification;
+    ]
+  in
   List.iter (fun f -> f pm) opts
 
 and gen_on asts =
-  (* Llvm_all_backends.initialize ();
+  Llvm_all_backends.initialize ();
   let triple = Target.default_triple () in
   set_target_triple triple the_module;
   let target = Target.by_triple triple in
-  let machine = TargetMachine.create ~triple:triple target in
+  let machine = TargetMachine.create ~triple target in
   let dly = TargetMachine.data_layout machine in
-  set_data_layout (DataLayout.as_string dly) the_module; *)
+  set_data_layout (DataLayout.as_string dly) the_module;
   define_lib_funcs;
   set_stack_frames asts;
-  gen_funcDef asts
-  (* let mpm = PassManager.create () in
+  gen_funcDef asts;
+  let mpm = PassManager.create () in
   add_opts mpm;
-  ignore(PassManager.run_module the_module mpm);
-  assert_valid_module the_module *)
+  ignore (PassManager.run_module the_module mpm);
+  assert_valid_module the_module
