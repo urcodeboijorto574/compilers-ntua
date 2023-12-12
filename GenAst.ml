@@ -129,7 +129,6 @@ and gen_expr is_param_ref stack_frame_alloca stack_frame_length funcDef expr =
       | L_comp (lv2, expr2) -> failwith "TODO gen_expr (E_lvalue (L_comp _))")
   | E_func_call fc ->
       let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
-      (* TODO: may need some work here *)
       let callee = fc.id in
       let args_list = fc.expr_list in
       let callee =
@@ -151,8 +150,21 @@ and gen_expr is_param_ref stack_frame_alloca stack_frame_length funcDef expr =
         fpar_def_list;
       let rev_list = List.rev !res in
       let args_array =
+        let first_argument =
+          if fc.id = funcDef.header.id then begin
+            let access_link_ptr =
+              build_struct_gep stack_frame_alloca 0 "access_link_ptr" builder
+            in
+            let access_link_val =
+              build_load access_link_ptr "access_link_ptr" builder
+            in
+            access_link_val
+          end
+          else
+            stack_frame_alloca
+        in
         if List.mem fc.id lib_function_names = false then
-          Array.of_list ([ stack_frame_alloca ] @ rev_list)
+          Array.of_list ([ first_argument ] @ rev_list)
         else
           Array.of_list rev_list
       in
@@ -755,17 +767,17 @@ and add_opts pm =
   List.iter (fun f -> f pm) opts
 
 and gen_on asts =
-  Llvm_all_backends.initialize ();
-  let triple = Target.default_triple () in
-  set_target_triple triple the_module;
-  let target = Target.by_triple triple in
-  let machine = TargetMachine.create ~triple target in
-  let dly = TargetMachine.data_layout machine in
-  set_data_layout (DataLayout.as_string dly) the_module;
+  (* Llvm_all_backends.initialize ();
+     let triple = Target.default_triple () in
+     set_target_triple triple the_module;
+     let target = Target.by_triple triple in
+     let machine = TargetMachine.create ~triple target in
+     let dly = TargetMachine.data_layout machine in
+     set_data_layout (DataLayout.as_string dly) the_module; *)
   define_lib_funcs;
   set_stack_frames asts;
-  gen_funcDef asts;
-  let mpm = PassManager.create () in
-  add_opts mpm;
-  ignore (PassManager.run_module the_module mpm);
-  assert_valid_module the_module
+  gen_funcDef asts
+(* let mpm = PassManager.create () in
+   add_opts mpm;
+   ignore (PassManager.run_module the_module mpm);
+   assert_valid_module the_module *)
