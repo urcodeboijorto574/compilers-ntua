@@ -379,7 +379,7 @@ and gen_header (header : Ast.header) access_link =
 
 and gen_funcDef funcDef =
   let funcDef_ll = gen_header funcDef.header funcDef.access_link in
-  let bb = append_block context "entry" funcDef_ll in
+  let bb = append_block context ("entry_" ^ funcDef.header.id) funcDef_ll in
   position_at_end bb builder;
   blocks_list := bb :: !blocks_list;
   let params_records = ref [] in
