@@ -115,8 +115,18 @@ and gen_expr is_param_ref stack_frame_alloca stack_frame_length funcDef expr =
             build_load lv_address id builder
           else
             lv_address
-      | L_comp (lv2, expr2) -> failwith "TODO gen_expr (E_lvalue (L_comp _))"
-      | L_string _ -> failwith "TODO gen_expr (E_lvalue (L_string _))")
+      | L_string s ->
+          (* pointer_type (const_string context s) *)
+          (* create const string *)
+          let const_str = const_stringz context s in
+          (* create variable holding  const_str*)
+          let string_var = define_global "string_var" const_str the_module in
+          (* point to the first element (char) of the string *)
+          let first_element = const_int int_type 0 in
+          build_gep string_var
+            [| first_element; first_element |]
+            "string_ptr" builder
+      | L_comp (lv2, expr2) -> failwith "TODO gen_expr (E_lvalue (L_comp _))")
   | E_func_call fc ->
       let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
       (* TODO: may need some work here *)
