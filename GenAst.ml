@@ -44,22 +44,22 @@ let named_values : (string, llvalue) Hashtbl.t = Hashtbl.create 2000
 let named_functions = Hashtbl.create 2000
 let blocks_list = ref []
 
-let rec llvm_type_of_t_type x =
+let rec lltype_of_t_type x =
   match x with
   | T_int -> int_type
   | T_char -> char_type
-  | T_array (t, n) -> array_type (llvm_type_of_t_type t) n
-  | T_func t -> llvm_type_of_t_type t
+  | T_array (t, n) -> array_type (lltype_of_t_type t) n
+  | T_func t -> lltype_of_t_type t
   | T_none -> void_type context
 
-and llvm_type_of_param x =
+and lltype_of_fparDef x =
   let t_type = Types.t_type_of_dataType x.fpar_type.data_type in
   match x.ref with
-  | false -> llvm_type_of_t_type t_type
+  | false -> lltype_of_t_type t_type
   | true ->
       (* TODO: need to add a check here whether type is
          array. Maybe need to change fparType and add type array there *)
-      pointer_type (llvm_type_of_t_type t_type)
+      pointer_type (lltype_of_t_type t_type)
 
 (* Currently fparDef does not help a lot
    [ {ref, [a, b, c], int}, {noref, [e,f], char} ] -->
@@ -384,9 +384,9 @@ and gen_header (header : Ast.header) access_link =
     match access_link with Some x -> [ x ] | None -> []
   in
 
-  let param_types_list = access_link_list @ List.map llvm_type_of_param args in
+  let param_types_list = access_link_list @ List.map lltype_of_fparDef args in
   let param_types_array = Array.of_list param_types_list in
-  let return_type = llvm_type_of_t_type (Types.t_type_of_retType ret_type) in
+  let return_type = lltype_of_t_type (Types.t_type_of_retType ret_type) in
   let ft = function_type return_type param_types_array in
   let f =
     match lookup_function name the_module with
@@ -473,7 +473,7 @@ and gen_funcDef funcDef =
     match local_def with
     | L_varDef v ->
         ignore
-          (llvm_type_of_t_type (Types.t_type_of_dataType v.var_type.data_type));
+          (lltype_of_t_type (Types.t_type_of_dataType v.var_type.data_type));
         ignore (List.nth v.id_list 0);
         List.iter
           (fun x ->
@@ -509,9 +509,9 @@ let define_lib_funcs =
     let args_array = Array.of_list args in
     Hashtbl.add named_functions (Hashtbl.hash name) args;
     let ret_type = header.ret_type in
-    let param_types_list = List.map llvm_type_of_param args in
+    let param_types_list = List.map lltype_of_fparDef args in
     let param_types_array = Array.of_list param_types_list in
-    let return_type = llvm_type_of_t_type (Types.t_type_of_retType ret_type) in
+    let return_type = lltype_of_t_type (Types.t_type_of_retType ret_type) in
     let ft = function_type return_type param_types_array in
     let f =
       match lookup_function name the_module with
@@ -663,7 +663,7 @@ and set_stack_frame funcDef =
 
   let params_records = ref [] in
   let params_list = expand_fpar_def_list funcDef.header.fpar_def_list in
-  let param_types_list = List.map llvm_type_of_param params_list in
+  let param_types_list = List.map lltype_of_fparDef params_list in
   (* gather local var definitions in a list for funcDef *)
   let params_length =
     match funcDef.parent_func with
@@ -697,7 +697,7 @@ and set_stack_frame funcDef =
           match hd with
           | L_varDef vd ->
               let vd_type =
-                llvm_type_of_t_type (t_type_of_dataType vd.var_type.data_type)
+                lltype_of_t_type (t_type_of_dataType vd.var_type.data_type)
               in
               let list_types = List.map (fun x -> vd_type) vd.id_list in
               helper tail (acc @ list_types)
