@@ -463,7 +463,7 @@ and sem_lvalue = function
         Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
       entryType
   | L_string s ->
-      Types.T_array (Types.T_char, String.length s)
+      Types.T_array (Types.T_char, String.length s + 1)
       (* Note: the last character of a string literal is not the '\0' character. *)
   | L_comp (lv, e) -> (
       if Types.debugMode then
