@@ -89,10 +89,7 @@ let rec expand_fpar_def_list (def_list : fparDef list) : fparDef list =
 and gen_lvalue_address id (stack_frame_alloca : Llvm.llvalue) funcDef
     stack_frame_length =
   let rec iterate i stack_frame funcDef =
-    let tuple = List.nth funcDef.var_records i in
-    let var_name = match tuple with v, _, _ -> v in
-    let elem_pos = match tuple with _, p, _ -> p in
-    let is_ref = match tuple with _, _, ref -> ref in
+    let var_name, elem_pos, is_ref = List.nth funcDef.var_records i in
     if var_name = id then begin
       let addr = build_struct_gep stack_frame elem_pos var_name builder in
       if is_ref = false then
@@ -121,28 +118,54 @@ and gen_expr is_param_ref (stack_frame_alloca : Llvm.llvalue) stack_frame_length
   match expr with
   | E_const_int x -> const_int int_type x
   | E_const_char x -> const_int char_type (int_of_char x)
-  | E_lvalue lv -> (
-      match lv.lv_kind with
-      | L_id id ->
-          let lv_address =
-            gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length
-          in
-          if is_param_ref = false then
-            build_load lv_address id builder
-          else
-            lv_address
-      | L_string s ->
-          (* pointer_type (const_string context s) *)
-          (* create const string *)
-          let const_str = const_stringz context s in
-          (* create variable holding  const_str*)
-          let string_var = define_global "string_var" const_str the_module in
-          (* point to the first element (char) of the string *)
-          let first_element = const_int int_type 0 in
-          build_gep string_var
-            [| first_element; first_element |]
-            "string_ptr" builder
-      | L_comp (lv2, expr2) -> failwith "TODO gen_expr (E_lvalue (L_comp _))")
+  | E_lvalue lv ->
+      (* [gen_lvalue_kind ?poc lv] takes an l-value [lv] and returns a pointer
+         pointing at the [Llvm.llvalue] of the l-value. The optional argument
+         [poc] shouldn't concern the top level use of the function.
+         Returns [Llvm.llvalue]. *)
+      let rec gen_lvalue_kind ?(partOfComp = false) = function
+        | L_id id ->
+            let lv_address =
+              gen_lvalue_address id stack_frame_alloca funcDef
+                stack_frame_length
+            in
+            if not partOfComp then
+              if is_param_ref = false then
+                build_load lv_address id builder
+              else
+                lv_address
+            else (* failwith "TODO: gen_expr (E_lvalue (L_comp (L_id _)))" *)
+              build_gep lv_address
+                [| const_int int_type 0 |]
+                "array_pointer" builder
+        | L_string s ->
+            (* pointer_type (const_string context s) *)
+            (* create const string *)
+            let const_str = const_stringz context s in
+            (* create variable holding  const_str*)
+            let string_var = define_global "string_var" const_str the_module in
+            (* point to the first element (char) of the string *)
+            let zero = const_int int_type 0 in
+            build_gep string_var [| zero; zero |] "string_ptr" builder
+        | L_comp (lv, e) -> begin
+            let elementPtr =
+              let arrayPtr = gen_lvalue_kind ~partOfComp:true lv in
+              let index =
+                let indexExpr =
+                  gen_expr false stack_frame_alloca stack_frame_length funcDef e
+                in
+                build_intcast indexExpr int_type "index_cast" builder
+              in
+              build_gep arrayPtr [| index |] "array_element_pointer" builder
+            in
+            (* TODO: The if-else stmt below might be unnecessary/wrong. *)
+            if not partOfComp then
+              build_load elementPtr "array_elem" builder
+            else
+              failwith "TODO: gen_expr (E_lvalue (L_comp (L_comp _)))"
+          end
+      in
+      gen_lvalue_kind lv.lv_kind
   | E_func_call fc ->
       let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
       let callee = fc.id in
@@ -317,7 +340,7 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
       end
   in
   match stmt with
-  | S_assignment (lv, expr) -> (
+  | S_assignment (lv, expr) -> begin
       match lv.lv_kind with
       | L_id id ->
           let lv_address =
@@ -327,8 +350,9 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
             gen_expr false stack_frame_alloca stack_frame_length funcDef expr
           in
           build_store lv_value lv_address builder
-      | L_comp _ -> failwith "TODO gen_stmt (S_assignment (L_comp _))"
-      | L_string _ -> failwith "TODO gen_stmt (S_assignment (L_string _))")
+      | L_string _ -> assert false
+      | L_comp (lv, e) -> failwith "TODO: gen_stmt (S_assignment (L_comp, _))"
+    end
   | S_func_call fc ->
       let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
       let callee = fc.id in
