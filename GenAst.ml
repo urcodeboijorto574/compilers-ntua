@@ -52,6 +52,23 @@ let rec lltype_of_t_type x =
   | T_func t -> lltype_of_t_type t
   | T_none -> void_type context
 
+and t_type_of_lltype lltype =
+  match Llvm.classify_type lltype with
+  | TypeKind.Integer -> begin
+      match Llvm.integer_bitwidth lltype with
+      | 64 ->
+          Printf.printf "integer baby\n";
+          T_int
+      | 8 ->
+          Printf.printf "character baby\n";
+          T_char
+      | _ -> assert false
+    end
+  | TypeKind.Array ->
+      T_array
+        (t_type_of_lltype (Llvm.element_type lltype), Llvm.array_length lltype)
+  | _ -> failwith "Error in t_type_of_lltype"
+
 and lltype_of_fparDef x =
   let t_type = Types.t_type_of_dataType x.fpar_type.data_type in
   match x.ref with
