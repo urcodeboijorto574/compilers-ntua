@@ -24,18 +24,7 @@ val construct_array_type : int list -> t_type -> t_type
     the same. If they are the same [true] is returned, otherwise [false]. *)
 val equal_types : t_type -> t_type -> bool
 
-(** [t_type_of_dataType dt] takes an object [dt] of type [Ast.dataType] and
-    returns the corresponding type. Returns [Types.t_type]. *)
-val t_type_of_dataType : Ast.dataType -> t_type
+val t_type_of_t_func : t_type -> t_type
 
-(** [t_type_of_retType rt] takes an object [rt] of type [Ast.retType] and
-    returns the corresponding [t_type] (encapsulated in [T_func]). *)
-val t_type_of_retType : Ast.retType -> t_type
-
-(** [t_type_of_fparType fpt] takes an object [fpt] of type [Ast.fparType] and
-    returns the corresponding type. Returns [Types.t_type]. *)
-val t_type_of_fparType : Ast.fparType -> t_type
-
-(** [t_type_of_fparType vt] takes an object [vt] of type [Ast.varType] and
-    returns the corresponding type. Returns [Types.t_type]. *)
-val t_type_of_varType : Ast.varType -> t_type
+(* Functions that convert types defined in Ast to t_type types are defined in
+   Ast. *)

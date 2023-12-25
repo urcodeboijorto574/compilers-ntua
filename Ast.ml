@@ -141,6 +141,23 @@ and newVarDef (a, b) = { id_list = a; var_type = b }
 and newVarType (a, b) : varType = { data_type = a; array_dimensions = b }
 and newFuncCall (a, b) = { id = a; expr_list = b }
 
+(* Type conversion functions *)
+let t_type_of_dataType = function
+  | ConstInt -> Types.T_int
+  | ConstChar -> Types.T_char
+
+let t_type_of_retType = function
+  | RetDataType dt -> Types.T_func (t_type_of_dataType dt)
+  | Nothing -> Types.T_func Types.T_none
+
+let t_type_of_fparType : fparType -> Types.t_type = function
+  | { data_type = dt; array_dimensions = dimList } ->
+      Types.construct_array_type dimList (t_type_of_dataType dt)
+
+let t_type_of_varType : varType -> Types.t_type = function
+  | { data_type = dt; array_dimensions = dimList } ->
+      Types.construct_array_type dimList (t_type_of_dataType dt)
+
 (* Helper functions for checks *)
 
 let rec get_const_expr_value = function

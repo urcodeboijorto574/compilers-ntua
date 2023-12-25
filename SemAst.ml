@@ -94,7 +94,7 @@ let rec sem_funcDef = function
             (Option.get funcIdListOption);
           failwith "Undefined function")
       end;
-      let expectedReturnType = Types.t_type_of_retType h.ret_type in
+      let expectedReturnType = Ast.t_type_of_retType h.ret_type in
       let typeReturnedInBlock =
         Types.T_func (match sem_block b with None -> T_none | Some t -> t)
       in
@@ -136,8 +136,7 @@ and sem_header isPartOfAFuncDef = function
           let add_fparDef : fparDef -> unit = function
             | { ref = r; id_list = idl; fpar_type = fpt } ->
                 List.iter
-                  (fun id ->
-                    enter_parameter id (Types.t_type_of_fparType fpt) r)
+                  (fun id -> enter_parameter id (Ast.t_type_of_fparType fpt) r)
                   idl
           in
           List.iter add_fparDef fpdl
@@ -145,9 +144,8 @@ and sem_header isPartOfAFuncDef = function
       in
       let resultLookUpOption = look_up_entry ident in
       if resultLookUpOption = None then (
-        enter_function ident (sem_fparDefList fpdl)
-          (Types.t_type_of_retType rt)
-          Symbol.(if isPartOfAFuncDef = true then DEFINED else DECLARED);
+        enter_function ident (sem_fparDefList fpdl) (Ast.t_type_of_retType rt)
+          Symbol.(if isPartOfAFuncDef then DEFINED else DECLARED);
         add_params_to_scope ())
       else
         try
@@ -168,13 +166,13 @@ and sem_header isPartOfAFuncDef = function
                      "byRef"))
               functionEntry.parameters_list;
             Printf.printf "]\n");
-          let returnTypeFromHeader = Types.t_type_of_retType rt in
+          let returnTypeFromHeader = Ast.t_type_of_retType rt in
           let paramListFromHeader : (int * Types.t_type * bool) list =
             let rec helper : fparDef list -> (int * Types.t_type * bool) list =
               function
               | [] -> []
               | { ref = r; id_list = il; fpar_type = fpt } :: tail ->
-                  let paramType = Types.t_type_of_fparType fpt in
+                  let paramType = Ast.t_type_of_fparType fpt in
                   (List.length il, paramType, r) :: helper tail
             in
             let resultList = helper fpdl in
@@ -300,7 +298,7 @@ and sem_fparDef = function
            by reference.\n";
         failwith "Array passed as a parameter by value");
       ( List.length il,
-        Types.t_type_of_fparType fpt,
+        Ast.t_type_of_fparType fpt,
         if r then BY_REFERENCE else BY_VALUE )
 
 (** [sem_localDefList (ldl : Ast.localDef list)] semantically analyses the
@@ -327,7 +325,7 @@ and sem_varDef = function
           "\027[31mError\027[0m: Array declared to have size a non-positive \
            number.\n";
         failwith "Array of zero size");
-      List.iter (fun i -> enter_variable i (Types.t_type_of_varType vt)) idl
+      List.iter (fun i -> enter_variable i (Ast.t_type_of_varType vt)) idl
 
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
     block [bl]. Returns [Types.t_type option]. *)
