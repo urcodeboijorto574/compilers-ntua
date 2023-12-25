@@ -134,10 +134,9 @@ and gen_expr is_param_ref (stack_frame_alloca : Llvm.llvalue) stack_frame_length
                 build_load lv_address id builder
               else
                 lv_address
-            else (* failwith "TODO: gen_expr (E_lvalue (L_comp (L_id _)))" *)
-              build_gep lv_address
-                [| const_int int_type 0 |]
-                "array_pointer" builder
+            else
+              let zero = const_int int_type 0 in
+              build_gep lv_address [| zero; zero |] "array_pointer" builder
         | L_string s ->
             (* pointer_type (const_string context s) *)
             (* create const string *)
@@ -352,12 +351,6 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
           build_store lv_value lv_address builder
       | L_string _ -> assert false
       | L_comp (lv, e) ->
-          let index =
-            let indexExpr =
-              gen_expr false stack_frame_alloca stack_frame_length funcDef e
-            in
-            build_intcast indexExpr int_type "index_cast" builder
-          in
           let gen_lvalue = function
             | L_string _ -> assert false
             | L_id id ->
@@ -370,6 +363,12 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
           in
           let elementPtr =
             let arrayPtr = gen_lvalue lv in
+            let index =
+              let indexExpr =
+                gen_expr false stack_frame_alloca stack_frame_length funcDef e
+              in
+              build_intcast indexExpr int_type "index_cast" builder
+            in
             build_gep arrayPtr [| index |] "array_element_ptr" builder
           in
           let value =
