@@ -112,6 +112,8 @@ and expr =
 and funcCall = {
   id : string;
   expr_list : expr list;
+  mutable ret_type : Types.t_type option;
+      (* 'ret_type' is not an encapsulation of T_func *)
 }
 
 and cond =
@@ -139,7 +141,7 @@ and newFparDef (a, b, c) = { ref = a; id_list = b; fpar_type = c }
 and newFparType (a, b) : fparType = { data_type = a; array_dimensions = b }
 and newVarDef (a, b) = { id_list = a; var_type = b }
 and newVarType (a, b) : varType = { data_type = a; array_dimensions = b }
-and newFuncCall (a, b) = { id = a; expr_list = b }
+and newFuncCall (a, b) = { id = a; expr_list = b; ret_type = None }
 
 (* Type conversion functions *)
 let t_type_of_dataType = function

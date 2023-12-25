@@ -110,6 +110,8 @@ and expr =
 and funcCall = {
   id : string;
   expr_list : expr list;
+  mutable ret_type : Types.t_type option;
+  (* 'ret_type' is not an encapsulation of T_func *)
 }
 
 and cond =

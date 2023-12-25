@@ -583,8 +583,9 @@ and sem_cond = function
 (** [sem_funcCall (fc : Ast.funcCall)] returns the return type of function call
     [fc]. Additionally, it checks if the types of its arguments match the
     expected ones defined in the function's header. Returns [Types.t_type]. *)
-and sem_funcCall = function
-  | { id = ident; expr_list = el } -> (
+and sem_funcCall fc =
+  match fc with
+  | { id = ident; expr_list = el; ret_type = rt } -> (
       let resultLookUpOption = look_up_entry ident in
       try
         if resultLookUpOption = None then raise Not_found;
@@ -593,6 +594,10 @@ and sem_funcCall = function
           | ENTRY_function ef -> ef
           | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
         in
+        if rt = None then
+          fc.ret_type <- Some (Types.t_type_of_t_func functionEntry.return_type)
+        else (* This case won't ever be ran twice. *)
+          Printf.printf "The impossible happened!\n";
 
         if List.compare_lengths el functionEntry.parameters_list <> 0 then
           raise Unexpected_number_of_parameters;
