@@ -156,7 +156,7 @@ and gen_expr is_param_ref (stack_frame_alloca : Llvm.llvalue) stack_frame_length
                 in
                 build_intcast indexExpr int_type "index_cast" builder
               in
-              build_gep arrayPtr [| index |] "array_element_pointer" builder
+              build_gep arrayPtr [| index |] "array_element_ptr" builder
             in
             (* TODO: The if-else stmt below might be unnecessary/wrong. *)
             if not partOfComp then
@@ -351,7 +351,31 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
           in
           build_store lv_value lv_address builder
       | L_string _ -> assert false
-      | L_comp (lv, e) -> failwith "TODO: gen_stmt (S_assignment (L_comp, _))"
+      | L_comp (lv, e) ->
+          let index =
+            let indexExpr =
+              gen_expr false stack_frame_alloca stack_frame_length funcDef e
+            in
+            build_intcast indexExpr int_type "index_cast" builder
+          in
+          let gen_lvalue = function
+            | L_string _ -> assert false
+            | L_id id ->
+                let lv_address =
+                  gen_lvalue_address id stack_frame_alloca funcDef
+                    stack_frame_length
+                in
+                build_struct_gep lv_address 0 "array_pointer" builder
+            | L_comp _ -> failwith "TODO: gen_stmt: gen_lvalue (L_comp _)"
+          in
+          let elementPtr =
+            let arrayPtr = gen_lvalue lv in
+            build_gep arrayPtr [| index |] "array_element_ptr" builder
+          in
+          let value =
+            gen_expr false stack_frame_alloca stack_frame_length funcDef expr
+          in
+          build_store value elementPtr builder
     end
   | S_func_call fc ->
       let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
