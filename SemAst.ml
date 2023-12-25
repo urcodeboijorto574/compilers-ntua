@@ -435,71 +435,76 @@ and sem_stmt = function
       match x with None -> Some T_none | Some e -> Some (sem_expr e))
   | S_semicolon -> None
 
-(** [sem_lvalue (lv : Ast.lvalue)] returns the type of the l-value [lv]. Returns
-    [Types.t_type]. *)
-and sem_lvalue = function
-  | L_id id ->
-      let entryFoundOption = look_up_entry id in
-      if entryFoundOption = None then (
-        Printf.eprintf
-          "\027[31mError\027[0m: Undefined variable '%s' is being used in \
-           function '%s'.\n"
-          id
-          Symbol.(!current_scope.name);
-        failwith "Undefined variable");
-      let entryFound = Option.get entryFoundOption in
-      if Types.debugMode then (
-        Printf.printf "Entry for '%s' found. Information:\n" id;
-        Printf.printf "\tid: %s, scope: %s" id entryFound.scope.name);
-      let entryType =
-        match entryFound.kind with
-        | ENTRY_variable ev -> ev.variable_type
-        | ENTRY_parameter ep -> ep.parameter_type
-        | ENTRY_function ef -> ef.return_type
-      in
-      if Types.debugMode then
-        Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
-      entryType
-  | L_string s ->
-      Types.T_array (Types.T_char, String.length s + 1)
-      (* Note: the last character of a string literal is not the '\0' character. *)
-  | L_comp (lv, e) -> (
-      if Types.debugMode then
-        Printf.printf
-          "... checking the type of the content inside the brackets (position \
-           in array must be an integer)\n";
-      let typeExpr = sem_expr e in
-      if not Types.(equal_types T_int typeExpr) then (
-        Printf.eprintf
-          "\027[31mError\027[0m: Expected type integer, but received %s.\n\
-           Index of array elements must be of integer type.\n"
-          (Types.string_of_t_type typeExpr);
-        failwith "Type error");
-      let rec get_name_of_lv = function
-        | L_id id -> id
-        | L_string s -> s
-        | L_comp (lvalue, _) -> get_name_of_lv lvalue
-      in
-      match sem_lvalue lv with
-      | Types.T_array (t, n) ->
-          begin
-            match Ast.get_const_expr_value e with
-            | None -> ()
-            | Some index ->
-                if index < 0 || index >= n then (
-                  Printf.eprintf
-                    "\027[31mError\027[0m: Attempt to access an out of bounds \
-                     element of the array '%s'.\n"
-                    (get_name_of_lv lv);
-                  failwith "Segmentation fault")
-          end;
-          t
-      | _ ->
+(** [sem_lvalue (lval : Ast.lvalue)] returns the type of the l-value [lval].
+    Returns [Types.t_type]. *)
+and sem_lvalue lv =
+  let rec sem_lvalue_kind = function
+    | L_id id ->
+        let entryFoundOption = look_up_entry id in
+        if entryFoundOption = None then (
           Printf.eprintf
-            "\027[31mError\027[0m: Variable '%s' is either not an array or it \
-             is declared as an array with less dimensions than as used.\n"
-            (get_name_of_lv lv);
-          failwith "Iteration on non-array type of variable")
+            "\027[31mError\027[0m: Undefined variable '%s' is being used in \
+             function '%s'.\n"
+            id
+            Symbol.(!current_scope.name);
+          failwith "Undefined variable");
+        let entryFound = Option.get entryFoundOption in
+        if Types.debugMode then (
+          Printf.printf "Entry for '%s' found. Information:\n" id;
+          Printf.printf "\tid: %s, scope: %s" id entryFound.scope.name);
+        let entryType =
+          match entryFound.kind with
+          | ENTRY_variable ev -> ev.variable_type
+          | ENTRY_parameter ep -> ep.parameter_type
+          | ENTRY_function ef -> ef.return_type
+        in
+        if Types.debugMode then
+          Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
+        entryType
+    | L_string s ->
+        Types.T_array (Types.T_char, String.length s + 1)
+        (* Note: the last character of a string literal is not the '\0' character. *)
+    | L_comp (lv, e) -> (
+        if Types.debugMode then
+          Printf.printf
+            "... checking the type of the content inside the brackets \
+             (position in array must be an integer)\n";
+        let typeExpr = sem_expr e in
+        if not Types.(equal_types T_int typeExpr) then (
+          Printf.eprintf
+            "\027[31mError\027[0m: Expected type integer, but received %s.\n\
+             Index of array elements must be of integer type.\n"
+            (Types.string_of_t_type typeExpr);
+          failwith "Type error");
+        let rec get_name_of_lv = function
+          | L_id id -> id
+          | L_string s -> s
+          | L_comp (lvalue, _) -> get_name_of_lv lvalue
+        in
+        match sem_lvalue_kind lv with
+        | Types.T_array (t, n) ->
+            begin
+              match Ast.get_const_expr_value e with
+              | None -> ()
+              | Some index ->
+                  if index < 0 || index >= n then (
+                    Printf.eprintf
+                      "\027[31mError\027[0m: Attempt to access an out of \
+                       bounds element of the array '%s'.\n"
+                      (get_name_of_lv lv);
+                    failwith "Segmentation fault")
+            end;
+            t
+        | _ ->
+            Printf.eprintf
+              "\027[31mError\027[0m: Variable '%s' is either not an array or \
+               it is declared as an array with less dimensions than as used.\n"
+              (get_name_of_lv lv);
+            failwith "Iteration on non-array type of variable")
+  in
+  let resultType = sem_lvalue_kind lv.lv_kind in
+  if lv.lv_type = None then lv.lv_type <- Some resultType;
+  resultType
 
 (** [sem_expr (e : Ast.expr)] returns the type of the expression [e]. Returns
     [Types.t_type]. *)
@@ -509,7 +514,7 @@ and sem_expr = function
   | E_lvalue lv ->
       let lvalue_type = sem_lvalue lv in
       if Types.debugMode then begin
-        match lv with
+        match lv.lv_kind with
         | L_comp _ ->
             Printf.printf "Composite l-value is of type '%s'\n"
               (Types.string_of_t_type lvalue_type)

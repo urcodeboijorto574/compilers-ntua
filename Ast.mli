@@ -93,10 +93,15 @@ and stmt =
   | S_return of expr option
   | S_semicolon
 
-and lvalue =
+and lvalue = {
+  lv_kind : lvalue_kind;
+  mutable lv_type : Types.t_type option;
+}
+
+and lvalue_kind =
   | L_id of string
   | L_string of string
-  | L_comp of lvalue * expr
+  | L_comp of lvalue_kind * expr
 
 and expr =
   | E_const_int of int
@@ -127,6 +132,7 @@ val newFparDef : bool * string list * fparType -> fparDef
 val newFparType : dataType * int list -> fparType
 val newVarDef : string list * varType -> varDef
 val newVarType : dataType * int list -> varType
+val newLValue : lvalue_kind -> lvalue
 val newFuncCall : string * expr list -> funcCall
 
 (* Type conversion functions *)

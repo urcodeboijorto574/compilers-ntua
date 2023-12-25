@@ -95,10 +95,15 @@ and stmt =
   | S_return of expr option
   | S_semicolon
 
-and lvalue =
+and lvalue = {
+  lv_kind : lvalue_kind;
+  mutable lv_type : Types.t_type option;
+}
+
+and lvalue_kind =
   | L_id of string
   | L_string of string
-  | L_comp of lvalue * expr
+  | L_comp of lvalue_kind * expr
 
 and expr =
   | E_const_int of int
@@ -141,6 +146,7 @@ and newFparDef (a, b, c) = { ref = a; id_list = b; fpar_type = c }
 and newFparType (a, b) : fparType = { data_type = a; array_dimensions = b }
 and newVarDef (a, b) = { id_list = a; var_type = b }
 and newVarType (a, b) : varType = { data_type = a; array_dimensions = b }
+and newLValue a = { lv_kind = a; lv_type = None }
 and newFuncCall (a, b) = { id = a; expr_list = b; ret_type = None }
 
 (* Type conversion functions *)

@@ -1,6 +1,10 @@
 %{
   open Ast
   open Types
+
+  let rec string_list_of_char_list = function
+    | [] -> []
+    | h :: t -> (String.make 1 h) :: string_list_of_char_list t
 %}
 
 (* Token declarations *)
@@ -56,6 +60,7 @@
 %type <stmt list> stmt_list
 %type <stmt> stmt
 %type <lvalue> l_value
+%type <lvalue_kind> l_value_comp
 %type <expr> expr
 %type <funcCall> func_call
 %type <expr list> expr_list
@@ -138,15 +143,14 @@ stmt:
   | T_return expr T_semicolon { S_return(Some($2)) }
 
 l_value:
-  T_identifier { L_id($1) }
-| T_string {
-    let rec string_list_of_char_list = function
-      | [] -> []
-      | h :: t -> (String.make 1 h) :: string_list_of_char_list t
-    in
-    L_string (String.concat "" (string_list_of_char_list $1))
-  }
-| l_value T_left_sqr expr T_right_sqr { L_comp($1, $3) }
+    T_identifier { newLValue (L_id ($1)) }
+  | T_string { newLValue (L_string (String.concat "" (string_list_of_char_list $1))) }
+  | l_value_comp T_left_sqr expr T_right_sqr { newLValue (L_comp ($1, $3)) }
+
+l_value_comp:
+    T_identifier { L_id $1 }
+  | T_string { L_string (String.concat "" (string_list_of_char_list $1)) }
+  | l_value_comp T_left_sqr expr T_right_sqr { L_comp ($1, $3) }
 
 expr:
     T_integer { E_const_int($1) }
