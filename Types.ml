@@ -36,26 +36,6 @@ let rec equal_types t1 t2 =
         Printf.printf "%s, %s -> " (string_of_t_type t1) (string_of_t_type t2);
       t1 = t2
 
-<<<<<<< HEAD
-let t_type_of_dataType = function
-  | Ast.ConstInt -> T_int
-  | Ast.ConstChar -> T_char
-
-(* removed T_func from here *)
-let t_type_of_retType = function
-  | Ast.RetDataType dt -> T_func (t_type_of_dataType dt)
-  (* | Ast.RetDataType dt -> t_type_of_dataType dt *)
-  | Ast.Nothing -> T_func T_none
-
-let t_type_of_fparType : Ast.fparType -> t_type = function
-  | { data_type = dt; array_dimensions = dimList } ->
-      construct_array_type dimList (t_type_of_dataType dt)
-
-let t_type_of_varType : Ast.varType -> t_type = function
-  | { data_type = dt; array_dimensions = dimList } ->
-      construct_array_type dimList (t_type_of_dataType dt)
-=======
 let t_type_of_t_func = function T_func t -> t | _ -> assert false
 (* Functions that convert types defined in Ast to t_type types are defined in
    Ast. *)
->>>>>>> 901f3ae (Type conversion functions moved to Ast module)

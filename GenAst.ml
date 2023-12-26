@@ -66,7 +66,7 @@ and t_type_of_lltype lltype =
   | _ -> raise (Invalid_argument "lltype_of_t_type: arg isn't int nor char")
 
 and lltype_of_fparDef x =
-  let t_type = Types.t_type_of_dataType x.fpar_type.data_type in
+  let t_type = Ast.t_type_of_dataType x.fpar_type.data_type in
   match x.ref with
   | false -> lltype_of_t_type t_type
   | true ->
@@ -76,7 +76,7 @@ and lltype_of_fparDef x =
 
 (* [ {ref, [a, b], int}, {noref, [c,d], char} ] -->
    [ {ref, [a], int}, {ref, [b], int}, {noref, [c], char}, {noref, [d], char} ] *)
-and expand_fpar_def_list (def_list : fparDef list) : fparDef list =
+let rec expand_fpar_def_list (def_list : fparDef list) : fparDef list =
   let expand_fpar_def def =
     List.map
       (fun id -> { ref = def.ref; id_list = [ id ]; fpar_type = def.fpar_type })
@@ -118,7 +118,7 @@ and gen_expr is_param_ref stack_frame_alloca stack_frame_length funcDef expr =
   | E_const_int x -> const_int int_type x
   | E_const_char x -> const_int char_type (int_of_char x)
   | E_lvalue lv -> (
-      match lv with
+      match lv.lv_kind with
       | L_id id ->
           let lv_address =
             gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length
@@ -242,7 +242,7 @@ and gen_cond stack_frame_alloca stack_frame_length funcDef = function
 and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
   match stmt with
   | S_assignment (lv, expr) -> (
-      match lv with
+      match lv.lv_kind with
       | L_id id ->
           let lv_address =
             gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length
@@ -399,7 +399,7 @@ and gen_header (header : Ast.header) access_link =
 
   let param_types_list = access_link_list @ List.map lltype_of_fparDef args in
   let param_types_array = Array.of_list param_types_list in
-  let return_type = lltype_of_t_type (Types.t_type_of_retType ret_type) in
+  let return_type = lltype_of_t_type (Ast.t_type_of_retType ret_type) in
   let ft = function_type return_type param_types_array in
   let f =
     match lookup_function name the_module with
@@ -513,7 +513,7 @@ let define_lib_funcs () =
     Hashtbl.add named_functions (Hashtbl.hash name) args;
     let param_types_list = List.map lltype_of_fparDef args in
     let param_types_array = Array.of_list param_types_list in
-    let return_type = lltype_of_t_type (Types.t_type_of_retType ret_type) in
+    let return_type = lltype_of_t_type (Ast.t_type_of_retType ret_type) in
     let ft = function_type return_type param_types_array in
     let f =
       match lookup_function name the_module with

@@ -231,7 +231,7 @@ and sem_header isPartOfAFuncDef = function
                  !current_scope)
           then (
             enter_function ident (sem_fparDefList fpdl)
-              (Types.t_type_of_retType rt)
+              (Ast.t_type_of_retType rt)
               Symbol.(if isPartOfAFuncDef then DEFINED else DECLARED);
             add_params_to_scope ())
           else if not matchingNumOfParams then
