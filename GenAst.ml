@@ -74,6 +74,76 @@ and lltype_of_fparDef x =
          array. Maybe need to change fparType and add type array there *)
       pointer_type (lltype_of_t_type t_type)
 
+(** [extract_ret_stmt (s : Ast.stmt)] calculates whether the statment [s] always
+    includes a return statement, and if it is, a ret statement is generated in
+    the LLVM IR code so that a type error is caught. If the statement [s]
+    doesn't return a value, a default value [dv] is returned. Returns
+    [Llvm.llvalue]. *)
+let extract_ret_stmt s =
+  (* [type_of_stmt (s : Ast.stmt)] takes a statement [s] and returns a
+     [Types.t_type option]. If the statement [s] is a return statement or a
+     statement that always includes a return statement, then [Some t] is
+     returned, with [t] being the type of the expression returned, else [None].
+     Returns [Types.t_type option]. *)
+  let rec type_of_stmt : Ast.stmt -> Types.t_type option = function
+    | S_return e_opt ->
+        (* [type_of_expr (e : Ast.expr)] takes an expression [e] and returns
+           its type. Returns [Types.t_type]. *)
+        let rec type_of_expr = function
+          | E_const_int _ | E_sgn_expr _ | E_op_expr_expr _ -> T_int
+          | E_const_char _ -> T_char
+          | E_lvalue lv -> begin
+              try Option.get lv.lv_type
+              with Invalid_argument _ ->
+                failwith "Type of l-value should be already set."
+            end
+          | E_func_call fc -> begin
+              try Option.get fc.ret_type
+              with Invalid_argument _ ->
+                failwith "Type of function call should be already set."
+            end
+          | E_expr_parenthesized e -> type_of_expr e
+        in
+        Some (match e_opt with None -> T_none | Some e -> type_of_expr e)
+    | S_block (Block l) ->
+        let rec type_of_stmt_list = function
+          | [] -> None
+          | h :: t ->
+              let typeOfHead = type_of_stmt h in
+              if typeOfHead <> None then
+                typeOfHead
+              else
+                type_of_stmt_list t
+        in
+        type_of_stmt_list l
+    | S_if_else (c, s1, s2) -> begin
+        match get_const_cond_value c with
+        | Some b -> type_of_stmt (if b then s1 else s2)
+        | None ->
+            let typeOfS1 = type_of_stmt s1 in
+            let typeOfS2 = type_of_stmt s2 in
+            if typeOfS1 = None || typeOfS2 = None then
+              None
+            else
+              typeOfS1
+      end
+    | S_while (c, s) | S_if (c, s) -> begin
+        match get_const_cond_value c with
+        | None | Some false -> None
+        | Some true -> type_of_stmt s
+      end
+    | S_assignment _ | S_func_call _ | S_semicolon -> None
+  in
+  match type_of_stmt s with
+  | None -> build_nop ()
+  | Some t -> begin
+      match t with
+      | T_int -> build_ret (const_int int_type 0) builder
+      | T_char -> build_ret (const_int char_type 0) builder
+      | T_none -> build_nop ()
+      | T_array _ | T_func _ -> assert false
+    end
+
 (* [ {ref, [a, b], int}, {noref, [c,d], char} ] -->
    [ {ref, [a], int}, {ref, [b], int}, {noref, [c], char}, {noref, [d], char} ] *)
 let rec expand_fpar_def_list (def_list : fparDef list) : fparDef list =
@@ -317,9 +387,9 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
       let new_then_basic_block = insertion_block builder in
 
       position_at_end new_then_basic_block builder;
-      let result_llvalue = build_br merge_basic_block builder in
+      ignore (build_br merge_basic_block builder);
       position_at_end merge_basic_block builder;
-      result_llvalue
+      extract_ret_stmt (S_if (c, s))
   | S_if_else (c, s1, s2) ->
       let start_basic_block = insertion_block builder in
       let function_bb = block_parent start_basic_block in
@@ -352,7 +422,7 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
       ignore (build_br merge_basic_block builder);
 
       position_at_end merge_basic_block builder;
-      build_nop ()
+      extract_ret_stmt (S_if_else (c, s1, s2))
   | S_while (c, s) ->
       let start_basic_block = insertion_block builder in
       let function_bb = block_parent start_basic_block in
@@ -372,12 +442,11 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
 
       let new_while_basic_block = insertion_block builder in
       position_at_end new_while_basic_block builder;
-      let result_llvalue =
-        build_cond_br (cond_val ()) while_basic_block cont_basic_block builder
-      in
+      ignore
+        (build_cond_br (cond_val ()) while_basic_block cont_basic_block builder);
 
       position_at_end cont_basic_block builder;
-      result_llvalue
+      extract_ret_stmt (S_while (c, s))
   | S_return expr_opt -> (
       match expr_opt with
       | None -> build_ret_void builder
