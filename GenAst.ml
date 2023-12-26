@@ -351,7 +351,7 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
           build_store lv_value lv_address builder
       | L_string _ -> assert false
       | L_comp (lv, e) ->
-          let gen_lvalue = function
+          let gen_lvalue_kind = function
             | L_string _ -> assert false
             | L_id id ->
                 let lv_address =
@@ -359,10 +359,10 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
                     stack_frame_length
                 in
                 build_struct_gep lv_address 0 "array_pointer" builder
-            | L_comp _ -> failwith "TODO: gen_stmt: gen_lvalue (L_comp _)"
+            | L_comp _ -> failwith "TODO: gen_stmt: gen_lvalue_kind (L_comp _)"
           in
           let elementPtr =
-            let arrayPtr = gen_lvalue lv in
+            let arrayPtr = gen_lvalue_kind lv in
             let index =
               let indexExpr =
                 gen_expr false stack_frame_alloca stack_frame_length funcDef e
