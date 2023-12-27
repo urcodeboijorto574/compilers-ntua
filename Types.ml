@@ -22,10 +22,9 @@ let construct_array_type dimList endType =
     else
       T_array (helper (cnt + 1) len (List.tl dl), List.hd dl)
   in
-  if List.mem endType [ T_int; T_char ] then
-    helper 0 (List.length dimList) dimList
-  else
-    failwith "Can't construct array of non-integers and non-characters"
+  match endType with
+  | T_int | T_char -> helper 0 (List.length dimList) dimList
+  | _ -> failwith "Can't construct array of non-integers and non-characters"
 
 let rec equal_types t1 t2 =
   match (t1, t2) with
