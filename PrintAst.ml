@@ -171,15 +171,17 @@ and print_exprList expr_list =
       print_exprList tail
 
 and print_lvalue lvalue =
+  let rec print_lvalue_kind = function
+    | L_id id -> Printf.printf "%s" id
+    | L_string str -> Printf.printf "\"%s\"" str
+    | L_comp (l, e) ->
+        print_lvalue_kind l;
+        Printf.printf "[";
+        print_expr e;
+        Printf.printf "]"
+  in
   Printf.printf "Lvalue(";
-  (match lvalue.lv_kind with
-  | L_id id -> Printf.printf "%s" id
-  | L_string str -> Printf.printf "%s" str
-  | L_comp (l, e) ->
-      print_lvalue { lv_kind = l; lv_type = None };
-      Printf.printf "[";
-      print_expr e;
-      Printf.printf "]");
+  print_lvalue_kind lvalue.lv_kind;
   Printf.printf ")"
 
 and print_expr expr =
