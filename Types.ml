@@ -37,5 +37,7 @@ let rec equal_types t1 t2 =
       t1 = t2
 
 let t_type_of_t_func = function T_func t -> t | _ -> assert false
+let t_type_of_t_array = function T_array (t, _) -> t | _ -> assert false
+
 (* Functions that convert types defined in Ast to t_type types are defined in
    Ast. *)

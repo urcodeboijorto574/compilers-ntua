@@ -24,9 +24,13 @@ val construct_array_type : int list -> t_type -> t_type
     the same. If they are the same [true] is returned, otherwise [false]. *)
 val equal_types : t_type -> t_type -> bool
 
-(** [t_type_of_t_func t] takes a type [T_func ti] type and returns the
-    encapsulated type [ti]. Returns [Types.t_type] *)
+(** [t_type_of_t_func t] takes a [T_func ti] type and returns the encapsulated
+    type [ti]. Returns [Types.t_type]. *)
 val t_type_of_t_func : t_type -> t_type
+
+(** [t_type_of_t_array t] takes a [T_array (ti, size)] type and returns the
+    encapsulated type [ti]. Returns [Types.t_type]. *)
+val t_type_of_t_array : t_type -> t_type
 
 (* Functions that convert types defined in Ast to t_type types are defined in
    Ast. *)
