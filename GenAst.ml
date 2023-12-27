@@ -63,7 +63,9 @@ and t_type_of_lltype lltype =
   | TypeKind.Array ->
       T_array
         (t_type_of_lltype (Llvm.element_type lltype), Llvm.array_length lltype)
-  | _ -> raise (Invalid_argument "lltype_of_t_type: arg isn't int nor char")
+  | TypeKind.Function -> T_func (t_type_of_lltype (return_type lltype))
+  | TypeKind.Void -> T_none
+  | _ -> raise (Invalid_argument "t_type is invalid")
 
 and lltype_of_fparDef x =
   let t_type = Ast.t_type_of_dataType x.fpar_type.data_type in
