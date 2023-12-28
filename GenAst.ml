@@ -86,7 +86,8 @@ let rec expand_fpar_def_list (def_list : fparDef list) : fparDef list =
   in
   List.concat (List.map expand_fpar_def def_list)
 
-and gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length =
+and gen_lvalue_address id (stack_frame_alloca : Llvm.llvalue) funcDef
+    stack_frame_length =
   let rec iterate i stack_frame funcDef =
     let tuple = List.nth funcDef.var_records i in
     let var_name = match tuple with v, _, _ -> v in
@@ -115,7 +116,8 @@ and gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length =
   in
   iterate 0 stack_frame_alloca funcDef
 
-and gen_expr is_param_ref stack_frame_alloca stack_frame_length funcDef expr =
+and gen_expr is_param_ref (stack_frame_alloca : Llvm.llvalue) stack_frame_length
+    funcDef expr =
   match expr with
   | E_const_int x -> const_int int_type x
   | E_const_char x -> const_int char_type (int_of_char x)
@@ -208,7 +210,8 @@ and gen_expr is_param_ref stack_frame_alloca stack_frame_length funcDef expr =
   | E_expr_parenthesized expr ->
       gen_expr false stack_frame_alloca stack_frame_length funcDef expr
 
-and gen_cond stack_frame_alloca stack_frame_length funcDef = function
+and gen_cond (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef =
+  function
   | C_not_cond (lo, c) ->
       let ll_cond = gen_cond stack_frame_alloca stack_frame_length funcDef c in
       build_not ll_cond "not" builder
@@ -241,7 +244,8 @@ and gen_cond stack_frame_alloca stack_frame_length funcDef = function
   | C_cond_parenthesized c ->
       gen_cond stack_frame_alloca stack_frame_length funcDef c
 
-and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
+and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
+    =
   (* [extract_ret_stmt (s : Ast.stmt)] calculates whether the statment [s] always
      includes a return statement, and if it is, a ret statement is generated in
      the LLVM IR code so that a type error is caught. If the statement [s]
@@ -459,7 +463,7 @@ and gen_stmt stack_frame_alloca stack_frame_length funcDef stmt =
           build_ret ll_expr builder)
   | S_semicolon -> build_nop ()
 
-and gen_header (header : Ast.header) access_link =
+and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
   let name = header.id in
   let args = expand_fpar_def_list header.fpar_def_list in
   Hashtbl.add named_functions (Hashtbl.hash name) args;
