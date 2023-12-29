@@ -73,7 +73,7 @@ and lltype_of_fparDef x =
   | false -> lltype_of_t_type t_type
   | true ->
       (* TODO: need to add a check here whether type is
-         array. Maybe need to change fparType and add type array there *)
+          array. Maybe need to change fparType and add type array there *)
       pointer_type (lltype_of_t_type t_type)
 
 (* [ {ref, [a, b], int}, {noref, [c,d], char} ] -->
@@ -354,8 +354,21 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
         fpar_def_list;
       let rev_list = List.rev !res in
       let args_array =
+        let first_argument =
+          if fc.id = funcDef.header.id then begin
+            let access_link_ptr =
+              build_struct_gep stack_frame_alloca 0 "access_link_ptr" builder
+            in
+            let access_link_val =
+              build_load access_link_ptr "access_link_ptr" builder
+            in
+            access_link_val
+          end
+          else
+            stack_frame_alloca
+        in
         if List.mem fc.id lib_function_names = false then
-          Array.of_list ([ stack_frame_alloca ] @ rev_list)
+          Array.of_list ([ first_argument ] @ rev_list)
         else
           Array.of_list rev_list
       in
@@ -549,9 +562,9 @@ and gen_funcDef funcDef =
   funcDef.var_records <- !params_records @ funcDef.var_records;
   funcDef.stack_frame_addr <- Some stack_frame_alloca;
 
-  let struct_index = ref (Array.length (params funcDef_ll)) in
   (* iterate functions in dfs order *)
-  let iterate local_def =
+  let rec iterate local_def =
+    let struct_index = ref (Array.length (params funcDef_ll)) in
     match local_def with
     | L_varDef v ->
         List.iter
@@ -562,7 +575,9 @@ and gen_funcDef funcDef =
             set_value_name id position;
             incr struct_index)
           v.id_list
-    | L_funcDef fd -> gen_funcDef fd
+    | L_funcDef fd ->
+        if Types.debugMode then Printf.printf "func in iterate %s\n%!" fd.header.id;
+        gen_funcDef fd
     | L_funcDecl fdl -> failwith "TODO gen_funcDef: iterate (L_funcDecl _)"
   in
   List.iter iterate funcDef.local_def_list;
@@ -776,6 +791,7 @@ and set_stack_frames funcDef =
   let rec iterate local_def =
     match local_def with
     | L_funcDef fd ->
+        if Types.debugMode then Printf.printf "func in set %s\n%!" fd.header.id;
         set_stack_frame fd;
         List.iter iterate fd.local_def_list
     | _ -> ()
