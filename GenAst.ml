@@ -576,7 +576,8 @@ and gen_funcDef funcDef =
             incr struct_index)
           v.id_list
     | L_funcDef fd ->
-        if Types.debugMode then Printf.printf "func in iterate %s\n%!" fd.header.id;
+        if Types.debugMode then
+          Printf.printf "func in iterate %s\n%!" fd.header.id;
         gen_funcDef fd
     | L_funcDecl fdl -> failwith "TODO gen_funcDef: iterate (L_funcDecl _)"
   in
