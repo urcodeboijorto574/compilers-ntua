@@ -35,7 +35,7 @@ and funcDef = {
   (* stack frame of the function -- later will become a struct *)
   mutable stack_frame : Llvm.lltype option;
   mutable stack_frame_addr : Llvm.llvalue option;
-  mutable var_records : (string * int * bool) list;
+  mutable var_records : (string * int * bool * bool) list;
   mutable stack_frame_length : int;
 }
 

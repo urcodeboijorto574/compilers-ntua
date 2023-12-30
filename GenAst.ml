@@ -135,27 +135,24 @@ and gen_funcCall (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef
   build_call callee args_array "" builder
 
 and gen_lvalue_address id (stack_frame_alloca : Llvm.llvalue) funcDef
-    stack_frame_length is_array=
+    stack_frame_length =
   let rec iterate i stack_frame funcDef =
     let tuple = List.nth funcDef.var_records i in
-    let var_name = match tuple with v, _, _ -> v in
-    let elem_pos = match tuple with _, p, _ -> p in
-    let is_ref = match tuple with _, _, ref -> ref in
-    if var_name = id then 
-      begin
-        let addr = build_struct_gep stack_frame elem_pos var_name builder in
-        if is_ref = false then
-          begin
-            (* match is_array with
-            | true -> build_load addr (var_name ^ "_address") builder
-            | false -> addr *)
-            addr
-          end
-        else
-          begin
-            build_load addr (var_name ^ "_address") builder 
-          end
+    let var_name = match tuple with v, _, _, _ -> v in
+    let elem_pos = match tuple with _, p, _, _ -> p in
+    let is_ref = match tuple with _, _, ref, _ -> ref in
+    let is_array = match tuple with _, _, _, array -> array in
+    if var_name = id then begin
+      let addr = build_struct_gep stack_frame elem_pos var_name builder in
+      if is_ref = false then begin
+        match is_array with
+        | true -> build_load addr (var_name ^ "_address") builder
+        | false -> addr
       end
+      else begin
+        build_load addr (var_name ^ "_address") builder
+      end
+    end
     else if i + 1 < funcDef.stack_frame_length then
       iterate (i + 1) stack_frame funcDef
     else
@@ -181,7 +178,7 @@ and gen_expr is_param_ref (stack_frame_alloca : Llvm.llvalue) stack_frame_length
       match lv.lv_kind with
       | L_id id ->
           let lv_address =
-            gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length false
+            gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length
           in
           if is_param_ref = false then
             build_load lv_address id builder
@@ -191,7 +188,8 @@ and gen_expr is_param_ref (stack_frame_alloca : Llvm.llvalue) stack_frame_length
             | Some t -> begin
                 match t with
                 | T_array (_, _) ->
-                    build_load lv_address "array_pointer" builder
+                    (* build_load lv_address "array_pointer" builder *)
+                    lv_address
                 | _ -> lv_address
               end
           end
@@ -206,32 +204,35 @@ and gen_expr is_param_ref (stack_frame_alloca : Llvm.llvalue) stack_frame_length
           build_gep string_var
             [| first_element; first_element |]
             "string_ptr" builder
-      | L_comp (lv, e) -> 
-        let gen_lvalue_kind = function
-          | L_string _ -> assert false
-          | L_id id ->
-              let lv_address =
-                gen_lvalue_address id stack_frame_alloca funcDef
-                  stack_frame_length true
-              in
-              lv_address
-          | L_comp _ -> failwith "TODO: gen_stmt: gen_lvalue_kind (L_comp _)"
-        in
-        let elementPtr =
-          let arrayPtr = 
-            let array_address = gen_lvalue_kind lv in
-            (* build_load array_address "array_first_element_ptr" builder *)
-            array_address
+      | L_comp (lv, e) ->
+          let gen_lvalue_kind = function
+            | L_string _ -> assert false
+            | L_id id ->
+                let lv_address =
+                  gen_lvalue_address id stack_frame_alloca funcDef
+                    stack_frame_length
+                in
+                lv_address
+            | L_comp _ -> failwith "TODO: gen_stmt: gen_lvalue_kind (L_comp _)"
           in
-          let index =
-            let indexExpr =
-              gen_expr false stack_frame_alloca stack_frame_length funcDef e
+          let elementPtr =
+            let arrayPtr =
+              let array_address = gen_lvalue_kind lv in
+              (* build_load array_address "array_first_element_ptr" builder *)
+              array_address
             in
-            build_intcast indexExpr int_type "index_cast" builder
+            let index =
+              let indexExpr =
+                gen_expr false stack_frame_alloca stack_frame_length funcDef e
+              in
+              build_intcast indexExpr int_type "index_cast" builder
+            in
+            build_gep arrayPtr [| index |] "array_element_ptr" builder
           in
-          build_gep arrayPtr [| index |] "array_element_ptr" builder
-        in
-        build_load elementPtr "array_element_val" builder)
+          if is_param_ref = false then
+            build_load elementPtr "array_element_val" builder
+          else
+            elementPtr)
   | E_func_call fc ->
       gen_funcCall stack_frame_alloca stack_frame_length funcDef fc
   | E_sgn_expr (sign, expr) -> (
@@ -369,7 +370,7 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
       match lv.lv_kind with
       | L_id id ->
           let lv_address =
-            gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length false
+            gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length
           in
           let lv_value =
             gen_expr false stack_frame_alloca stack_frame_length funcDef expr
@@ -382,13 +383,13 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
                 Printf.printf "%s\n%!" id;
                 let lv_address =
                   gen_lvalue_address id stack_frame_alloca funcDef
-                    stack_frame_length true
+                    stack_frame_length
                 in
                 lv_address
             | L_comp _ -> failwith "TODO: gen_stmt: gen_lvalue_kind (L_comp _)"
           in
           let elementPtr =
-            let arrayPtr = 
+            let arrayPtr =
               let array_address = gen_lvalue_kind lv2 in
               (* build_load array_address "array_first_element_ptr" builder *)
               array_address
@@ -573,11 +574,13 @@ and gen_funcDef funcDef =
               try List.hd ith_param.id_list with _ -> assert false
             in
             set_value_name var_name position;
-            params_records := (var_name, i, ith_param.ref) :: !params_records;
+            params_records :=
+              (var_name, i, ith_param.ref, false) :: !params_records;
             ignore (build_store param position builder)
         | list ->
             set_value_name "access_link" position;
-            params_records := ("access_link", i, false) :: !params_records;
+            params_records :=
+              ("access_link", i, false, false) :: !params_records;
             ignore (build_store param position builder))
       else
         let ith_param =
@@ -585,19 +588,24 @@ and gen_funcDef funcDef =
           | [] -> args_array.(i)
           | list -> args_array.(i - 1)
         in
+        let is_array =
+          match ith_param.fpar_type.array_dimensions with
+          | [] -> false
+          | [ a ] -> true
+        in
         let var_name = try List.hd ith_param.id_list with _ -> assert false in
         set_value_name var_name position;
-        Printf.printf "%s\n%!" var_name;
-        params_records := (var_name, i, ith_param.ref) :: !params_records;
+        params_records :=
+          (var_name, i, ith_param.ref, is_array) :: !params_records;
         ignore (build_store param position builder))
     (params funcDef_ll);
   params_records := List.rev !params_records;
   funcDef.var_records <- !params_records @ funcDef.var_records;
   funcDef.stack_frame_addr <- Some stack_frame_alloca;
 
+  let struct_index = ref (Array.length (params funcDef_ll)) in
   (* iterate functions in dfs order *)
   let rec iterate local_def =
-    let struct_index = ref (Array.length (params funcDef_ll)) in
     match local_def with
     | L_varDef v ->
         List.iter
@@ -605,7 +613,11 @@ and gen_funcDef funcDef =
             let position =
               build_struct_gep stack_frame_alloca !struct_index id builder
             in
+            Printf.printf "%d %s %!\n" !struct_index id;
             match v.var_type.array_dimensions with
+            | [] ->
+                set_value_name id position;
+                incr struct_index
             | [ dim ] ->
                 let t =
                   match v.var_type.data_type with
@@ -616,18 +628,14 @@ and gen_funcDef funcDef =
                 let array_alloca =
                   build_array_alloca t n "array_alloca" builder
                 in
+                incr struct_index;
                 set_value_name id position;
                 let zero = const_int int_type 0 in
                 Printf.printf "here \n%!";
                 let array_first_elem =
                   build_gep array_alloca [| zero |] "array_first_elem" builder
                 in
-                let store = build_store array_first_elem position builder in
-                incr struct_index;
-                ignore store
-            | [] ->
-                set_value_name id position;
-                incr struct_index)
+                ignore (build_store array_first_elem position builder))
           v.id_list
     | L_funcDef fd ->
         if Types.debugMode then
@@ -812,7 +820,13 @@ and set_stack_frames funcDef =
         | L_varDef v ->
             List.iter
               (fun id ->
-                params_records := (id, !index, false) :: !params_records;
+                let is_array =
+                  match v.var_type.array_dimensions with
+                  | [] -> false
+                  | [ a ] -> true
+                in
+                params_records :=
+                  (id, !index, false, is_array) :: !params_records;
                 incr index)
               v.id_list
         | _ -> ())
