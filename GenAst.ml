@@ -374,7 +374,7 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
           let gen_lvalue_kind = function
             | L_string _ -> assert false
             | L_id id ->
-                Printf.printf "%s\n%!" id;
+                if Types.debugModeCodeGen then Printf.printf "%s\n%!" id;
                 let lv_address =
                   gen_lvalue_address id stack_frame_alloca funcDef
                     stack_frame_length
@@ -603,7 +603,8 @@ and gen_funcDef funcDef =
             let position =
               build_struct_gep stack_frame_alloca !struct_index id builder
             in
-            Printf.printf "%d %s %!\n" !struct_index id;
+            if Types.debugModeCodeGen then
+              Printf.printf "%d %s %!\n" !struct_index id;
             match v.var_type.array_dimensions with
             | [] ->
                 set_value_name id position;
@@ -621,7 +622,7 @@ and gen_funcDef funcDef =
                 incr struct_index;
                 set_value_name id position;
                 let zero = const_int int_type 0 in
-                Printf.printf "here \n%!";
+                if Types.debugModeCodeGen then Printf.printf "here \n%!";
                 let array_first_elem =
                   build_gep array_alloca [| zero |] "array_first_elem" builder
                 in
@@ -629,7 +630,7 @@ and gen_funcDef funcDef =
             | hdim :: tail -> failwith "multidimensional arrays aren't done yet")
           v.id_list
     | L_funcDef fd ->
-        if Types.debugMode then
+        if Types.debugModeCodeGen then
           Printf.printf "func in iterate %s\n%!" fd.header.id;
         gen_funcDef fd
     | L_funcDecl fdl -> failwith "TODO gen_funcDef: iterate (L_funcDecl _)"
@@ -847,7 +848,8 @@ and set_stack_frames funcDef =
   let rec iterate local_def =
     match local_def with
     | L_funcDef fd ->
-        if Types.debugMode then Printf.printf "func in set %s\n%!" fd.header.id;
+        if Types.debugModeCodeGen then
+          Printf.printf "func in set %s\n%!" fd.header.id;
         set_stack_frame fd;
         List.iter iterate fd.local_def_list
     | _ -> ()

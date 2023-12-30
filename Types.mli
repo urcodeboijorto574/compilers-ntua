@@ -10,6 +10,8 @@ type t_type =
 (** [debugMode] is [true] when debug messages will be printed out. *)
 val debugMode : bool
 
+val debugModeCodeGen : bool
+
 (** [string_of_t_type t] takes a [t : t_type] and returns a string corresponding
     to the type given. Returns [string]. *)
 val string_of_t_type : t_type -> string
