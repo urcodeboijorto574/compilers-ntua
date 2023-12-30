@@ -86,6 +86,51 @@ let rec expand_fpar_def_list (def_list : fparDef list) : fparDef list =
   in
   List.concat (List.map expand_fpar_def def_list)
 
+and gen_funcCall (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef
+    (fc : Ast.funcCall) =
+  let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
+  let callee = fc.id in
+  let args_list = fc.expr_list in
+  let callee =
+    match lookup_function callee the_module with
+    | Some callee -> callee
+    | None -> raise (Error "unknown function referenced")
+  in
+  ignore (params callee);
+  (* if 'params' has no side effects, delete line*)
+  let i = ref 0 in
+  let res = ref [] in
+  List.iter
+    (fun fpar_def ->
+      let ith_elem = List.nth args_list !i in
+      res :=
+        gen_expr fpar_def.ref stack_frame_alloca stack_frame_length funcDef
+          ith_elem
+        :: !res;
+      incr i)
+    fpar_def_list;
+  let rev_list = List.rev !res in
+  let args_array =
+    let first_argument =
+      if fc.id = funcDef.header.id then begin
+        let access_link_ptr =
+          build_struct_gep stack_frame_alloca 0 "access_link_ptr" builder
+        in
+        let access_link_val =
+          build_load access_link_ptr "access_link_ptr" builder
+        in
+        access_link_val
+      end
+      else
+        stack_frame_alloca
+    in
+    if List.mem fc.id lib_function_names = false then
+      Array.of_list ([ first_argument ] @ rev_list)
+    else
+      Array.of_list rev_list
+  in
+  build_call callee args_array "" builder
+
 and gen_lvalue_address id (stack_frame_alloca : Llvm.llvalue) funcDef
     stack_frame_length =
   let rec iterate i stack_frame funcDef =
@@ -144,48 +189,7 @@ and gen_expr is_param_ref (stack_frame_alloca : Llvm.llvalue) stack_frame_length
             "string_ptr" builder
       | L_comp (lv2, expr2) -> failwith "TODO gen_expr (E_lvalue (L_comp _))")
   | E_func_call fc ->
-      let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
-      let callee = fc.id in
-      let args_list = fc.expr_list in
-      let callee =
-        match lookup_function callee the_module with
-        | Some callee -> callee
-        | None -> raise (Error "unknown function referenced")
-      in
-      ignore (params callee);
-      (* if 'params' has no side effects, delete line*)
-      let i = ref 0 in
-      let res = ref [] in
-      List.iter
-        (fun x ->
-          let ith_elem = List.nth args_list !i in
-          res :=
-            gen_expr x.ref stack_frame_alloca stack_frame_length funcDef
-              ith_elem
-            :: !res;
-          incr i)
-        fpar_def_list;
-      let rev_list = List.rev !res in
-      let args_array =
-        let first_argument =
-          if fc.id = funcDef.header.id then begin
-            let access_link_ptr =
-              build_struct_gep stack_frame_alloca 0 "access_link_ptr" builder
-            in
-            let access_link_val =
-              build_load access_link_ptr "access_link_ptr" builder
-            in
-            access_link_val
-          end
-          else
-            stack_frame_alloca
-        in
-        if List.mem fc.id lib_function_names = false then
-          Array.of_list ([ first_argument ] @ rev_list)
-        else
-          Array.of_list rev_list
-      in
-      build_call callee args_array "" builder
+      gen_funcCall stack_frame_alloca stack_frame_length funcDef fc
   | E_sgn_expr (sign, expr) -> (
       match sign with
       | O_plus ->
@@ -330,49 +334,7 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
       | L_comp _ -> failwith "TODO gen_stmt (S_assignment (L_comp _))"
       | L_string _ -> failwith "TODO gen_stmt (S_assignment (L_string _))")
   | S_func_call fc ->
-      let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
-      let callee = fc.id in
-      let args_list = fc.expr_list in
-      let callee =
-        match lookup_function callee the_module with
-        | Some callee -> callee
-        | None -> raise (Error "unknown function referenced")
-      in
-      ignore (params callee);
-      (* if 'params' has no side effects, delete line*)
-      let i = ref 0 in
-      let res = ref [] in
-
-      List.iter
-        (fun fpar_def ->
-          let ith_elem = List.nth args_list !i in
-          res :=
-            gen_expr fpar_def.ref stack_frame_alloca stack_frame_length funcDef
-              ith_elem
-            :: !res;
-          incr i)
-        fpar_def_list;
-      let rev_list = List.rev !res in
-      let args_array =
-        let first_argument =
-          if fc.id = funcDef.header.id then begin
-            let access_link_ptr =
-              build_struct_gep stack_frame_alloca 0 "access_link_ptr" builder
-            in
-            let access_link_val =
-              build_load access_link_ptr "access_link_ptr" builder
-            in
-            access_link_val
-          end
-          else
-            stack_frame_alloca
-        in
-        if List.mem fc.id lib_function_names = false then
-          Array.of_list ([ first_argument ] @ rev_list)
-        else
-          Array.of_list rev_list
-      in
-      build_call callee args_array "" builder
+      gen_funcCall stack_frame_alloca stack_frame_length funcDef fc
   | S_block b -> begin
       match b with
       | Block [] -> build_nop ()
