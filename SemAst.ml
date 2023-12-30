@@ -352,6 +352,13 @@ and sem_block = function
     [Types.t_type option]. *)
 and sem_stmt = function
   | S_assignment (lv, e) -> (
+      (match lv.lv_kind with
+      | L_comp (L_string _, _) ->
+          Printf.eprintf
+            "\027[31mError\027[0m: Assignment to a string literal's element is \
+             not possible.\n";
+          failwith "Assignment to string literal"
+      | _ -> ());
       match sem_lvalue lv with
       | Types.T_array _ ->
           Printf.eprintf
