@@ -73,12 +73,6 @@ and lltype_of_fparDef x =
   | false -> lltype_of_t_type t_type
   | true -> pointer_type (lltype_of_t_type t_type)
 
-(* match x.fpar_type.array_dimensions with
-   | [] -> pointer_type (lltype_of_t_type t_type)
-   | list -> lltype_of_t_type t_type *)
-(* TODO: need to add a check here whether type is
-    array. Maybe need to change fparType and add type array there *)
-
 (* [ {ref, [a, b], int}, {noref, [c,d], char} ] -->
    [ {ref, [a], int}, {ref, [b], int}, {noref, [c], char}, {noref, [d], char} ] *)
 let rec expand_fpar_def_list (def_list : fparDef list) : fparDef list =
@@ -588,11 +582,7 @@ and gen_funcDef funcDef =
           | [] -> args_array.(i)
           | list -> args_array.(i - 1)
         in
-        let is_array =
-          match ith_param.fpar_type.array_dimensions with
-          | [] -> false
-          | [ a ] -> true
-        in
+        let is_array = ith_param.fpar_type.array_dimensions <> [] in
         let var_name = try List.hd ith_param.id_list with _ -> assert false in
         set_value_name var_name position;
         params_records :=
@@ -635,7 +625,8 @@ and gen_funcDef funcDef =
                 let array_first_elem =
                   build_gep array_alloca [| zero |] "array_first_elem" builder
                 in
-                ignore (build_store array_first_elem position builder))
+                ignore (build_store array_first_elem position builder)
+            | hdim :: tail -> failwith "multidimensional arrays aren't done yet")
           v.id_list
     | L_funcDef fd ->
         if Types.debugMode then
@@ -820,11 +811,7 @@ and set_stack_frames funcDef =
         | L_varDef v ->
             List.iter
               (fun id ->
-                let is_array =
-                  match v.var_type.array_dimensions with
-                  | [] -> false
-                  | [ a ] -> true
-                in
+                let is_array = v.var_type.array_dimensions <> [] in
                 params_records :=
                   (id, !index, false, is_array) :: !params_records;
                 incr index)
