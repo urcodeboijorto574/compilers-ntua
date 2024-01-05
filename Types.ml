@@ -39,5 +39,11 @@ let rec equal_types t1 t2 =
 let t_type_of_t_func = function T_func t -> t | _ -> assert false
 let t_type_of_t_array = function T_array (t, _) -> t | _ -> assert false
 
+let rec final_t_type_of_t_array = function
+  | T_func _ | T_none ->
+      raise (Invalid_argument "argument type is not an array")
+  | T_array (t, _) -> final_t_type_of_t_array t
+  | t -> t
+
 (* Functions that convert types defined in Ast to t_type types are defined in
    Ast. *)

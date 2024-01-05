@@ -34,5 +34,11 @@ val t_type_of_t_func : t_type -> t_type
     encapsulated type [ti]. Returns [Types.t_type]. *)
 val t_type_of_t_array : t_type -> t_type
 
+(** [final_t_type_of_t_array t] returns the type of data that an array stores.
+    The only types that can be returned are [T_int] and [T_char]. Raises
+    [Invalid_argument] if the argument is not of [T_array] or [T_int] and
+    [T_char]. Returns [Types.t_type]. *)
+val final_t_type_of_t_array : t_type -> t_type
+
 (* Functions that convert types defined in Ast to t_type types are defined in
    Ast. *)
