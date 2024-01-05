@@ -48,7 +48,8 @@ let rec lltype_of_t_type x =
   match x with
   | T_int -> int_type
   | T_char -> char_type
-  | T_array (t, n) -> pointer_type (lltype_of_t_type t)
+  | T_array (t, n) ->
+      pointer_type (lltype_of_t_type (Types.final_t_type_of_t_array t))
   | T_func t -> lltype_of_t_type t
   | T_none -> void_type context
 
@@ -168,65 +169,20 @@ and gen_expr is_param_ref (stack_frame_alloca : Llvm.llvalue) stack_frame_length
   match expr with
   | E_const_int x -> const_int int_type x
   | E_const_char x -> const_int char_type (int_of_char x)
-  | E_lvalue lv -> (
-      match lv.lv_kind with
-      | L_id id ->
-          let lv_address =
-            gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length
-          in
-          if is_param_ref = false then
-            build_load lv_address id builder
-          else begin
-            match lv.lv_type with
-            | None -> failwith "no type given"
-            | Some t -> begin
-                match t with
-                | T_array (_, _) ->
-                    (* build_load lv_address "array_pointer" builder *)
-                    lv_address
-                | _ -> lv_address
-              end
-          end
-      | L_string s ->
-          (* pointer_type (const_string context s) *)
-          (* create const string *)
-          let const_str = const_stringz context s in
-          (* create variable holding  const_str*)
-          let string_var = define_global "string_var" const_str the_module in
-          (* point to the first element (char) of the string *)
-          let first_element = const_int int_type 0 in
-          build_gep string_var
-            [| first_element; first_element |]
-            "string_ptr" builder
-      | L_comp (lv, e) ->
-          let gen_lvalue_kind = function
-            | L_string _ -> assert false
-            | L_id id ->
-                let lv_address =
-                  gen_lvalue_address id stack_frame_alloca funcDef
-                    stack_frame_length
-                in
-                lv_address
-            | L_comp _ -> failwith "TODO: gen_stmt: gen_lvalue_kind (L_comp _)"
-          in
-          let elementPtr =
-            let arrayPtr =
-              let array_address = gen_lvalue_kind lv in
-              (* build_load array_address "array_first_element_ptr" builder *)
-              array_address
-            in
-            let index =
-              let indexExpr =
-                gen_expr false stack_frame_alloca stack_frame_length funcDef e
-              in
-              build_intcast indexExpr int_type "index_cast" builder
-            in
-            build_gep arrayPtr [| index |] "array_element_ptr" builder
-          in
-          if is_param_ref = false then
-            build_load elementPtr "array_element_val" builder
-          else
-            elementPtr)
+  | E_lvalue lv -> begin
+      let lv_address =
+        gen_lvalue stack_frame_alloca stack_frame_length funcDef lv
+      in
+      if is_param_ref then
+        lv_address
+      else
+        let var_name =
+          match lv.lv_kind with
+          | L_id id -> id
+          | L_string _ | L_comp _ -> "array_element_val"
+        in
+        build_load lv_address var_name builder
+    end
   | E_func_call fc ->
       gen_funcCall stack_frame_alloca stack_frame_length funcDef fc
   | E_sgn_expr (sign, expr) -> (
@@ -360,44 +316,14 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
       end
   in
   match stmt with
-  | S_assignment (lv, expr) -> (
-      match lv.lv_kind with
-      | L_id id ->
-          let lv_address =
-            gen_lvalue_address id stack_frame_alloca funcDef stack_frame_length
-          in
-          let lv_value =
-            gen_expr false stack_frame_alloca stack_frame_length funcDef expr
-          in
-          build_store lv_value lv_address builder
-      | L_comp (lv2, e) ->
-          let gen_lvalue_kind = function
-            | L_string _ -> assert false
-            | L_id id ->
-                if Types.debugModeCodeGen then Printf.printf "%s\n%!" id;
-                let lv_address =
-                  gen_lvalue_address id stack_frame_alloca funcDef
-                    stack_frame_length
-                in
-                lv_address
-            | L_comp _ -> failwith "TODO: gen_stmt: gen_lvalue_kind (L_comp _)"
-          in
-          let elementPtr =
-            let arrayPtr =
-              let array_address = gen_lvalue_kind lv2 in
-              (* build_load array_address "array_first_element_ptr" builder *)
-              array_address
-            in
-            let index =
-              gen_expr false stack_frame_alloca stack_frame_length funcDef e
-            in
-            build_gep arrayPtr [| index |] "array_element_ptr" builder
-          in
-          let value =
-            gen_expr false stack_frame_alloca stack_frame_length funcDef expr
-          in
-          build_store value elementPtr builder
-      | L_string _ -> failwith "TODO gen_stmt (S_assignment (L_string _))")
+  | S_assignment (lv, expr) ->
+      let lv_address =
+        gen_lvalue id stack_frame_alloca stack_frame_length funcDef lv
+      in
+      let lv_value =
+        gen_expr false stack_frame_alloca stack_frame_length funcDef expr
+      in
+      build_store lv_value lv_address builder
   | S_func_call fc ->
       gen_funcCall stack_frame_alloca stack_frame_length funcDef fc
   | S_block b -> begin
@@ -609,25 +535,28 @@ and gen_funcDef funcDef =
             | [] ->
                 set_value_name id position;
                 incr struct_index
-            | [ dim ] ->
+            | dimList ->
                 let t =
                   match v.var_type.data_type with
                   | ConstInt -> int_type
                   | ConstChar -> char_type
                 in
-                let n = const_int int_type dim in
                 let array_alloca =
-                  build_array_alloca t n "array_alloca" builder
+                  let arraySize : Llvm.llvalue =
+                    let productOfList =
+                      List.fold_left (fun acc d -> acc * d) 1 dimList
+                    in
+                    const_int int_type productOfList
+                  in
+                  build_array_alloca t arraySize "array_alloca" builder
                 in
                 incr struct_index;
                 set_value_name id position;
-                let zero = const_int int_type 0 in
-                if Types.debugModeCodeGen then Printf.printf "here \n%!";
-                let array_first_elem =
-                  build_gep array_alloca [| zero |] "array_first_elem" builder
+                let arrayPtr =
+                  let zero = const_int int_type 0 in
+                  build_gep array_alloca [| zero |] "array_ptr" builder
                 in
-                ignore (build_store array_first_elem position builder)
-            | hdim :: tail -> failwith "multidimensional arrays aren't done yet")
+                ignore (build_store arrayPtr position builder))
           v.id_list
     | L_funcDef fd ->
         if Types.debugModeCodeGen then
