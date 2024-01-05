@@ -404,26 +404,14 @@ and sem_stmt = function
       | Some true -> type_of_s)
   | S_if_else (c, s1, s2) -> (
       sem_cond c;
-      let constCondValue = Ast.get_const_cond_value c in
       let type_of_s1 = sem_stmt s1 in
       let type_of_s2 = sem_stmt s2 in
       if type_of_s1 = type_of_s2 then
         type_of_s1
-      else if type_of_s1 = None || type_of_s2 = None then
-        None
       else
-        match constCondValue with
-        | Some constValue ->
-            Printf.eprintf
-              "Warning: In an if-then-else statement two different types are \
-               returned. However, the type of ";
-            if constValue then (
-              Printf.eprintf "'else' branch is never returned.\n";
-              type_of_s1)
-            else (
-              Printf.eprintf "'then' branch is never returned.\n";
-              type_of_s2)
-        | None ->
+        match (type_of_s1, type_of_s2) with
+        | None, type_of_s | type_of_s, None -> type_of_s
+        | _ ->
             Printf.eprintf
               "\027[31mError\027[0m: In an if-then-else statement two \
                different types are returned.\n";

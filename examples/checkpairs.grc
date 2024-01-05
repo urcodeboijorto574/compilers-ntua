@@ -7,14 +7,14 @@ fun main() : nothing
   {
 
     if 1 < 0 then
-      return 'f';
+      return ascii('f');
 
     diff <- ascii('a') - ascii('A');
     if ascii(a) - ascii(b) = diff or ascii(b) - ascii(a) = diff then
       return 1;
     else if 1 < 2 then
       return 1;
-    else return '4';
+    else return ascii('4');
 
     if ascii(c) - ascii(d) = diff or ascii(d) - ascii(c) = diff then
       return 2;
@@ -45,6 +45,6 @@ fun main() : nothing
     return;
 
   while 1 < 2 do
-    return 'a';
+    return $$ 'a' $$;
 
 }
