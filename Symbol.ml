@@ -131,7 +131,6 @@ let add_standard_library () =
     in
     enter_function name (List.map extract_passing parList) (T_func typ) DEFINED
   in
-  add_func_lib "writeAddress" [ (1, T_int) ] T_none;
   add_func_lib "writeInteger" [ (1, T_int) ] T_none;
   add_func_lib "writeChar" [ (1, T_char) ] T_none;
   add_func_lib "writeString" [ (1, T_array (T_char, -1)) ] T_none;
@@ -161,25 +160,13 @@ let look_up_entry (id : string) =
       in
       Hashtbl.iter
         (fun key entry ->
-          let lib_function_names =
-            [
-              "writeAddress";
-              "writeInteger";
-              "writeChar";
-              "writeString";
-              "readInteger";
-              "readChar";
-              "readString";
-              "ascii";
-              "chr";
-              "strlen";
-              "strcmp";
-              "strcpy";
-              "strcat";
-            ]
-          in
-          let keyIsLibFuncName = List.mem key lib_function_names in
-          if keyIsLibFuncName then (
+          if
+            not
+              (key = "writeInteger" || key = "writeChar" || key = "writeString"
+             || key = "readInteger" || key = "readChar" || key = "readString"
+             || key = "ascii" || key = "chr" || key = "strlen" || key = "strcmp"
+             || key = "strcpy" || key = "strcat")
+          then (
             printedSmth := true;
             Printf.printf
               "\tKey: '%s', Value: { id = '%s'; scope = %s(%d); kind = %s }\n"

@@ -3,10 +3,6 @@
 #include <inttypes.h>
 #include <string.h>
 
-extern void writeAddress(int *ptr) {
-    printf("%p", (void*) ptr);
-}
-
 extern void writeInteger(int x) {
     printf("%d", x);
 }

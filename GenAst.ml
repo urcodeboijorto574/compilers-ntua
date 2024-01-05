@@ -21,7 +21,6 @@ let bool_type = i1_type context
 
 let lib_function_names =
   [
-    "writeAddress";
     "writeInteger";
     "writeChar";
     "writeString";
@@ -681,11 +680,6 @@ let define_lib_funcs () =
       (params f)
   in
 
-  (* writeAddress (ptr : int[]) : nothing *)
-  let writeAddress_fp_def_list =
-    [ newFparDef (true, [ "ptr" ], newFparType (ConstInt, [])) ]
-  and writeAddress_f_rtype = Nothing in
-
   (* writeInteger (n : int) : nothing *)
   let writeInteger_fp_type = newFparType (ConstInt, []) in
   let writeInteger_fp_def_list =
@@ -750,7 +744,6 @@ let define_lib_funcs () =
 
   let lib_list =
     [
-      ("writeAddress", writeAddress_fp_def_list, writeAddress_f_rtype);
       ("writeInteger", writeInteger_fp_def_list, writeInteger_f_rtype);
       ("writeChar", writeChar_fp_def_list, writeChar_f_rtype);
       ("writeString", writeString_fp_def_list, writeString_f_rtype);
