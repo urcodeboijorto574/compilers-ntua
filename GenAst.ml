@@ -130,40 +130,116 @@ and gen_funcCall (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef
   in
   build_call callee args_array "" builder
 
-and gen_lvalue_address id (stack_frame_alloca : Llvm.llvalue) funcDef
-    stack_frame_length =
-  let rec iterate i stack_frame funcDef =
-    let tuple = List.nth funcDef.var_records i in
-    let var_name = match tuple with v, _, _, _ -> v in
-    let elem_pos = match tuple with _, p, _, _ -> p in
-    let is_ref = match tuple with _, _, ref, _ -> ref in
-    let is_array = match tuple with _, _, _, array -> array in
-    if var_name = id then begin
-      let addr = build_struct_gep stack_frame elem_pos var_name builder in
-      if is_ref = false then begin
-        match is_array with
-        | true -> build_load addr (var_name ^ "_address") builder
-        | false -> addr
+and gen_lvalue (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef lv
+    =
+  let gen_lvalue_address id =
+    let rec iterate i stack_frame funcDef =
+      let tuple = List.nth funcDef.var_records i in
+      let var_name = match tuple with v, _, _, _ -> v in
+      let elem_pos = match tuple with _, p, _, _ -> p in
+      let is_ref = match tuple with _, _, ref, _ -> ref in
+      let is_array = match tuple with _, _, _, array -> array in
+      if var_name = id then begin
+        let addr = build_struct_gep stack_frame elem_pos var_name builder in
+        if is_ref = false then begin
+          match is_array with
+          | true -> build_load addr (var_name ^ "_address") builder
+          | false -> addr
+        end
+        else begin
+          build_load addr (var_name ^ "_address") builder
+        end
       end
-      else begin
-        build_load addr (var_name ^ "_address") builder
-      end
-    end
-    else if i + 1 < funcDef.stack_frame_length then
-      iterate (i + 1) stack_frame funcDef
-    else
-      match funcDef.parent_func with
-      | Some p ->
-          let access_link =
-            build_struct_gep stack_frame 0 "access_link_ptr" builder
-          in
-          let the_access_link =
-            build_load access_link "access_link_val" builder
-          in
-          iterate 0 the_access_link p
-      | None -> failwith "fail variable not found"
+      else if i + 1 < funcDef.stack_frame_length then
+        iterate (i + 1) stack_frame funcDef
+      else
+        match funcDef.parent_func with
+        | Some p ->
+            let access_link =
+              build_struct_gep stack_frame 0 "access_link_ptr" builder
+            in
+            let the_access_link =
+              build_load access_link "access_link_val" builder
+            in
+            iterate 0 the_access_link p
+        | None -> failwith "fail variable not found"
+    in
+    iterate 0 stack_frame_alloca funcDef
   in
-  iterate 0 stack_frame_alloca funcDef
+  match lv.lv_kind with
+  | L_id id -> gen_lvalue_address id
+  | L_string s ->
+      let const_str = const_stringz context s in
+      let string_var = define_global "string_var" const_str the_module in
+      let zero = const_int int_type 0 in
+      build_gep string_var [| zero; zero |] "string_ptr" builder
+  | L_comp _ -> begin
+      let arrayPtr =
+        let rec gen_lvalue_kind = function
+          | L_id id -> gen_lvalue_address id
+          | L_string s ->
+              gen_lvalue stack_frame_alloca stack_frame_length funcDef
+                { lv_kind = L_string s; lv_type = None }
+          | L_comp (lvk, _) -> gen_lvalue_kind lvk
+        in
+        gen_lvalue_kind lv.lv_kind
+      in
+      let index =
+        let dimensions : Llvm.llvalue list =
+          let rec get_dimensions : Types.t_type -> int list = function
+            | T_func _ | T_none -> assert false
+            | T_int | T_char -> []
+            | T_array (typ, -1) ->
+                if Types.debugModeCodeGen then
+                  Printf.printf "watch this case\n";
+                -1 :: get_dimensions typ
+            | T_array (typ, size) ->
+                if Types.debugModeCodeGen then begin
+                  let name =
+                    let rec get_name = function
+                      | L_id i -> i
+                      | L_string s -> s
+                      | L_comp (lvk, _) -> get_name lvk
+                    in
+                    get_name lv.lv_kind
+                  in
+                  Printf.printf "a dimension of %s is %d\n" name size
+                end;
+                size :: get_dimensions typ
+          in
+          let dimensionsList : int list =
+            let arrayType = Option.get (Option.get lv.lv_type).array_type in
+            List.rev (get_dimensions arrayType)
+          in
+          List.map (const_int int_type) dimensionsList
+        in
+        let indices : Llvm.llvalue list =
+          let rec get_indices : Ast.lvalue_kind -> Ast.expr list = function
+            | L_id _ | L_string _ -> []
+            | L_comp (lvk, i) -> i :: get_indices lvk
+          in
+          let indicesList : Ast.expr list = List.rev (get_indices lv.lv_kind) in
+          List.map
+            (gen_expr false stack_frame_alloca stack_frame_length funcDef)
+            indicesList
+        in
+        let indexExpr : Llvm.llvalue =
+          let rec get_final_index :
+              Llvm.llvalue list * Llvm.llvalue list -> Llvm.llvalue = function
+            | [], _ | _, [] -> const_int int_type 0
+            | i :: _, _ :: [] -> i
+            | i :: itail, d :: dtail ->
+                let product = build_mul i d "prod_temp" builder in
+                build_add product
+                  (get_final_index (itail, dtail))
+                  "index_temp" builder
+          in
+          get_final_index (indices, dimensions)
+        in
+        build_intcast indexExpr int_type "index" builder
+      in
+      build_gep arrayPtr [| index |] "array_element_ptr" builder
+    end
 
 and gen_expr is_param_ref (stack_frame_alloca : Llvm.llvalue) stack_frame_length
     funcDef expr =
@@ -319,7 +395,7 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
   match stmt with
   | S_assignment (lv, expr) ->
       let lv_address =
-        gen_lvalue id stack_frame_alloca stack_frame_length funcDef lv
+        gen_lvalue stack_frame_alloca stack_frame_length funcDef lv
       in
       let lv_value =
         gen_expr false stack_frame_alloca stack_frame_length funcDef expr
