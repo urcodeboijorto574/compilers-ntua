@@ -264,7 +264,7 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
             | E_const_int _ | E_sgn_expr _ | E_op_expr_expr _ -> T_int
             | E_const_char _ -> T_char
             | E_lvalue lv -> begin
-                try Option.get lv.lv_type
+                try (Option.get lv.lv_type).elem_type
                 with Invalid_argument _ ->
                   failwith "Type of l-value should be already set."
               end

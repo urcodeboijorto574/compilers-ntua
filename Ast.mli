@@ -95,13 +95,18 @@ and stmt =
 
 and lvalue = {
   lv_kind : lvalue_kind;
-  mutable lv_type : Types.t_type option;
+  mutable lv_type : lvalue_type option;
 }
 
 and lvalue_kind =
   | L_id of string
   | L_string of string
   | L_comp of lvalue_kind * expr
+
+and lvalue_type = {
+  elem_type : Types.t_type;
+  array_type : Types.t_type option;
+}
 
 and expr =
   | E_const_int of int

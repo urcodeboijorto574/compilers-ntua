@@ -445,6 +445,7 @@ and sem_stmt = function
 (** [sem_lvalue (lval : Ast.lvalue)] returns the type of the l-value [lval].
     Returns [Types.t_type]. *)
 and sem_lvalue lv =
+  let resultArrayType : Types.t_type option ref = ref None in
   let rec sem_lvalue_kind = function
     | L_id id ->
         let entryFoundOption = look_up_entry id in
@@ -467,9 +468,12 @@ and sem_lvalue lv =
         in
         if Types.debugMode then
           Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
+        resultArrayType := Some entryType;
         entryType
     | L_string s ->
-        Types.T_array (Types.T_char, String.length s + 1)
+        let resultType = Types.T_array (Types.T_char, String.length s + 1) in
+        resultArrayType := Some resultType;
+        resultType
         (* Note: the last character of a string literal is not the '\0' character. *)
     | L_comp (lv, e) -> (
         if Types.debugMode then
@@ -510,7 +514,8 @@ and sem_lvalue lv =
             failwith "Iteration on non-array type of variable")
   in
   let resultType = sem_lvalue_kind lv.lv_kind in
-  if lv.lv_type = None then lv.lv_type <- Some resultType;
+  if lv.lv_type = None then
+    lv.lv_type <- Some { elem_type = resultType; array_type = !resultArrayType };
   resultType
 
 (** [sem_expr (e : Ast.expr)] returns the type of the expression [e]. Returns
