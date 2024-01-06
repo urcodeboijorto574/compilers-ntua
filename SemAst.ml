@@ -482,7 +482,7 @@ and sem_lvalue lv =
         in
         match sem_lvalue_kind lv with
         | Types.T_array (t, n) ->
-            begin
+            if n <> -1 then begin
               match Ast.get_const_expr_value e with
               | None -> ()
               | Some index ->
