@@ -1,5 +1,34 @@
 fun main () : nothing
 
+    fun printIntArray1D(size : int; ref arr : int[]) : nothing var i : int; {
+        writeInteger(arr[0]);
+        i <- 1;
+        while i < size do {
+            writeChar(' ');
+            writeInteger(arr[i]);
+            i <- i + 1;
+        } }
+    fun printCharArray1D(size : int; ref arr : char[]) : nothing var i : int; {
+        writeChar(arr[0]);
+        i <- 1;
+        while i < size do {
+            writeChar(' ');
+            writeChar(arr[i]);
+            i <- i + 1;
+        } }
+    fun printArray2D(size : int; ref arr : int[][10]) : nothing var i, j : int; {
+        i <- 0;
+        while i < size do {
+            j <- 0;
+            while j < 10 do {
+                writeInteger(arr[i][j]);
+                if j # 9 then writeChar('\t');
+                j <- j + 1;
+            }
+            writeChar('\n');
+            i <- i + 1;
+        } }
+
     var foo : int[90];
     var bar : char[110];
     var zen : int[5][10];
@@ -35,11 +64,43 @@ fun main () : nothing
             }
 
             i <- i + 1;
+        } }
+
+    var i,j : int;
+{ $ main
+    $ Initialization of foo
+    i <- 0;
+    while i < 90 do {
+        foo[i] <- i;
+        i <- i + 1;
+    }
+    $ Initialization of bar
+    i <- 0;
+    while i < 110 do {
+        bar[i] <- chr(i + ascii('A'));
+        i <- i + 1;
+    }
+    $ Initialization of zen
+    i <- 0;
+    while i < 5 do {
+        j <- 0;
+        while j < 10 do {
+            zen[i][j] <- i * 50 + j * 5;
+            j <- j + 1;
         }
+        i <- i + 1;
     }
 
-{ $ main
+    writeString("Arrays foo, bar, zen initialized.\n");
+    writeString("Executing arrayProc()...");
     arrayProc(foo, bar, zen);
-    writeString("OK!\n");
-    foo[89] <- 1;
+    writeString("DONE!\nfoo:\n");
+    printIntArray1D(90, foo);
+    writeString("\nbar:\n");
+    printCharArray1D(110, bar);
+    writeString("\nzen:\n");
+    printArray2D(5, zen);
+    writeString("\nzen[2]:\n");
+    printIntArray1D(10, zen[2]);
+    writeString("\nOK!\n");
 }
