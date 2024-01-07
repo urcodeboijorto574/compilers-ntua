@@ -286,15 +286,53 @@ and gen_cond (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef =
   | C_not_cond (lo, c) ->
       let ll_cond = gen_cond stack_frame_alloca stack_frame_length funcDef c in
       build_not ll_cond "not" builder
-  | C_cond_cond (c1, lo, c2) -> (
-      (* TODO: short-circuiting *)
+  | C_cond_cond (c1, lo, c2) ->
       let gen_cond = gen_cond stack_frame_alloca stack_frame_length funcDef in
       let lhs_val = gen_cond c1 in
+
+      let is_good, opName, build_instr =
+        match lo with
+        | O_and -> (const_int bool_type 0, "and", build_and)
+        | O_or -> (const_int bool_type 1, "or", build_or)
+        | O_not -> assert false
+      in
+      let start_basic_block = insertion_block builder in
+      let function_bb = block_parent start_basic_block in
+      let good_basic_block = append_block context "good" function_bb in
+      let bad_basic_block = append_block context "bad" function_bb in
+      let merge_basic_block =
+        append_block context "good_bad_cont" function_bb
+      in
+      let result_bool () =
+        build_icmp Llvm.Icmp.Eq lhs_val is_good
+          (opName ^ "_short_circuit")
+          builder
+      in
+      let resultCondition =
+        build_alloca bool_type ("result_" ^ opName) builder
+      in
+
+      position_at_end start_basic_block builder;
+      ignore
+        (build_cond_br (result_bool ()) good_basic_block bad_basic_block builder);
+
+      position_at_end good_basic_block builder;
+      let resultGood = build_instr lhs_val is_good opName builder in
+      ignore (build_store resultGood resultCondition builder);
+      let new_good_basic_block = insertion_block builder in
+      position_at_end new_good_basic_block builder;
+      ignore (build_br merge_basic_block builder);
+
+      position_at_end bad_basic_block builder;
       let rhs_val = gen_cond c2 in
-      match lo with
-      | O_and -> build_and lhs_val rhs_val "and" builder
-      | O_or -> build_or lhs_val rhs_val "or" builder
-      | O_not -> assert false)
+      let resultBad = build_instr lhs_val rhs_val opName builder in
+      ignore (build_store resultBad resultCondition builder);
+      let new_bad_basic_block = insertion_block builder in
+      position_at_end new_bad_basic_block builder;
+      ignore (build_br merge_basic_block builder);
+
+      position_at_end merge_basic_block builder;
+      build_load resultCondition (opName ^ "_result") builder
   | C_expr_expr (e1, co, e2) -> (
       let gen_expr =
         gen_expr false stack_frame_alloca stack_frame_length funcDef
