@@ -188,10 +188,6 @@ and gen_lvalue (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef lv
           let rec get_dimensions : Types.t_type -> int list = function
             | T_func _ | T_none -> assert false
             | T_int | T_char -> []
-            | T_array (typ, -1) ->
-                if Types.debugModeCodeGen then
-                  Printf.printf "watch this case\n";
-                -1 :: get_dimensions typ
             | T_array (typ, size) ->
                 if Types.debugModeCodeGen then begin
                   let name =
@@ -525,7 +521,9 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
         match access_link with
         | Some _ -> declare_function name ft the_module
         | None -> declare_function "main" ft the_module)
-    | Some x -> failwith "semantic analysis error: function already defined"
+    | Some x ->
+        (* TODO: Check whether this case should or should not be erroneous *)
+        failwith "semantic analysis error: function already defined"
   in
   f
 
