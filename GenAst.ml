@@ -74,6 +74,13 @@ and lltype_of_fparDef x =
   | false -> lltype_of_t_type t_type
   | true -> pointer_type (lltype_of_t_type t_type)
 
+and lltype_of_varDef vd =
+  let result =
+    lltype_of_t_type (Ast.t_type_of_dataType vd.var_type.data_type)
+  in
+  let isArray = vd.var_type.array_dimensions = [] in
+  if isArray then pointer_type result else result
+
 (* [ {ref, [a, b], int}, {noref, [c,d], char} ] -->
    [ {ref, [a], int}, {ref, [b], int}, {noref, [c], char}, {noref, [d], char} ] *)
 let rec expand_fpar_def_list (def_list : fparDef list) : fparDef list =
