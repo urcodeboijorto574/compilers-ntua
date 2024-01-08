@@ -180,19 +180,25 @@ let look_up_entry (id : string) =
     print_hashtable ());
 
   let resultEntryList =
+    (* Entries of ancestor scopes in decreasing order. *)
     List.stable_sort
       (fun e1 e2 -> compare e1.scope.depth e2.scope.depth * -1)
-      (List.filter
+      ((* Entries of ancestor scopes of the current scope. *)
+       List.filter
          (fun e ->
-           let rec is_ancestor sc_ref sc =
-             if sc_ref.parent = None then
-               sc.parent = None
+           (* [is_ancestor s1 s2] returns [true] if [s2] is part of [s1]'s
+              ancestor scopes or if [s1] and [s2] are the same scope. *)
+           let rec is_ancestor referenceScope candidateScope =
+             if referenceScope.parent = None then
+               candidateScope.parent = None
              else
-               sc.parent = None || equal_scopes sc_ref sc
-               || is_ancestor (Option.get sc_ref.parent) sc
+               candidateScope.parent = None
+               || equal_scopes referenceScope candidateScope
+               || is_ancestor (Option.get referenceScope.parent) candidateScope
            in
            is_ancestor !current_scope e.scope)
-         (Hashtbl.find_all !symbolTable id))
+         ((* Entries with [id] as their name. *)
+          Hashtbl.find_all !symbolTable id))
   in
   if Types.debugMode then (
     let print_entry_list () =
@@ -214,7 +220,7 @@ let look_up_entry (id : string) =
         (List.hd resultEntryList).scope.depth !current_scope.depth
     else
       Printf.printf "Entry '%s' not found in any scope.\n" id);
-  if resultEntryList = [] then None else Some (List.hd resultEntryList)
+  try Some (List.hd resultEntryList) with _ -> None
 
 let get_undefined_functions () =
   let undefinedFunctionsList = ref [] in
