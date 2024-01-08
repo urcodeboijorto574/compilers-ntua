@@ -24,19 +24,26 @@ and compOperator =
   | O_greater_eq
   | O_not_equal
 
+and stackFrame = {
+  parent_stack_frame : stackFrame option;
+  stack_frame_type : Llvm.lltype;
+  access_link : Llvm.lltype option;
+  stack_frame_addr : Llvm.llvalue;
+  (* [var_records] is a list that contains a tuple with 4 fields:
+      1st field: the name of the variable
+      2nd field: the position of the record in the stack frame
+      3rd field: the variable is reference (only for parameters)
+      4th field: the variable is an array *)
+  var_records : (string * int * bool * bool) list;
+  stack_frame_length : int;
+}
+
 and funcDef = {
   header : header;
   local_def_list : localDef list;
   block : block;
-  (* pointer to the stack frame of parent function *)
-  mutable access_link : Llvm.lltype option;
-  (* the parent funcDef of the function*)
   mutable parent_func : funcDef option;
-  (* stack frame of the function -- later will become a struct *)
-  mutable stack_frame : Llvm.lltype option;
-  mutable stack_frame_addr : Llvm.llvalue option;
-  mutable var_records : (string * int * bool * bool) list;
-  mutable stack_frame_length : int;
+  mutable stack_frame : stackFrame option;
 }
 
 and header = {
@@ -138,12 +145,8 @@ let newFuncDef (a, b, c) =
     header = a;
     local_def_list = b;
     block = c;
-    access_link = None;
     parent_func = None;
     stack_frame = None;
-    stack_frame_addr = None;
-    var_records = [];
-    stack_frame_length = 0;
   }
 
 and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
