@@ -43,6 +43,7 @@ let build_nop () =
 let named_values : (string, llvalue) Hashtbl.t = Hashtbl.create 2000
 let named_functions = Hashtbl.create 2000
 let blocks_list = ref []
+let current_funcDef : string list ref = ref []
 
 let rec lltype_of_t_type x =
   match x with
@@ -91,8 +92,8 @@ let rec expand_fpar_def_list (def_list : fparDef list) : fparDef list =
   in
   List.concat (List.map expand_fpar_def def_list)
 
-and gen_funcCall (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef
-    (fc : Ast.funcCall) =
+and gen_funcCall stackFrame (fc : Ast.funcCall) =
+  let stack_frame_alloca = stackFrame.stack_frame_addr in
   let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
   let callee = fc.id in
   let args_list = fc.expr_list in
@@ -108,23 +109,17 @@ and gen_funcCall (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef
   List.iter
     (fun fpar_def ->
       let ith_elem = List.nth args_list !i in
-      res :=
-        gen_expr fpar_def.ref stack_frame_alloca stack_frame_length funcDef
-          ith_elem
-        :: !res;
+      res := gen_expr fpar_def.ref stackFrame ith_elem :: !res;
       incr i)
     fpar_def_list;
   let rev_list = List.rev !res in
   let args_array =
     let first_argument =
-      if fc.id = funcDef.header.id then begin
+      if fc.id = List.hd !current_funcDef then begin
         let access_link_ptr =
           build_struct_gep stack_frame_alloca 0 "access_link_ptr" builder
         in
-        let access_link_val =
-          build_load access_link_ptr "access_link_ptr" builder
-        in
-        access_link_val
+        build_load access_link_ptr "access_link_ptr" builder
       end
       else
         stack_frame_alloca
@@ -136,17 +131,20 @@ and gen_funcCall (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef
   in
   build_call callee args_array "" builder
 
-and gen_lvalue (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef lv
-    =
+and gen_lvalue stackFrame lv =
+  let stack_frame_alloca = stackFrame.stack_frame_addr in
+  let stack_frame_length = stackFrame.stack_frame_length in
   let gen_lvalue_address id =
-    let rec iterate i stack_frame funcDef =
-      let tuple = List.nth funcDef.var_records i in
+    let rec iterate i stack_frame_addr stackFrame =
+      let tuple = List.nth stackFrame.var_records i in
       let var_name = match tuple with v, _, _, _ -> v in
       let elem_pos = match tuple with _, p, _, _ -> p in
       let is_ref = match tuple with _, _, ref, _ -> ref in
       let is_array = match tuple with _, _, _, array -> array in
       if var_name = id then begin
-        let addr = build_struct_gep stack_frame elem_pos var_name builder in
+        let addr =
+          build_struct_gep stack_frame_addr elem_pos var_name builder
+        in
         if is_ref = false then begin
           match is_array with
           | true -> build_load addr (var_name ^ "_address") builder
@@ -156,21 +154,21 @@ and gen_lvalue (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef lv
           build_load addr (var_name ^ "_address") builder
         end
       end
-      else if i + 1 < funcDef.stack_frame_length then
-        iterate (i + 1) stack_frame funcDef
+      else if i + 1 < stack_frame_length then
+        iterate (i + 1) stack_frame_addr stackFrame
       else
-        match funcDef.parent_func with
-        | Some p ->
+        match stackFrame.parent_stack_frame with
+        | Some sfParent ->
             let access_link =
-              build_struct_gep stack_frame 0 "access_link_ptr" builder
+              build_struct_gep stack_frame_addr 0 "access_link_ptr" builder
             in
             let the_access_link =
               build_load access_link "access_link_val" builder
             in
-            iterate 0 the_access_link p
+            iterate 0 the_access_link sfParent
         | None -> failwith "fail variable not found"
     in
-    iterate 0 stack_frame_alloca funcDef
+    iterate 0 stack_frame_alloca stackFrame
   in
   match lv.lv_kind with
   | L_id id -> gen_lvalue_address id
@@ -184,8 +182,7 @@ and gen_lvalue (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef lv
         let rec gen_lvalue_kind = function
           | L_id id -> gen_lvalue_address id
           | L_string s ->
-              gen_lvalue stack_frame_alloca stack_frame_length funcDef
-                { lv_kind = L_string s; lv_type = None }
+              gen_lvalue stackFrame { lv_kind = L_string s; lv_type = None }
           | L_comp (lvk, _) -> gen_lvalue_kind lvk
         in
         gen_lvalue_kind lv.lv_kind
@@ -221,9 +218,7 @@ and gen_lvalue (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef lv
             | L_comp (lvk, i) -> i :: get_indices lvk
           in
           let indicesList : Ast.expr list = List.rev (get_indices lv.lv_kind) in
-          List.map
-            (gen_expr false stack_frame_alloca stack_frame_length funcDef)
-            indicesList
+          List.map (gen_expr false stackFrame) indicesList
         in
         let indexExpr : Llvm.llvalue =
           let rec get_final_index :
@@ -243,15 +238,12 @@ and gen_lvalue (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef lv
       build_gep arrayPtr [| index |] "array_element_ptr" builder
     end
 
-and gen_expr is_param_ref (stack_frame_alloca : Llvm.llvalue) stack_frame_length
-    funcDef expr =
+and gen_expr is_param_ref stackFrame expr =
   match expr with
   | E_const_int x -> const_int int_type x
   | E_const_char x -> const_int char_type (int_of_char x)
   | E_lvalue lv -> begin
-      let lv_address =
-        gen_lvalue stack_frame_alloca stack_frame_length funcDef lv
-      in
+      let lv_address = gen_lvalue stackFrame lv in
       if is_param_ref then
         lv_address
       else
@@ -262,41 +254,28 @@ and gen_expr is_param_ref (stack_frame_alloca : Llvm.llvalue) stack_frame_length
         in
         build_load lv_address var_name builder
     end
-  | E_func_call fc ->
-      gen_funcCall stack_frame_alloca stack_frame_length funcDef fc
+  | E_func_call fc -> gen_funcCall stackFrame fc
   | E_sgn_expr (sign, expr) -> (
       match sign with
-      | O_plus ->
-          gen_expr false stack_frame_alloca stack_frame_length funcDef expr
-      | O_minus ->
-          build_neg
-            (gen_expr false stack_frame_alloca stack_frame_length funcDef expr)
-            "minus" builder)
+      | O_plus -> gen_expr false stackFrame expr
+      | O_minus -> build_neg (gen_expr false stackFrame expr) "minus" builder)
   | E_op_expr_expr (lhs, oper, rhs) -> (
-      let lhs_val =
-        gen_expr false stack_frame_alloca stack_frame_length funcDef lhs
-      in
-      let rhs_val =
-        gen_expr false stack_frame_alloca stack_frame_length funcDef rhs
-      in
+      let lhs_val = gen_expr false stackFrame lhs in
+      let rhs_val = gen_expr false stackFrame rhs in
       match oper with
       | O_plus -> build_add lhs_val rhs_val "addtmp" builder
       | O_minus -> build_sub lhs_val rhs_val "subtmp" builder
       | O_mul -> build_mul lhs_val rhs_val "multmp" builder
       | O_div -> build_sdiv lhs_val rhs_val "divtmp" builder
       | O_mod -> build_srem lhs_val rhs_val "modtmp" builder)
-  | E_expr_parenthesized expr ->
-      gen_expr false stack_frame_alloca stack_frame_length funcDef expr
+  | E_expr_parenthesized expr -> gen_expr false stackFrame expr
 
-and gen_cond (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef =
-  function
+and gen_cond stackFrame = function
   | C_not_cond (lo, c) ->
-      let ll_cond = gen_cond stack_frame_alloca stack_frame_length funcDef c in
+      let ll_cond = gen_cond stackFrame c in
       build_not ll_cond "not" builder
   | C_cond_cond (c1, lo, c2) ->
-      let gen_cond = gen_cond stack_frame_alloca stack_frame_length funcDef in
-      let lhs_val = gen_cond c1 in
-
+      let lhs_val = gen_cond stackFrame c1 in
       let is_good, opName, build_instr =
         match lo with
         | O_and -> (const_int bool_type 0, "and", build_and)
@@ -331,7 +310,7 @@ and gen_cond (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef =
       ignore (build_br merge_basic_block builder);
 
       position_at_end bad_basic_block builder;
-      let rhs_val = gen_cond c2 in
+      let rhs_val = gen_cond stackFrame c2 in
       let resultBad = build_instr lhs_val rhs_val opName builder in
       ignore (build_store resultBad resultCondition builder);
       let new_bad_basic_block = insertion_block builder in
@@ -341,11 +320,8 @@ and gen_cond (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef =
       position_at_end merge_basic_block builder;
       build_load resultCondition (opName ^ "_result") builder
   | C_expr_expr (e1, co, e2) -> (
-      let gen_expr =
-        gen_expr false stack_frame_alloca stack_frame_length funcDef
-      in
-      let lhs_val = gen_expr e1 in
-      let rhs_val = gen_expr e2 in
+      let lhs_val = gen_expr false stackFrame e1 in
+      let rhs_val = gen_expr false stackFrame e2 in
       let open Icmp in
       let build_comp predicate instr_name =
         build_icmp predicate lhs_val rhs_val instr_name builder
@@ -357,11 +333,9 @@ and gen_cond (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef =
       | O_less_eq -> build_comp Sle "less_eq"
       | O_greater_eq -> build_comp Sge "greater_eq"
       | O_not_equal -> build_comp Ne "not_equal")
-  | C_cond_parenthesized c ->
-      gen_cond stack_frame_alloca stack_frame_length funcDef c
+  | C_cond_parenthesized c -> gen_cond stackFrame c
 
-and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
-    =
+and gen_stmt stackFrame stmt =
   (* [extract_ret_stmt (s : Ast.stmt)] calculates whether the statment [s] always
      includes a return statement, and if it is, a ret statement is generated in
      the LLVM IR code so that a type error is caught. If the statement [s]
@@ -434,15 +408,10 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
   in
   match stmt with
   | S_assignment (lv, expr) ->
-      let lv_address =
-        gen_lvalue stack_frame_alloca stack_frame_length funcDef lv
-      in
-      let lv_value =
-        gen_expr false stack_frame_alloca stack_frame_length funcDef expr
-      in
+      let lv_address = gen_lvalue stackFrame lv in
+      let lv_value = gen_expr false stackFrame expr in
       build_store lv_value lv_address builder
-  | S_func_call fc ->
-      gen_funcCall stack_frame_alloca stack_frame_length funcDef fc
+  | S_func_call fc -> gen_funcCall stackFrame fc
   | S_block b -> begin
       match b with
       | Block [] -> build_nop ()
@@ -451,10 +420,7 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
             | [] -> assert false
             | l -> List.(hd (rev l))
           in
-          get_last_elem
-            (List.map
-               (gen_stmt stack_frame_alloca stack_frame_length funcDef)
-               l)
+          get_last_elem (List.map (gen_stmt stackFrame) l)
     end
   | S_if (c, s) ->
       let start_basic_block = insertion_block builder in
@@ -465,14 +431,14 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
       position_at_end start_basic_block builder;
       let cond_val () =
         let zero = const_int bool_type 0 in
-        let ll_c = gen_cond stack_frame_alloca stack_frame_length funcDef c in
+        let ll_c = gen_cond stackFrame c in
         build_icmp Ne zero ll_c "if_then_cond" builder
       in
       ignore
         (build_cond_br (cond_val ()) then_basic_block merge_basic_block builder);
 
       position_at_end then_basic_block builder;
-      ignore (gen_stmt stack_frame_alloca stack_frame_length funcDef s);
+      ignore (gen_stmt stackFrame s);
       let new_then_basic_block = insertion_block builder in
 
       position_at_end new_then_basic_block builder;
@@ -490,22 +456,21 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
 
       let cond_val () =
         let zero = const_int bool_type 0 in
-        let ll_c = gen_cond stack_frame_alloca stack_frame_length funcDef c in
+        let ll_c = gen_cond stackFrame c in
         build_icmp Ne zero ll_c "if_then_else_cond" builder
       in
       position_at_end start_basic_block builder;
       ignore
         (build_cond_br (cond_val ()) then_basic_block else_basic_block builder);
 
-      let gen_stmt = gen_stmt stack_frame_alloca stack_frame_length funcDef in
       position_at_end then_basic_block builder;
-      ignore (gen_stmt s1);
+      ignore (gen_stmt stackFrame s1);
       let new_then_basic_block = insertion_block builder in
       position_at_end new_then_basic_block builder;
       ignore (build_br merge_basic_block builder);
 
       position_at_end else_basic_block builder;
-      ignore (gen_stmt s2);
+      ignore (gen_stmt stackFrame s2);
       let new_else_basic_block = insertion_block builder in
       position_at_end new_else_basic_block builder;
       ignore (build_br merge_basic_block builder);
@@ -520,14 +485,14 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
 
       let cond_val () =
         let zero = const_int bool_type 0 in
-        let ll_c = gen_cond stack_frame_alloca stack_frame_length funcDef c in
+        let ll_c = gen_cond stackFrame c in
         build_icmp Ne zero ll_c "while_cond" builder
       in
       position_at_end start_basic_block builder;
       ignore
         (build_cond_br (cond_val ()) while_basic_block cont_basic_block builder);
       position_at_end while_basic_block builder;
-      ignore (gen_stmt stack_frame_alloca stack_frame_length funcDef s);
+      ignore (gen_stmt stackFrame s);
 
       let new_while_basic_block = insertion_block builder in
       position_at_end new_while_basic_block builder;
@@ -540,9 +505,7 @@ and gen_stmt (stack_frame_alloca : Llvm.llvalue) stack_frame_length funcDef stmt
       match expr_opt with
       | None -> build_ret_void builder
       | Some e ->
-          let ll_expr =
-            gen_expr false stack_frame_alloca stack_frame_length funcDef e
-          in
+          let ll_expr = gen_expr false stackFrame e in
           build_ret ll_expr builder)
   | S_semicolon -> build_nop ()
 
@@ -550,30 +513,32 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
   let name = header.id in
   let args = expand_fpar_def_list header.fpar_def_list in
   Hashtbl.add named_functions (Hashtbl.hash name) args;
-  let ret_type = header.ret_type in
-  let access_link_list =
-    match access_link with Some x -> [ x ] | None -> []
-  in
-
-  let param_types_list = access_link_list @ List.map lltype_of_fparDef args in
-  let param_types_array = Array.of_list param_types_list in
-  let return_type = lltype_of_t_type (Ast.t_type_of_retType ret_type) in
-  let ft = function_type return_type param_types_array in
-  let f =
-    match lookup_function name the_module with
-    | None -> (
-        (* if access_link is None then function is main, so give the name name to llvm for global function *)
-        match access_link with
-        | Some _ -> declare_function name ft the_module
-        | None -> declare_function "main" ft the_module)
-    | Some x ->
-        (* TODO: Check whether this case should or should not be erroneous *)
-        failwith "semantic analysis error: function already defined"
-  in
-  f
+  match lookup_function name the_module with
+  | None ->
+      (* if access_link is None then function is ROOT, so give the name to llvm
+        for global function *)
+      let name = if access_link = None then "ROOT" else name in
+      let ft =
+        let return_type =
+          lltype_of_t_type (Ast.t_type_of_retType header.ret_type)
+        in
+        let param_types_array =
+          let param_types_list =
+            Option.to_list access_link @ List.map lltype_of_fparDef args
+          in
+          Array.of_list param_types_list
+        in
+        function_type return_type param_types_array
+      in
+      declare_function name ft the_module
+  | Some x ->
+      (* TODO: Check whether this case should or should not be erroneous *)
+      failwith "semantic analysis error: function already defined"
 
 and gen_funcDef funcDef =
-  let funcDef_ll = gen_header funcDef.header funcDef.access_link in
+  let funcDef_ll =
+    gen_header funcDef.header (Option.get funcDef.stack_frame).access_link
+  in
   let bb = append_block context ("entry_" ^ funcDef.header.id) funcDef_ll in
   position_at_end bb builder;
   blocks_list := bb :: !blocks_list;
@@ -598,6 +563,7 @@ and gen_funcDef funcDef =
   let args = expand_fpar_def_list funcDef.header.fpar_def_list in
   let args_array = Array.of_list args in
 
+  let params_records = ref [] in
   Array.iteri
     (fun i param ->
       let position =
@@ -627,16 +593,14 @@ and gen_funcDef funcDef =
           | [] -> args_array.(i)
           | list -> args_array.(i - 1)
         in
-        let is_array = ith_param.fpar_type.array_dimensions <> [] in
         let var_name = try List.hd ith_param.id_list with _ -> assert false in
+        let is_ref = ith_param.ref in
+        let is_array = ith_param.fpar_type.array_dimensions <> [] in
         set_value_name var_name position;
-        params_records :=
-          (var_name, i, ith_param.ref, is_array) :: !params_records;
+        params_records := (var_name, i, is_ref, is_array) :: !params_records;
         ignore (build_store param position builder))
     (params funcDef_ll);
   params_records := List.rev !params_records;
-  funcDef.var_records <- !params_records @ funcDef.var_records;
-  funcDef.stack_frame_addr <- Some stack_frame_alloca;
 
   let struct_index = ref (Array.length (params funcDef_ll)) in
   (* iterate functions in dfs order *)
@@ -648,24 +612,23 @@ and gen_funcDef funcDef =
             let position =
               build_struct_gep stack_frame_alloca !struct_index id builder
             in
-            if Types.debugModeCodeGen then
-              Printf.printf "%d %s %!\n" !struct_index id;
-            match v.var_type.array_dimensions with
-            | [] ->
+            let isArray = v.var_type.array_dimensions <> [] in
+            match isArray with
+            | false ->
                 set_value_name id position;
                 incr struct_index
-            | dimList ->
-                let t =
-                  match v.var_type.data_type with
-                  | ConstInt -> int_type
-                  | ConstChar -> char_type
-                in
+            | true ->
+                let dimList = v.var_type.array_dimensions in
                 let array_alloca =
                   let arraySize : Llvm.llvalue =
                     let productOfList =
                       List.fold_left (fun acc d -> acc * d) 1 dimList
                     in
                     const_int int_type productOfList
+                  in
+                  let t =
+                    lltype_of_t_type
+                      (Ast.t_type_of_dataType v.var_type.data_type)
                   in
                   build_array_alloca t arraySize "array_alloca" builder
                 in
@@ -685,11 +648,10 @@ and gen_funcDef funcDef =
   in
   List.iter iterate funcDef.local_def_list;
 
+  current_funcDef := funcDef.header.id :: !current_funcDef;
   let stmt_list = match funcDef.block with Block b -> b in
-  ignore
-    (List.map
-       (gen_stmt stack_frame_alloca stack_frame_length funcDef)
-       stmt_list);
+  ignore (List.map (gen_stmt (Option.get funcDef.stack_frame)) stmt_list);
+  current_funcDef := List.tl !current_funcDef;
 
   if block_terminator @@ insertion_block builder = None then
     ignore (build_ret_void builder);
@@ -698,7 +660,7 @@ and gen_funcDef funcDef =
   if !blocks_list <> [] then
     position_at_end (List.hd !blocks_list) builder
 
-let define_lib_funcs () =
+and define_lib_funcs () =
   let define_lib_func
       ((name : string), (args : Ast.fparDef list), (ret_type : Ast.retType)) =
     let args = expand_fpar_def_list args in
