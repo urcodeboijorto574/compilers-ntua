@@ -516,7 +516,7 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
   match lookup_function name the_module with
   | None ->
       (* if access_link is None then function is ROOT, so give the name to llvm
-        for global function *)
+         for global function *)
       let name = if access_link = None then "ROOT" else name in
       let ft =
         let return_type =
@@ -602,6 +602,7 @@ and gen_funcDef funcDef =
     (params funcDef_ll);
   params_records := List.rev !params_records;
 
+  (* Generation of local definitions *)
   let struct_index = ref (Array.length (params funcDef_ll)) in
   (* iterate functions in dfs order *)
   let rec iterate local_def =
@@ -640,14 +641,12 @@ and gen_funcDef funcDef =
                 in
                 ignore (build_store arrayPtr position builder))
           v.id_list
-    | L_funcDef fd ->
-        if Types.debugModeCodeGen then
-          Printf.printf "func in iterate %s\n%!" fd.header.id;
-        gen_funcDef fd
+    | L_funcDef fd -> gen_funcDef fd
     | L_funcDecl fdl -> failwith "TODO gen_funcDef: iterate (L_funcDecl _)"
   in
   List.iter iterate funcDef.local_def_list;
 
+  (* Generation of block *)
   current_funcDef := funcDef.header.id :: !current_funcDef;
   let stmt_list = match funcDef.block with Block b -> b in
   ignore (List.map (gen_stmt (Option.get funcDef.stack_frame)) stmt_list);
