@@ -11,17 +11,25 @@ exception Unexpected_number_of_parameters
 exception Type_error
 exception Passing_error
 
+(** [funcDefAncestors] is a stack that stores all the ancestors of a funcDef in
+    runtime. *)
+let funcDefAncestors = Stack.create ()
+
 (** [sem_funcDef (fd : Ast.funcDef)] semantically analyses the function
     definition [fd]. After semantically analysing the header, local definitions
     list and the block, it is checked if in the function's block a value of the
     expected type is returned. Returns [unit]. *)
-let rec sem_funcDef = function
+let rec sem_funcDef fd =
+  match fd with
   | { header = h; local_def_list = l; block = b } ->
       let isMainProgram = !current_scope.depth = 0 in
       if isMainProgram then Symbol.add_standard_library ();
-
+      if isMainProgram then Stack.push None funcDefAncestors;
+      fd.parent_func <- Stack.top funcDefAncestors;
       sem_header true h;
+      Stack.push (Some fd) funcDefAncestors;
       sem_localDefList l;
+      ignore (Stack.pop funcDefAncestors);
 
       let overloadedParVarNameOption =
         let duplicate_element lst =

@@ -797,16 +797,6 @@ let define_lib_funcs () =
   List.iter define_lib_func lib_list
 
 and set_stack_frames funcDef =
-  let rec set_func_parents fd =
-    let traverse_dfs child =
-      match child with
-      | L_funcDef c ->
-          c.parent_func <- Some fd;
-          set_func_parents c
-      | _ -> ()
-    in
-    List.iter traverse_dfs fd.local_def_list
-  in
   let set_stack_frame funcDef =
     (* take a func definition and do the following
        - create the stack frame containing the access link, parameters and local
@@ -884,7 +874,6 @@ and set_stack_frames funcDef =
     let stack_frame_records_arr = Array.of_list stack_frame_records in
     struct_set_body stack_frame_ll stack_frame_records_arr false
   in
-  set_func_parents funcDef;
   set_stack_frame funcDef;
   let rec iterate local_def =
     match local_def with
