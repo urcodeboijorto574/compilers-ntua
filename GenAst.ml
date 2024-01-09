@@ -82,8 +82,6 @@ and lltype_of_varDef vd =
   let isArray = vd.var_type.array_dimensions <> [] in
   if isArray then pointer_type result else result
 
-(* [ {ref, [a, b], int}, {noref, [c,d], char} ] -->
-   [ {ref, [a], int}, {ref, [b], int}, {noref, [c], char}, {noref, [d], char} ] *)
 let rec expand_fpar_def_list (def_list : fparDef list) : fparDef list =
   let expand_fpar_def def =
     List.map
@@ -135,91 +133,46 @@ and gen_funcCall stackFrame (fc : Ast.funcCall) =
   build_call callee args_array "" builder
 
 and gen_lvalue stackFrame lv =
-  if Types.debugModeStackFrames then
-    Printf.printf "Generating lvalue '%s'\n%!"
-      (match lv.lv_kind with
-      | L_id id -> id
-      | L_string s -> s
-      | L_comp (lvk, _) -> "<comp>");
   let stack_frame_alloca = Option.get stackFrame.stack_frame_addr in
   let gen_lvalue_address id =
     let rec iterate i stack_frame_alloca stackFrame =
-      if Types.debugModeStackFrames then
-        Printf.printf "searching '%s' with i = %d...\n%!" id i;
-      if i >= stackFrame.stack_frame_length then (
-        if Types.debugModeStackFrames then
-          Printf.printf "nowhere to be found in the current stack frame\n%!";
+      if i >= stackFrame.stack_frame_length then
         match stackFrame.parent_stack_frame with
         | Some sfParent ->
             let access_link =
-              if Types.debugModeStackFrames then
-                Printf.printf "is this the problem?\n%!";
               build_struct_gep
                 (Option.get stackFrame.stack_frame_addr)
                 0 "access_link_ptr" builder
             in
-            if Types.debugModeStackFrames then Printf.printf "no, it isn't\n%!";
             let parentStackFrameAddr =
               build_load access_link "access_link_val" builder
             in
-            if Types.debugModeStackFrames then
-              Printf.printf "and this wasn't as well\n%!";
             iterate 0 parentStackFrameAddr sfParent
-        | None -> failwith "variable not found")
+        | None -> failwith "variable not found"
       else
         let var_name, elem_pos, is_ref, is_array =
           List.nth stackFrame.var_records i
         in
         if var_name = id then begin
-          if Types.debugModeStackFrames then
-            Printf.printf "found '%s' with i = %d!\n%!" var_name i;
           let addr =
             build_struct_gep stack_frame_alloca elem_pos var_name builder
           in
-          if Types.debugModeStackFrames then
-            Printf.printf "calculated address\n%!";
           if is_ref = false then begin
-            if Types.debugModeStackFrames then
-              Printf.printf "build_load is suspicious\n%!";
-            let result =
-              match is_array with
-              | true -> build_load addr (var_name ^ "_address") builder
-              | false -> addr
-            in
-            if Types.debugModeStackFrames then
-              Printf.printf "It wasn't in the end\n%!";
-            result
+            match is_array with
+            | true -> build_load addr (var_name ^ "_address") builder
+            | false -> addr
           end
-          else begin
+          else
             build_load addr (var_name ^ "_address") builder
-          end
         end
-        else (
-          if Types.debugModeStackFrames then
-            Printf.printf
-              "didn't find '%s', searching in the next field with i = %d\n%!" id
-              (i + 1);
-          iterate (i + 1) stack_frame_alloca stackFrame)
+        else
+          iterate (i + 1) stack_frame_alloca stackFrame
     in
     let initialIndex = if stackFrame.parent_stack_frame = None then 0 else 1 in
-
-    (if stackFrame.parent_stack_frame = None then
-       let fst = function id, _, _, _ -> id in
-       if Types.debugModeStackFrames then
-         Printf.printf "var_records: [%s, %s]\n%!"
-           (fst (List.nth stackFrame.var_records 0))
-           (fst (List.nth stackFrame.var_records 1))
-     (* (fst (List.nth stackFrame.var_records 2)) *)
-     (* (fst (List.nth stackFrame.var_records 3)) *));
-
     iterate initialIndex stack_frame_alloca stackFrame
   in
   match lv.lv_kind with
-  | L_id id ->
-      if Types.debugModeStackFrames then Printf.printf "Holla\n%!";
-      let result = gen_lvalue_address id in
-      if Types.debugModeStackFrames then Printf.printf "Adios\n%!";
-      result
+  | L_id id -> gen_lvalue_address id
   | L_string s ->
       let const_str = const_stringz context s in
       let string_var = define_global "string_var" const_str the_module in
@@ -608,22 +561,15 @@ and gen_funcDef funcDef =
   stackFrame.stack_frame_addr <- Some stack_frame_alloca;
 
   (* Generation of local definitions *)
-  if Types.debugModeStackFrames then
-    Printf.printf "Generating local_def_list of '%s'\n%!" funcDef.header.id;
   let struct_index = ref (Array.length (params funcDef_ll)) in
   let rec iterate local_def =
     match local_def with
     | L_varDef v ->
         List.iter
           (fun id ->
-            if Types.debugModeStackFrames then
-              Printf.printf
-                "will get a pointer pointing to %s (struct_index = %d)...%!" id
-                !struct_index;
             let position =
               build_struct_gep stack_frame_alloca !struct_index id builder
             in
-            if Types.debugModeStackFrames then Printf.printf "got it!\n%!";
             let isArray = v.var_type.array_dimensions <> [] in
             match isArray with
             | false ->
@@ -652,27 +598,15 @@ and gen_funcDef funcDef =
                 in
                 ignore (build_store arrayPtr position builder))
           v.id_list
-    | L_funcDef fd ->
-        if Types.debugModeStackFrames then
-          Printf.printf "Generating funcDef of '%s'\n%!" fd.header.id;
-        gen_funcDef fd;
-        if Types.debugModeStackFrames then
-          Printf.printf "Generating funcDef of '%s'...Done!!\n%!" fd.header.id
+    | L_funcDef fd -> gen_funcDef fd
     | L_funcDecl fdl -> failwith "TODO gen_funcDef: iterate (L_funcDecl _)"
   in
   List.iter iterate funcDef.local_def_list;
-  if Types.debugModeStackFrames then
-    Printf.printf "Generating local_def_list of '%s'..Done!\n%!"
-      funcDef.header.id;
 
   (* Generation of block *)
   current_func_id := funcDef.header.id :: !current_func_id;
   let stmt_list = match funcDef.block with Block b -> b in
-  if Types.debugModeStackFrames then
-    Printf.printf "Generating statements of '%s'\n%!" funcDef.header.id;
   ignore (List.map (gen_stmt stackFrame) stmt_list);
-  if Types.debugModeStackFrames then
-    Printf.printf "Generating statements of '%s'...Done!\n%!" funcDef.header.id;
   current_func_id := List.tl !current_func_id;
 
   if block_terminator @@ insertion_block builder = None then
@@ -810,22 +744,18 @@ and set_stack_frames funcDef =
       List.concat
         (List.map expand_var_def (extract_var_defs funcDef.local_def_list))
     in
-    Printf.printf "funcDef '%s' has %d varDefs\n%!" funcDef.header.id
-      (List.length vars_list);
     let stack_frame_type : Llvm.lltype =
       named_struct_type context ("frame_" ^ funcDef.header.id)
     in
-    let result =
-      let stack_frame_records_arr : Llvm.lltype array =
-        let stack_frame_records =
-          let param_types_list = List.map lltype_of_fparDef params_list in
-          let var_types_list = List.map lltype_of_varDef vars_list in
-          Option.to_list access_link_opt @ param_types_list @ var_types_list
-        in
-        Array.of_list stack_frame_records
+    let stack_frame_records_arr : Llvm.lltype array =
+      let stack_frame_records =
+        let param_types_list = List.map lltype_of_fparDef params_list in
+        let var_types_list = List.map lltype_of_varDef vars_list in
+        Option.to_list access_link_opt @ param_types_list @ var_types_list
       in
-      struct_set_body stack_frame_type stack_frame_records_arr false
+      Array.of_list stack_frame_records
     in
+    struct_set_body stack_frame_type stack_frame_records_arr false;
     let stack_frame_length =
       Array.length (struct_element_types stack_frame_type)
     in
@@ -871,13 +801,9 @@ and set_stack_frames funcDef =
              else
                ("access_link", 0, false, false) :: var_par_records);
           stack_frame_length;
-        };
-    result
+        }
   in
-  if Types.debugModeStackFrames then
-    Printf.printf "Setting stack frame of '%s'...%!" funcDef.header.id;
   set_stack_frame ();
-  if Types.debugModeStackFrames then Printf.printf "Done!\n%!";
   List.iter
     (fun ld -> match ld with L_funcDef fd -> set_stack_frames fd | _ -> ())
     funcDef.local_def_list
