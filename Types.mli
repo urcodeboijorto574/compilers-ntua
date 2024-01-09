@@ -11,7 +11,7 @@ type t_type =
 val debugMode : bool
 
 val debugModeCodeGen : bool
-val debugModeStackFrames : bool
+val debugModeI10 : bool
 
 (** [string_of_t_type t] takes a [t : t_type] and returns a string corresponding
     to the type given. Returns [string]. *)
