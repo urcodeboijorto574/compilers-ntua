@@ -43,7 +43,7 @@ let build_nop () =
 let named_values : (string, llvalue) Hashtbl.t = Hashtbl.create 2000
 let named_functions = Hashtbl.create 2000
 let blocks_list = ref []
-let current_funcDef : string list ref = ref []
+let current_func_id : string list ref = ref []
 
 let rec lltype_of_t_type x =
   match x with
@@ -79,7 +79,7 @@ and lltype_of_varDef vd =
   let result =
     lltype_of_t_type (Ast.t_type_of_dataType vd.var_type.data_type)
   in
-  let isArray = vd.var_type.array_dimensions = [] in
+  let isArray = vd.var_type.array_dimensions <> [] in
   if isArray then pointer_type result else result
 
 (* [ {ref, [a, b], int}, {noref, [c,d], char} ] -->
@@ -118,7 +118,7 @@ and gen_funcCall stackFrame (fc : Ast.funcCall) =
   let rev_list = List.rev !res in
   let args_array =
     let first_argument =
-      if fc.id = List.hd !current_funcDef then begin
+      if fc.id = List.hd !current_func_id then begin
         let access_link_ptr =
           build_struct_gep stack_frame_alloca 0 "access_link_ptr" builder
         in
@@ -135,11 +135,12 @@ and gen_funcCall stackFrame (fc : Ast.funcCall) =
   build_call callee args_array "" builder
 
 and gen_lvalue stackFrame lv =
-  Printf.printf "Generating lvalue '%s'\n%!"
-    (match lv.lv_kind with
-    | L_id id -> id
-    | L_string s -> s
-    | L_comp (lvk, _) -> "<comp>");
+  if Types.debugModeStackFrames then
+    Printf.printf "Generating lvalue '%s'\n%!"
+      (match lv.lv_kind with
+      | L_id id -> id
+      | L_string s -> s
+      | L_comp (lvk, _) -> "<comp>");
   let stack_frame_alloca = Option.get stackFrame.stack_frame_addr in
   let stack_frame_length = stackFrame.stack_frame_length in
   let gen_lvalue_address id =
@@ -527,9 +528,6 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
   Hashtbl.add named_functions (Hashtbl.hash name) args;
   match lookup_function name the_module with
   | None ->
-      (* if access_link is None then function is ROOT, so give the name to llvm
-         for global function *)
-      let name = if access_link = None then "ROOT" else name in
       let ft =
         let return_type =
           lltype_of_t_type (Ast.t_type_of_retType header.ret_type)
@@ -549,7 +547,6 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
 
 and gen_funcDef funcDef =
   let stackFrame = Option.get funcDef.stack_frame in
-  Printf.printf "Generating funcDef of '%s'\n%!" funcDef.header.id;
   let funcDef_ll = gen_header funcDef.header stackFrame.access_link in
   let bb = append_block context ("entry_" ^ funcDef.header.id) funcDef_ll in
   position_at_end bb builder;
@@ -588,16 +585,22 @@ and gen_funcDef funcDef =
   stackFrame.stack_frame_addr <- Some stack_frame_alloca;
 
   (* Generation of local definitions *)
+  if Types.debugModeStackFrames then
+    Printf.printf "Generating local_def_list of '%s'\n%!" funcDef.header.id;
   let struct_index = ref (Array.length (params funcDef_ll)) in
-  (* iterate functions in dfs order *)
   let rec iterate local_def =
     match local_def with
     | L_varDef v ->
         List.iter
           (fun id ->
+            if Types.debugModeStackFrames then
+              Printf.printf
+                "will get a pointer pointing to %s (struct_index = %d)...%!" id
+                !struct_index;
             let position =
               build_struct_gep stack_frame_alloca !struct_index id builder
             in
+            if Types.debugModeStackFrames then Printf.printf "got it!\n%!";
             let isArray = v.var_type.array_dimensions <> [] in
             match isArray with
             | false ->
@@ -618,26 +621,36 @@ and gen_funcDef funcDef =
                   in
                   build_array_alloca t arraySize "array_alloca" builder
                 in
-                incr struct_index;
                 set_value_name id position;
+                incr struct_index;
                 let arrayPtr =
                   let zero = const_int int_type 0 in
                   build_gep array_alloca [| zero |] "array_ptr" builder
                 in
                 ignore (build_store arrayPtr position builder))
           v.id_list
-    | L_funcDef fd -> gen_funcDef fd
+    | L_funcDef fd ->
+        if Types.debugModeStackFrames then
+          Printf.printf "Generating funcDef of '%s'\n%!" fd.header.id;
+        gen_funcDef fd;
+        if Types.debugModeStackFrames then
+          Printf.printf "Generating funcDef of '%s'...Done!!\n%!" fd.header.id
     | L_funcDecl fdl -> failwith "TODO gen_funcDef: iterate (L_funcDecl _)"
   in
   List.iter iterate funcDef.local_def_list;
+  if Types.debugModeStackFrames then
+    Printf.printf "Generating local_def_list of '%s'..Done!\n%!"
+      funcDef.header.id;
 
   (* Generation of block *)
-  current_funcDef := funcDef.header.id :: !current_funcDef;
+  current_func_id := funcDef.header.id :: !current_func_id;
   let stmt_list = match funcDef.block with Block b -> b in
-  Printf.printf "wasup\n%!";
+  if Types.debugModeStackFrames then
+    Printf.printf "Generating statements of '%s'\n%!" funcDef.header.id;
   ignore (List.map (gen_stmt stackFrame) stmt_list);
-  Printf.printf "let's go man\n%!";
-  current_funcDef := List.tl !current_funcDef;
+  if Types.debugModeStackFrames then
+    Printf.printf "Generating statements of '%s'...Done!\n%!" funcDef.header.id;
+  current_func_id := List.tl !current_func_id;
 
   if block_terminator @@ insertion_block builder = None then
     ignore (build_ret_void builder);
@@ -767,8 +780,9 @@ and set_stack_frames funcDef =
     in
     let vars_list : Ast.varDef list =
       let rec extract_var_defs = function
+        | [] -> []
         | L_varDef vd :: tail -> vd :: extract_var_defs tail
-        | _ -> []
+        | L_funcDef _ :: tail | L_funcDecl _ :: tail -> extract_var_defs tail
       in
       List.concat
         (List.map expand_var_def (extract_var_defs funcDef.local_def_list))
@@ -824,14 +838,15 @@ and set_stack_frames funcDef =
           stack_frame_type;
           access_link = access_link_opt;
           stack_frame_addr = None;
-          var_records = var_par_records;
+          var_records = ("access_link", 0, false, false) :: var_par_records;
           stack_frame_length;
         };
     result
   in
-  Printf.printf "Setting stack frame of '%s'...%!" funcDef.header.id;
+  if Types.debugModeStackFrames then
+    Printf.printf "Setting stack frame of '%s'...%!" funcDef.header.id;
   set_stack_frame ();
-  Printf.printf "Done!\n%!";
+  if Types.debugModeStackFrames then Printf.printf "Done!\n%!";
   List.iter
     (fun ld -> match ld with L_funcDef fd -> set_stack_frames fd | _ -> ())
     funcDef.local_def_list

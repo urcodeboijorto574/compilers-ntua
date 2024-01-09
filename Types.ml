@@ -8,6 +8,7 @@ type t_type =
 (* DEBUG *)
 let debugMode = false
 let debugModeCodeGen = false
+let debugModeStackFrames = false
 
 let rec string_of_t_type = function
   | T_int -> "integer"
