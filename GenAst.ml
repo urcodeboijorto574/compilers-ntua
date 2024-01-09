@@ -90,8 +90,11 @@ let rec expand_fpar_def_list (def_list : fparDef list) : fparDef list =
   in
   List.concat (List.map expand_fpar_def def_list)
 
-and expand_var_def (vd : Ast.varDef) : Ast.varDef list =
-  List.map (fun id -> { id_list = [ id ]; var_type = vd.var_type }) vd.id_list
+and expand_var_def_list (vdl : Ast.varDef list) : Ast.varDef list =
+  let expand_var_def (vd : Ast.varDef) : Ast.varDef list =
+    List.map (fun id -> { id_list = [ id ]; var_type = vd.var_type }) vd.id_list
+  in
+  List.concat (List.map expand_var_def vdl)
 
 and gen_funcCall stackFrame (fc : Ast.funcCall) =
   let stack_frame_alloca = Option.get stackFrame.stack_frame_addr in
@@ -741,8 +744,7 @@ and set_stack_frames funcDef =
         | L_varDef vd :: tail -> vd :: extract_var_defs tail
         | L_funcDef _ :: tail | L_funcDecl _ :: tail -> extract_var_defs tail
       in
-      List.concat
-        (List.map expand_var_def (extract_var_defs funcDef.local_def_list))
+      expand_var_def_list (extract_var_defs funcDef.local_def_list)
     in
     let stack_frame_type : Llvm.lltype =
       named_struct_type context ("frame_" ^ funcDef.header.id)
