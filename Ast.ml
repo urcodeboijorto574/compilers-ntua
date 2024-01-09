@@ -37,9 +37,9 @@ and stackFrame = {
       2nd field: the position of the record in the stack frame
       3rd field: the variable is reference (only for parameters)
       4th field: the variable is an array *)
-  mutable var_records : (string * int * bool * bool) list;
+  var_records : (string * int * bool * bool) list;
   (* [stack_frame_length] is the numbers of fields that the struct has *)
-  mutable stack_frame_length : int;
+  stack_frame_length : int;
 }
 
 and funcDef = {

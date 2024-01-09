@@ -608,9 +608,7 @@ and sem_funcCall fc =
           | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
         in
         if rt = None then
-          fc.ret_type <- Some (Types.t_type_of_t_func functionEntry.return_type)
-        else (* This case won't ever be ran twice. *)
-          Printf.printf "The impossible happened!\n";
+          fc.ret_type <- Some (Types.t_type_of_t_func functionEntry.return_type);
 
         if List.compare_lengths el functionEntry.parameters_list <> 0 then
           raise Unexpected_number_of_parameters;
