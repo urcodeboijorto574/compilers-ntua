@@ -96,68 +96,57 @@ and expand_var_def_list (vdl : Ast.varDef list) : Ast.varDef list =
   List.concat (List.map expand_var_def vdl)
 
 and gen_funcCall stackFrame funcDef (fc : Ast.funcCall) =
-  let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
-  let args_list = fc.expr_list in
-  let callee : Llvm.llvalue =
-    match lookup_function fc.id the_module with
-    | Some callee -> callee
-    | None -> raise (Error "unknown function referenced")
-  in
-  let i = ref 0 in
-  let res = ref [] in
-  List.iter
-    (fun fpar_def ->
-      let ith_elem = List.nth args_list !i in
-      res := gen_expr fpar_def.ref stackFrame funcDef ith_elem :: !res;
-      incr i)
-    fpar_def_list;
-  let rev_list = List.rev !res in
-  let args_array =
-    let first_argument =
-      let llvalueOpt_of_parent_stack_frame parentStackFrame =
-        let access_link_ptr =
-          build_struct_gep
-            (Option.get parentStackFrame.stack_frame_addr)
-            0 "access_link_ptr_ptr" builder
-        in
-        Some (build_load access_link_ptr "access_link_ptr" builder)
+  let callee : Llvm.llvalue = Option.get (lookup_function fc.id the_module) in
+  let args_array : Llvm.llvalue array =
+    let args : Llvm.llvalue list =
+      let rec gen_args fparDefList exprList =
+        let gen_arg fpd e = gen_expr fpd.ref stackFrame funcDef e in
+        match (fparDefList, exprList) with
+        | [], [] -> []
+        | [], _ | _, [] -> assert false
+        | fpd :: fpdTail, expr :: exprTail ->
+            gen_arg fpd expr :: gen_args fpdTail exprTail
       in
+      let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
+      gen_args fpar_def_list fc.expr_list
+    in
+    let result_access_link : Llvm.llvalue option =
       if List.mem fc.id lib_function_names then
         None
       else
-        let parentStackFrameOpt : Ast.stackFrame option =
-          (* [get_callee_funcDef fd] takes a [fd] and searches for the function
-              definition of the func call either from the local definitions of
-              the [fd] or checks if the argument is the result.
-              Returns [Ast.funcDef option]. *)
-          let rec get_callee_funcDef (funcDef : Ast.funcDef) :
-              Ast.funcDef option =
-            let rec helper : Ast.localDef list -> Ast.funcDef option = function
-              | [] -> None
-              | L_varDef _ :: tail -> helper tail
-              | L_funcDecl _ :: tail -> failwith "TODO"
-              | L_funcDef fd :: tail ->
-                  if funcDef = fd then Some fd else helper tail
-            in
-            match helper funcDef.local_def_list with
-            | None -> (
-                if funcDef.header.id = fc.id then
-                  Some funcDef
-                else
-                  try get_callee_funcDef (Option.get funcDef.parent_func)
-                  with _ -> failwith "it broke here")
-            | res -> res
+        let rec get_parent_calle_stack_frame funcDefSource sourceStackFrame
+            funcDef : Llvm.llvalue =
+          (* assert sourceStackFrame = stack_frame_bar; *)
+          let resultOpt =
+            List.find_map
+              (fun ld ->
+                match ld with
+                | L_varDef _ -> None
+                | L_funcDecl (FuncDecl_Header h) -> failwith "TODO"
+                | L_funcDef fd -> if fc.id = fd.header.id then Some fd else None)
+              funcDef.local_def_list
           in
-          match get_callee_funcDef funcDef with
-          | Some fd ->
-              Option.map (fun fd -> Option.get fd.stack_frame) fd.parent_func
-          | None -> None
+          if resultOpt <> None then
+            sourceStackFrame
+          else
+            let parent_stack_frame =
+              let parent_stack_frame_ptr =
+                build_struct_gep sourceStackFrame 0 "stack_frame_current"
+                  builder
+              in
+              build_load parent_stack_frame_ptr
+                ("stack_frame_parent" ^ "")
+                builder
+            in
+            get_parent_calle_stack_frame (Some funcDef) parent_stack_frame
+              (Option.get funcDef.parent_func)
         in
-        match parentStackFrameOpt with
-        | Some parent_sf -> llvalueOpt_of_parent_stack_frame parent_sf
-        | None -> failwith "undefined function"
+        Some
+          (get_parent_calle_stack_frame None
+             (Option.get stackFrame.stack_frame_addr)
+             funcDef)
     in
-    Array.of_list (Option.to_list first_argument @ rev_list)
+    Array.of_list (Option.to_list result_access_link @ args)
   in
   build_call callee args_array
     (if Option.get fc.ret_type <> T_none then fc.id ^ "_result" else "")
