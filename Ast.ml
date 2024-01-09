@@ -27,15 +27,19 @@ and compOperator =
 and stackFrame = {
   parent_stack_frame : stackFrame option;
   stack_frame_type : Llvm.lltype;
+  (* [access_link] is a pointer lltype that points to the stack frame of its
+     parents' stack frame type *)
   access_link : Llvm.lltype option;
-  stack_frame_addr : Llvm.llvalue;
-  (* [var_records] is a list that contains a tuple with 4 fields:
+  (* [stack_frame_addr] is the allocated memory for the stack frame *)
+  mutable stack_frame_addr : Llvm.llvalue option;
+  (* [var_records] is a list of tuples with 4 fields each:
       1st field: the name of the variable
       2nd field: the position of the record in the stack frame
       3rd field: the variable is reference (only for parameters)
       4th field: the variable is an array *)
-  var_records : (string * int * bool * bool) list;
-  stack_frame_length : int;
+  mutable var_records : (string * int * bool * bool) list;
+  (* [stack_frame_length] is the numbers of fields that the struct has *)
+  mutable stack_frame_length : int;
 }
 
 and funcDef = {

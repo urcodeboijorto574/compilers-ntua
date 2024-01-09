@@ -92,8 +92,11 @@ let rec expand_fpar_def_list (def_list : fparDef list) : fparDef list =
   in
   List.concat (List.map expand_fpar_def def_list)
 
+and expand_var_def (vd : Ast.varDef) : Ast.varDef list =
+  List.map (fun id -> { id_list = [ id ]; var_type = vd.var_type }) vd.id_list
+
 and gen_funcCall stackFrame (fc : Ast.funcCall) =
-  let stack_frame_alloca = stackFrame.stack_frame_addr in
+  let stack_frame_alloca = Option.get stackFrame.stack_frame_addr in
   let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
   let callee = fc.id in
   let args_list = fc.expr_list in
@@ -132,23 +135,33 @@ and gen_funcCall stackFrame (fc : Ast.funcCall) =
   build_call callee args_array "" builder
 
 and gen_lvalue stackFrame lv =
-  let stack_frame_alloca = stackFrame.stack_frame_addr in
+  Printf.printf "Generating lvalue '%s'\n%!"
+    (match lv.lv_kind with
+    | L_id id -> id
+    | L_string s -> s
+    | L_comp (lvk, _) -> "<comp>");
+  let stack_frame_alloca = Option.get stackFrame.stack_frame_addr in
   let stack_frame_length = stackFrame.stack_frame_length in
   let gen_lvalue_address id =
     let rec iterate i stack_frame_addr stackFrame =
-      let tuple = List.nth stackFrame.var_records i in
-      let var_name = match tuple with v, _, _, _ -> v in
-      let elem_pos = match tuple with _, p, _, _ -> p in
-      let is_ref = match tuple with _, _, ref, _ -> ref in
-      let is_array = match tuple with _, _, _, array -> array in
+      let var_name, elem_pos, is_ref, is_array =
+        List.nth stackFrame.var_records i
+      in
       if var_name = id then begin
+        Printf.printf "found '%s' with i = %d!\n%!" var_name i;
         let addr =
           build_struct_gep stack_frame_addr elem_pos var_name builder
         in
+        Printf.printf "calculated address\n%!";
         if is_ref = false then begin
-          match is_array with
-          | true -> build_load addr (var_name ^ "_address") builder
-          | false -> addr
+          Printf.printf "build_load is suspicious\n%!";
+          let result =
+            match is_array with
+            | true -> build_load addr (var_name ^ "_address") builder
+            | false -> addr
+          in
+          Printf.printf "It wasn't in the end\n%!";
+          result
         end
         else begin
           build_load addr (var_name ^ "_address") builder
@@ -168,10 +181,21 @@ and gen_lvalue stackFrame lv =
             iterate 0 the_access_link sfParent
         | None -> failwith "fail variable not found"
     in
+    (if stackFrame.parent_stack_frame <> None then
+       let fst = function id, _, _, _ -> id in
+       Printf.printf "var_records: [%s, %s, %s]\n%!"
+         (fst (List.nth stackFrame.var_records 0))
+         (fst (List.nth stackFrame.var_records 1))
+         (fst (List.nth stackFrame.var_records 2))
+     (* (fst (List.nth stackFrame.var_records 3)) *));
     iterate 0 stack_frame_alloca stackFrame
   in
   match lv.lv_kind with
-  | L_id id -> gen_lvalue_address id
+  | L_id id ->
+      Printf.printf "Holla\n%!";
+      let result = gen_lvalue_address id in
+      Printf.printf "Adios\n%!";
+      result
   | L_string s ->
       let const_str = const_stringz context s in
       let string_var = define_global "string_var" const_str the_module in
@@ -192,19 +216,7 @@ and gen_lvalue stackFrame lv =
           let rec get_dimensions : Types.t_type -> int list = function
             | T_func _ | T_none -> assert false
             | T_int | T_char -> []
-            | T_array (typ, size) ->
-                if Types.debugModeCodeGen then begin
-                  let name =
-                    let rec get_name = function
-                      | L_id i -> i
-                      | L_string s -> s
-                      | L_comp (lvk, _) -> get_name lvk
-                    in
-                    get_name lv.lv_kind
-                  in
-                  Printf.printf "a dimension of %s is %d\n" name size
-                end;
-                size :: get_dimensions typ
+            | T_array (typ, size) -> size :: get_dimensions typ
           in
           let dimensionsList : int list =
             let arrayType = Option.get (Option.get lv.lv_type).array_type in
@@ -536,71 +548,44 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
       failwith "semantic analysis error: function already defined"
 
 and gen_funcDef funcDef =
-  let funcDef_ll =
-    gen_header funcDef.header (Option.get funcDef.stack_frame).access_link
-  in
+  let stackFrame = Option.get funcDef.stack_frame in
+  Printf.printf "Generating funcDef of '%s'\n%!" funcDef.header.id;
+  let funcDef_ll = gen_header funcDef.header stackFrame.access_link in
   let bb = append_block context ("entry_" ^ funcDef.header.id) funcDef_ll in
   position_at_end bb builder;
   blocks_list := bb :: !blocks_list;
-  let params_records = ref [] in
-  let stack_frame_type =
-    match funcDef.stack_frame with
-    | Some sf -> sf
-    | None -> failwith "Fail. Stack frame for function not set."
+  let stack_frame_type = stackFrame.stack_frame_type in
+  let stack_frame_length =
+    Array.length (struct_element_types stack_frame_type)
   in
-  let frame_array = struct_element_types stack_frame_type in
-  let stack_frame_length = Array.length frame_array in
-  funcDef.stack_frame_length <- stack_frame_length;
-  let access_link_list =
-    match funcDef.access_link with Some al -> [ al ] | None -> []
-  in
+  stackFrame.stack_frame_length <- stack_frame_length;
   let stack_frame_alloca =
-    let stack_frame_name =
-      match access_link_list with [] -> "main" | list -> funcDef.header.id
-    in
-    build_alloca stack_frame_type ("stack_frame_" ^ stack_frame_name) builder
+    build_alloca stack_frame_type ("stack_frame_" ^ funcDef.header.id) builder
   in
-  let args = expand_fpar_def_list funcDef.header.fpar_def_list in
-  let args_array = Array.of_list args in
+  let args_array =
+    Array.of_list (expand_fpar_def_list funcDef.header.fpar_def_list)
+  in
 
-  let params_records = ref [] in
+  (* Generation of fparDefs *)
   Array.iteri
     (fun i param ->
       let position =
-        build_struct_gep stack_frame_alloca i "stack_frame elem" builder
+        build_struct_gep stack_frame_alloca i "stack_frame_elem" builder
       in
-      (* i = 0 corresponds to the access link*)
-      if i = 0 then (
-        match access_link_list with
-        (* funcion is main *)
-        | [] ->
-            let ith_param = args_array.(i) in
-            let var_name =
-              try List.hd ith_param.id_list with _ -> assert false
-            in
-            set_value_name var_name position;
-            params_records :=
-              (var_name, i, ith_param.ref, false) :: !params_records;
-            ignore (build_store param position builder)
-        | list ->
-            set_value_name "access_link" position;
-            params_records :=
-              ("access_link", i, false, false) :: !params_records;
-            ignore (build_store param position builder))
+      let isRootFunction = stackFrame.access_link = None in
+      let isAccessLink = (not isRootFunction) && i = 0 in
+      if isAccessLink then (
+        let accessLink = param in
+        set_value_name "access_link" position;
+        ignore (build_store accessLink position builder))
       else
-        let ith_param =
-          match access_link_list with
-          | [] -> args_array.(i)
-          | list -> args_array.(i - 1)
-        in
+        let ith_param = args_array.(if isRootFunction then i else i - 1) in
         let var_name = try List.hd ith_param.id_list with _ -> assert false in
-        let is_ref = ith_param.ref in
-        let is_array = ith_param.fpar_type.array_dimensions <> [] in
         set_value_name var_name position;
-        params_records := (var_name, i, is_ref, is_array) :: !params_records;
         ignore (build_store param position builder))
     (params funcDef_ll);
-  params_records := List.rev !params_records;
+
+  stackFrame.stack_frame_addr <- Some stack_frame_alloca;
 
   (* Generation of local definitions *)
   let struct_index = ref (Array.length (params funcDef_ll)) in
@@ -649,7 +634,9 @@ and gen_funcDef funcDef =
   (* Generation of block *)
   current_funcDef := funcDef.header.id :: !current_funcDef;
   let stmt_list = match funcDef.block with Block b -> b in
-  ignore (List.map (gen_stmt (Option.get funcDef.stack_frame)) stmt_list);
+  Printf.printf "wasup\n%!";
+  ignore (List.map (gen_stmt stackFrame) stmt_list);
+  Printf.printf "let's go man\n%!";
   current_funcDef := List.tl !current_funcDef;
 
   if block_terminator @@ insertion_block builder = None then
@@ -765,94 +752,89 @@ and define_lib_funcs () =
   List.iter define_lib_func lib_list
 
 and set_stack_frames funcDef =
-  let set_stack_frame funcDef =
-    (* take a func definition and do the following
-       - create the stack frame containing the access link, parameters and local
-         variables *)
-    (* create the stack frame in field stack_frame for funcDef*)
-    let stack_frame_ll =
-      let frame_name =
-        match funcDef.parent_func with
-        | Some p -> funcDef.header.id
-        | None -> "main"
+  let set_stack_frame () =
+    let parent_stack_frame =
+      Option.map (fun fd -> Option.get fd.stack_frame) funcDef.parent_func
+    in
+    let access_link_opt : Llvm.lltype option =
+      Option.map
+        (fun parent_fd ->
+          pointer_type (Option.get parent_stack_frame).stack_frame_type)
+        funcDef.parent_func
+    in
+    let params_list : Ast.fparDef list =
+      expand_fpar_def_list funcDef.header.fpar_def_list
+    in
+    let vars_list : Ast.varDef list =
+      let rec extract_var_defs = function
+        | L_varDef vd :: tail -> vd :: extract_var_defs tail
+        | _ -> []
       in
-      named_struct_type context ("frame_" ^ frame_name)
+      List.concat
+        (List.map expand_var_def (extract_var_defs funcDef.local_def_list))
     in
-    funcDef.stack_frame <- Some stack_frame_ll;
-    let access_link =
-      match funcDef.parent_func with
-      | Some p -> (
-          let parent_stack_frame = p.stack_frame in
-          match parent_stack_frame with
-          | Some x ->
-              let pointer = pointer_type x in
-              funcDef.access_link <- Some pointer;
-              [ pointer_type x ]
-          | None -> [])
-      | None -> []
+    let stack_frame_type : Llvm.lltype =
+      named_struct_type context ("frame_" ^ funcDef.header.id)
     in
-
-    let params_records = ref [] in
-    let params_list = expand_fpar_def_list funcDef.header.fpar_def_list in
-    let param_types_list = List.map lltype_of_fparDef params_list in
-    (* gather local var definitions in a list for funcDef *)
-    let params_length =
-      match funcDef.parent_func with
-      | Some _ -> List.length params_list + 1
-      | None -> List.length params_list
-    in
-
-    let index = ref params_length in
-    let vars_array = Array.of_list funcDef.local_def_list in
-
-    Array.iteri
-      (fun i var ->
-        match var with
-        | L_varDef v ->
-            List.iter
-              (fun id ->
-                let is_array = v.var_type.array_dimensions <> [] in
-                params_records :=
-                  (id, !index, false, is_array) :: !params_records;
-                incr index)
-              v.id_list
-        | _ -> ())
-      vars_array;
-    params_records := List.rev !params_records;
-    funcDef.var_records <- funcDef.var_records @ !params_records;
-
-    let var_types_list =
-      let rec helper ld_list acc =
-        match ld_list with
-        | [] -> acc
-        | hd :: tail -> (
-            match hd with
-            | L_varDef vd ->
-                let vd_type =
-                  lltype_of_t_type (t_type_of_varType vd.var_type)
-                in
-                let list_types = List.map (fun _ -> vd_type) vd.id_list in
-                helper tail (acc @ list_types)
-            | _ -> helper tail acc)
+    let result =
+      let stack_frame_records_arr : Llvm.lltype array =
+        let stack_frame_records =
+          let param_types_list = List.map lltype_of_fparDef params_list in
+          let var_types_list = List.map lltype_of_varDef vars_list in
+          Option.to_list access_link_opt @ param_types_list @ var_types_list
+        in
+        Array.of_list stack_frame_records
       in
-      helper funcDef.local_def_list []
+      struct_set_body stack_frame_type stack_frame_records_arr false
     in
-
-    let stack_frame_records = access_link @ param_types_list @ var_types_list in
-    let stack_frame_records_arr = Array.of_list stack_frame_records in
-    struct_set_body stack_frame_ll stack_frame_records_arr false
+    let stack_frame_length =
+      Array.length (struct_element_types stack_frame_type)
+    in
+    let var_par_records =
+      let par_records =
+        let rec par_records_of_fparDefs index = function
+          | [] -> []
+          | (fpd : Ast.fparDef) :: tail ->
+              let id = List.hd fpd.id_list in
+              let isRef = fpd.ref in
+              let isArray = fpd.fpar_type.array_dimensions <> [] in
+              (id, index, isRef, isArray)
+              :: par_records_of_fparDefs (index + 1) tail
+        in
+        par_records_of_fparDefs stack_frame_length params_list
+      in
+      let var_records =
+        let initial_index = stack_frame_length + List.length par_records in
+        let rec var_records_of_varDefs index = function
+          | [] -> []
+          | vd :: tail ->
+              let id = List.hd vd.id_list in
+              let isArray = vd.var_type.array_dimensions <> [] in
+              (id, index, false, isArray)
+              :: var_records_of_varDefs (index + 1) tail
+        in
+        var_records_of_varDefs initial_index vars_list
+      in
+      par_records @ var_records
+    in
+    funcDef.stack_frame <-
+      Some
+        {
+          parent_stack_frame;
+          stack_frame_type;
+          access_link = access_link_opt;
+          stack_frame_addr = None;
+          var_records = var_par_records;
+          stack_frame_length;
+        };
+    result
   in
-  set_stack_frame funcDef;
-  let rec iterate local_def =
-    match local_def with
-    | L_funcDef fd ->
-        if Types.debugModeCodeGen then
-          Printf.printf "func in set %s\n%!" fd.header.id;
-        set_stack_frame fd;
-        List.iter iterate fd.local_def_list
-    | _ -> ()
-  in
-  List.iter iterate funcDef.local_def_list
+  Printf.printf "Setting stack frame of '%s'...%!" funcDef.header.id;
+  set_stack_frame ();
+  Printf.printf "Done!\n%!";
+  List.iter
+    (fun ld -> match ld with L_funcDef fd -> set_stack_frames fd | _ -> ())
+    funcDef.local_def_list
 
 let add_opts pm =
   let opts =
