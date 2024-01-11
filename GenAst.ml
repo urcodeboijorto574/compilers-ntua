@@ -517,6 +517,32 @@ and gen_stmt funcDef stmt =
           build_ret ll_expr builder)
   | S_semicolon -> build_nop ()
 
+and gen_varDef sf_alloca struct_index v =
+  let position =
+    build_struct_gep sf_alloca struct_index (List.hd v.id_list) builder
+  in
+  let isArray = v.var_type.array_dimensions <> [] in
+  match isArray with
+  | false -> set_value_name (List.hd v.id_list) position
+  | true ->
+      let dimList = v.var_type.array_dimensions in
+      let array_alloca =
+        let arraySize : Llvm.llvalue =
+          let productOfList = List.fold_left (fun acc d -> acc * d) 1 dimList in
+          const_int int_type productOfList
+        in
+        let t =
+          lltype_of_t_type (Ast.t_type_of_dataType v.var_type.data_type)
+        in
+        build_array_alloca t arraySize "array_alloca" builder
+      in
+      set_value_name (List.hd v.id_list) position;
+      let arrayPtr =
+        let zero = const_int int_type 0 in
+        build_gep array_alloca [| zero |] "array_ptr" builder
+      in
+      ignore (build_store arrayPtr position builder)
+
 and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
   let name = header.id in
   let args = expand_fpar_def_list header.fpar_def_list in
@@ -582,39 +608,11 @@ and gen_funcDef funcDef =
   let rec iterate local_def =
     match local_def with
     | L_varDef v ->
-        List.iter
-          (fun id ->
-            let position =
-              build_struct_gep stack_frame_alloca !struct_index id builder
-            in
-            let isArray = v.var_type.array_dimensions <> [] in
-            match isArray with
-            | false ->
-                set_value_name id position;
-                incr struct_index
-            | true ->
-                let dimList = v.var_type.array_dimensions in
-                let array_alloca =
-                  let arraySize : Llvm.llvalue =
-                    let productOfList =
-                      List.fold_left (fun acc d -> acc * d) 1 dimList
-                    in
-                    const_int int_type productOfList
-                  in
-                  let t =
-                    lltype_of_t_type
-                      (Ast.t_type_of_dataType v.var_type.data_type)
-                  in
-                  build_array_alloca t arraySize "array_alloca" builder
-                in
-                set_value_name id position;
-                incr struct_index;
-                let arrayPtr =
-                  let zero = const_int int_type 0 in
-                  build_gep array_alloca [| zero |] "array_ptr" builder
-                in
-                ignore (build_store arrayPtr position builder))
-          v.id_list
+        let varDefList = expand_var_def_list [ v ] in
+        Array.iteri
+          (fun i v -> gen_varDef stack_frame_alloca (i + !struct_index) v)
+          (Array.of_list varDefList);
+        struct_index := !struct_index + List.length varDefList
     | L_funcDef fd -> gen_funcDef fd
     | L_funcDecl fdecl ->
         if not fdecl.is_redundant then
