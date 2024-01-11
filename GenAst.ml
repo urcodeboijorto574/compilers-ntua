@@ -660,69 +660,68 @@ and define_lib_funcs () =
       (params f)
   in
 
-  (* writeInteger (n : int) : nothing *)
-  let writeInteger_fp_type = newFparType (ConstInt, []) in
-  let writeInteger_fp_def_list =
-    [ newFparDef (false, [ "x" ], writeInteger_fp_type) ]
-  and writeInteger_f_rtype = Nothing in
-
-  (* writeChar (c : char) : nothing *)
-  let writeChar_fp_type = newFparType (ConstChar, []) in
-  let writeChar_fp_def_list = [ newFparDef (false, [ "x" ], writeChar_fp_type) ]
-  and writeChar_f_rtype = Nothing in
-
-  (* writeString (s char[]) : nothing *)
-  let writeString_fp_def_list =
-    [ newFparDef (true, [ "s" ], newFparType (ConstChar, [ -1 ])) ]
-  and writeString_f_rtype = Nothing in
-
-  (* readInteger () : int *)
-  let readInteger_fp_def_list = []
-  and readInteger_f_rtype = RetDataType ConstInt in
-
-  (* readChar () : char *)
-  let readChar_fp_def_list = []
-  and readChar_f_rtype = RetDataType ConstChar in
-
-  (* readString (n : int; ref s : char[]) : nothing *)
-  let readString_fp_def_list =
-    [
-      newFparDef (false, [ "n" ], newFparType (ConstInt, []));
-      newFparDef (true, [ "s" ], newFparType (ConstChar, [ -1 ]));
-    ]
-  and readString_f_rtype = Nothing in
-
-  (* ascii (c : char) : int *)
-  let ascii_fp_def_list =
-    [ newFparDef (false, [ "c" ], newFparType (ConstChar, [])) ]
-  and ascii_f_rtype = RetDataType ConstInt in
-
-  (* chr (n : int) : char *)
-  let chr_fp_def_list =
-    [ newFparDef (false, [ "n" ], newFparType (ConstInt, [])) ]
-  and chr_f_rtype = RetDataType ConstChar in
-
-  (* strlen (ref s : char[]) : int *)
-  let strlen_fp_def_list =
-    [ newFparDef (true, [ "s" ], newFparType (ConstChar, [ -1 ])) ]
-  and strlen_f_rtype = RetDataType ConstInt in
-
-  (* strcmp (ref s1, s2 : char[]) : int *)
-  let strcmp_fp_def_list =
-    [ newFparDef (true, [ "s1"; "s2" ], newFparType (ConstChar, [ -1 ])) ]
-  and strcmp_f_rtype = RetDataType ConstInt in
-
-  (* strcpy (ref trg, src : char[]) : nothing *)
-  let strcpy_fp_def_list =
-    [ newFparDef (true, [ "trg"; "src" ], newFparType (ConstChar, [ -1 ])) ]
-  and strcpy_f_rtype = Nothing in
-
-  (* strcat (ref trg, src : char[]) : nothing *)
-  let strcat_fp_def_list =
-    [ newFparDef (true, [ "trg"; "src" ], newFparType (ConstChar, [ -1 ])) ]
-  and strcat_f_rtype = Nothing in
-
   let lib_list =
+    (* writeInteger (n : int) : nothing *)
+    let writeInteger_fp_def_list =
+      [ newFparDef (false, [ "x" ], newFparType (ConstInt, [])) ]
+    and writeInteger_f_rtype = Nothing in
+
+    (* writeChar (c : char) : nothing *)
+    let writeChar_fp_def_list =
+      [ newFparDef (false, [ "x" ], newFparType (ConstChar, [])) ]
+    and writeChar_f_rtype = Nothing in
+
+    (* writeString (s char[]) : nothing *)
+    let writeString_fp_def_list =
+      [ newFparDef (true, [ "s" ], newFparType (ConstChar, [ -1 ])) ]
+    and writeString_f_rtype = Nothing in
+
+    (* readInteger () : int *)
+    let readInteger_fp_def_list = []
+    and readInteger_f_rtype = RetDataType ConstInt in
+
+    (* readChar () : char *)
+    let readChar_fp_def_list = []
+    and readChar_f_rtype = RetDataType ConstChar in
+
+    (* readString (n : int; ref s : char[]) : nothing *)
+    let readString_fp_def_list =
+      [
+        newFparDef (false, [ "n" ], newFparType (ConstInt, []));
+        newFparDef (true, [ "s" ], newFparType (ConstChar, [ -1 ]));
+      ]
+    and readString_f_rtype = Nothing in
+
+    (* ascii (c : char) : int *)
+    let ascii_fp_def_list =
+      [ newFparDef (false, [ "c" ], newFparType (ConstChar, [])) ]
+    and ascii_f_rtype = RetDataType ConstInt in
+
+    (* chr (n : int) : char *)
+    let chr_fp_def_list =
+      [ newFparDef (false, [ "n" ], newFparType (ConstInt, [])) ]
+    and chr_f_rtype = RetDataType ConstChar in
+
+    (* strlen (ref s : char[]) : int *)
+    let strlen_fp_def_list =
+      [ newFparDef (true, [ "s" ], newFparType (ConstChar, [ -1 ])) ]
+    and strlen_f_rtype = RetDataType ConstInt in
+
+    (* strcmp (ref s1, s2 : char[]) : int *)
+    let strcmp_fp_def_list =
+      [ newFparDef (true, [ "s1"; "s2" ], newFparType (ConstChar, [ -1 ])) ]
+    and strcmp_f_rtype = RetDataType ConstInt in
+
+    (* strcpy (ref trg, src : char[]) : nothing *)
+    let strcpy_fp_def_list =
+      [ newFparDef (true, [ "trg"; "src" ], newFparType (ConstChar, [ -1 ])) ]
+    and strcpy_f_rtype = Nothing in
+
+    (* strcat (ref trg, src : char[]) : nothing *)
+    let strcat_fp_def_list =
+      [ newFparDef (true, [ "trg"; "src" ], newFparType (ConstChar, [ -1 ])) ]
+    and strcat_f_rtype = Nothing in
+
     [
       ("writeInteger", writeInteger_fp_def_list, writeInteger_f_rtype);
       ("writeChar", writeChar_fp_def_list, writeChar_f_rtype);
