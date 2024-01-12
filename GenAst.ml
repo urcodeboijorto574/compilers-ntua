@@ -95,7 +95,7 @@ and expand_var_def_list (vdl : Ast.varDef list) : Ast.varDef list =
   in
   List.concat (List.map expand_var_def vdl)
 
-and gen_funcCall funcDef (fc : Ast.funcCall) =
+let rec gen_funcCall funcDef (fc : Ast.funcCall) =
   let callee : Llvm.llvalue = Option.get (lookup_function fc.id the_module) in
   let args_array : Llvm.llvalue array =
     let args : Llvm.llvalue list =
@@ -543,6 +543,24 @@ and gen_varDef sf_alloca struct_index v =
       in
       ignore (build_store arrayPtr position builder)
 
+and gen_param funcDef (args_array : Ast.fparDef array) index param =
+  let position =
+    let stackFrameAlloca =
+      Option.get (Option.get funcDef.stack_frame).stack_frame_addr
+    in
+    build_struct_gep stackFrameAlloca index "stack_frame_elem" builder
+  in
+  let isRootFunction = funcDef.parent_func = None in
+  let isAccessLink = (not isRootFunction) && index = 0 in
+  if isAccessLink then (
+    set_value_name "access_link" position;
+    ignore (build_store param position builder))
+  else
+    let ith_param = args_array.(if isRootFunction then index else index - 1) in
+    let var_name = try List.hd ith_param.id_list with _ -> assert false in
+    set_value_name var_name position;
+    ignore (build_store param position builder)
+
 and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
   let name = header.id in
   let args = expand_fpar_def_list header.fpar_def_list in
@@ -571,37 +589,19 @@ and gen_funcDef funcDef =
   let bb = append_block context ("entry_" ^ funcDef.header.id) funcDef_ll in
   position_at_end bb builder;
   blocks_list := bb :: !blocks_list;
-  let stack_frame_type = stackFrame.stack_frame_type in
-  let stack_frame_alloca =
+  let stackFrameAlloca =
     let name =
       if funcDef.parent_func = None then "main" else funcDef.header.id
     in
-    build_alloca stack_frame_type ("stack_frame_" ^ name) builder
+    build_alloca stackFrame.stack_frame_type ("stack_frame_" ^ name) builder
   in
+  stackFrame.stack_frame_addr <- Some stackFrameAlloca;
   let args_array =
     Array.of_list (expand_fpar_def_list funcDef.header.fpar_def_list)
   in
 
-  (* Generation of fparDefs *)
-  Array.iteri
-    (fun i param ->
-      let position =
-        build_struct_gep stack_frame_alloca i "stack_frame_elem" builder
-      in
-      let isRootFunction = funcDef.parent_func = None in
-      let isAccessLink = (not isRootFunction) && i = 0 in
-      if isAccessLink then (
-        let accessLink = param in
-        set_value_name "access_link" position;
-        ignore (build_store accessLink position builder))
-      else
-        let ith_param = args_array.(if isRootFunction then i else i - 1) in
-        let var_name = try List.hd ith_param.id_list with _ -> assert false in
-        set_value_name var_name position;
-        ignore (build_store param position builder))
-    (params funcDef_ll);
-
-  stackFrame.stack_frame_addr <- Some stack_frame_alloca;
+  (* Generation of parameters *)
+  Array.iteri (gen_param funcDef args_array) (params funcDef_ll);
 
   (* Generation of local definitions *)
   let struct_index = ref (Array.length (params funcDef_ll)) in
@@ -610,7 +610,7 @@ and gen_funcDef funcDef =
     | L_varDef v ->
         let varDefList = expand_var_def_list [ v ] in
         Array.iteri
-          (fun i v -> gen_varDef stack_frame_alloca (i + !struct_index) v)
+          (fun i vd -> gen_varDef stackFrameAlloca (i + !struct_index) vd)
           (Array.of_list varDefList);
         struct_index := !struct_index + List.length varDefList
     | L_funcDef fd -> gen_funcDef fd
