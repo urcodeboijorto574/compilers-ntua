@@ -44,7 +44,8 @@ let named_values : (string, llvalue) Hashtbl.t = Hashtbl.create 2000
 let named_functions = Hashtbl.create 2000
 let blocks_list = ref []
 
-let rec lltype_of_t_type = function
+let rec lltype_of_t_type x =
+  match x with
   | T_int -> int_type
   | T_char -> char_type
   | T_array (t, n) ->
@@ -154,52 +155,53 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
     (if Option.get fc.ret_type <> T_none then fc.id ^ "_result" else "")
     builder
 
-and gen_lvalue_address id funcDef =
-  let rec iterate i stack_frame_alloca stackFrame =
-    if i >= stackFrame.stack_frame_length then
-      let parentStackFrame =
-        Option.map (fun fd -> Option.get fd.stack_frame) funcDef.parent_func
-      in
-      match parentStackFrame with
-      | Some sfParent ->
-          let access_link =
-            build_struct_gep
-              (Option.get stackFrame.stack_frame_addr)
-              0 "access_link_ptr" builder
-          in
-          let parentStackFrameAddr =
-            build_load access_link "access_link_val" builder
-          in
-          iterate 0 parentStackFrameAddr sfParent
-      | None -> failwith "variable not found"
-    else
-      let var_name, elem_pos, is_ref, is_array =
-        List.nth stackFrame.var_records i
-      in
-      if var_name = id then begin
-        let addr =
-          build_struct_gep stack_frame_alloca elem_pos var_name builder
+and gen_lvalue funcDef lv =
+  let gen_lvalue_address id =
+    let rec iterate i stack_frame_alloca stackFrame =
+      if i >= stackFrame.stack_frame_length then
+        let parentStackFrame =
+          Option.map (fun fd -> Option.get fd.stack_frame) funcDef.parent_func
         in
-        if is_ref = false then begin
-          match is_array with
-          | true -> build_load addr (var_name ^ "_address") builder
-          | false -> addr
+        match parentStackFrame with
+        | Some sfParent ->
+            let access_link =
+              build_struct_gep
+                (Option.get stackFrame.stack_frame_addr)
+                0 "access_link_ptr" builder
+            in
+            let parentStackFrameAddr =
+              build_load access_link "access_link_val" builder
+            in
+            iterate 0 parentStackFrameAddr sfParent
+        | None -> failwith "variable not found"
+      else
+        let var_name, elem_pos, is_ref, is_array =
+          List.nth stackFrame.var_records i
+        in
+        if var_name = id then begin
+          let addr =
+            build_struct_gep stack_frame_alloca elem_pos var_name builder
+          in
+          if is_ref = false then begin
+            match is_array with
+            | true -> build_load addr (var_name ^ "_address") builder
+            | false -> addr
+          end
+          else
+            build_load addr (var_name ^ "_address") builder
         end
         else
-          build_load addr (var_name ^ "_address") builder
-      end
-      else
-        iterate (i + 1) stack_frame_alloca stackFrame
+          iterate (i + 1) stack_frame_alloca stackFrame
+    in
+    let initialIndex = if funcDef.parent_func = None then 0 else 1 in
+    let stackFrameAddr =
+      Option.get (Option.get funcDef.stack_frame).stack_frame_addr
+    in
+    iterate initialIndex stackFrameAddr (Option.get funcDef.stack_frame)
   in
-  let initialIndex = if funcDef.parent_func = None then 0 else 1 in
-  let stack_frame_alloca =
-    Option.get (Option.get funcDef.stack_frame).stack_frame_addr
-  in
-  iterate initialIndex stack_frame_alloca (Option.get funcDef.stack_frame)
 
-and gen_lvalue funcDef lv =
   match lv.lv_kind with
-  | L_id id -> gen_lvalue_address id funcDef
+  | L_id id -> gen_lvalue_address id
   | L_string s ->
       let const_str = const_stringz context s in
       let string_var = define_global "string_var" const_str the_module in
@@ -208,7 +210,7 @@ and gen_lvalue funcDef lv =
   | L_comp _ -> begin
       let arrayPtr =
         let rec gen_lvalue_kind = function
-          | L_id id -> gen_lvalue_address id funcDef
+          | L_id id -> gen_lvalue_address id
           | L_string s ->
               gen_lvalue funcDef { lv_kind = L_string s; lv_type = None }
           | L_comp (lvk, _) -> gen_lvalue_kind lvk
@@ -605,7 +607,8 @@ and gen_funcDef funcDef =
 
   (* Generation of local definitions *)
   let struct_index = ref (Array.length (params funcDef_ll)) in
-  let rec iterate = function
+  let rec iterate local_def =
+    match local_def with
     | L_varDef v ->
         let varDefList = expand_var_def_list [ v ] in
         Array.iteri
