@@ -44,8 +44,7 @@ let named_values : (string, llvalue) Hashtbl.t = Hashtbl.create 2000
 let named_functions = Hashtbl.create 2000
 let blocks_list = ref []
 
-let rec lltype_of_t_type x =
-  match x with
+let rec lltype_of_t_type = function
   | T_int -> int_type
   | T_char -> char_type
   | T_array (t, n) ->
@@ -605,8 +604,7 @@ and gen_funcDef funcDef =
 
   (* Generation of local definitions *)
   let struct_index = ref (Array.length (params funcDef_ll)) in
-  let rec iterate local_def =
-    match local_def with
+  let rec iterate = function
     | L_varDef v ->
         let varDefList = expand_var_def_list [ v ] in
         Array.iteri
