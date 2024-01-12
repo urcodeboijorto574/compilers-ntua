@@ -110,10 +110,10 @@ and gen_funcCall stackFrame funcDef (fc : Ast.funcCall) =
       let fpar_def_list = Hashtbl.find named_functions (Hashtbl.hash fc.id) in
       gen_args fpar_def_list fc.expr_list
     in
-    let result_access_link : Llvm.llvalue option =
-      if List.mem fc.id lib_function_names then
-        None
-      else
+    if List.mem fc.id lib_function_names then
+      Array.of_list args
+    else
+      let result_access_link : Llvm.llvalue =
         let rec get_parent_calle_stack_frame funcDefSource sourceStackFrame
             funcDef : Llvm.llvalue =
           (* assert sourceStackFrame = stack_frame_bar; *)
@@ -141,12 +141,11 @@ and gen_funcCall stackFrame funcDef (fc : Ast.funcCall) =
             get_parent_calle_stack_frame (Some funcDef) parent_stack_frame
               (Option.get funcDef.parent_func)
         in
-        Some
-          (get_parent_calle_stack_frame None
-             (Option.get stackFrame.stack_frame_addr)
-             funcDef)
-    in
-    Array.of_list (Option.to_list result_access_link @ args)
+        get_parent_calle_stack_frame None
+          (Option.get stackFrame.stack_frame_addr)
+          funcDef
+      in
+      Array.of_list (result_access_link :: args)
   in
   build_call callee args_array
     (if Option.get fc.ret_type <> T_none then fc.id ^ "_result" else "")
