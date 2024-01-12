@@ -330,7 +330,7 @@ and sem_localDefList = function
               fdecl.header.id;
             failwith "Function declared but never defined"
       in
-      fdecl.func_def <- Some correspondingFuncDef;
+      fdecl.func_def <- correspondingFuncDef;
       sem_localDef (L_funcDecl fdecl);
       sem_localDefList tail
   | ld :: tail ->

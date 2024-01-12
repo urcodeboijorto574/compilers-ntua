@@ -122,7 +122,10 @@ and gen_funcCall funcDef (fc : Ast.funcCall) =
                 match ld with
                 | L_varDef _ -> None
                 | L_funcDecl fdecl ->
-                    if fc.id = fdecl.header.id then fdecl.func_def else None
+                    if fc.id = fdecl.header.id then
+                      Some fdecl.func_def
+                    else
+                      None
                 | L_funcDef fd -> if fc.id = fd.header.id then Some fd else None)
               funcDef.local_def_list
           in
@@ -364,16 +367,8 @@ and gen_stmt funcDef stmt =
           let rec type_of_expr = function
             | E_const_int _ | E_sgn_expr _ | E_op_expr_expr _ -> T_int
             | E_const_char _ -> T_char
-            | E_lvalue lv -> begin
-                try (Option.get lv.lv_type).elem_type
-                with Invalid_argument _ ->
-                  failwith "Type of l-value should be already set."
-              end
-            | E_func_call fc -> begin
-                try Option.get fc.ret_type
-                with Invalid_argument _ ->
-                  failwith "Type of function call should be already set."
-              end
+            | E_lvalue lv -> (Option.get lv.lv_type).elem_type
+            | E_func_call fc -> Option.get fc.ret_type
             | E_expr_parenthesized e -> type_of_expr e
           in
           Some (match e_opt with None -> T_none | Some e -> type_of_expr e)

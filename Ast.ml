@@ -84,7 +84,7 @@ and localDef =
 
 and funcDecl = {
   header : header;
-  mutable func_def : funcDef option;
+  mutable func_def : funcDef;
 }
 
 and varDef = {
@@ -147,7 +147,7 @@ and cond =
   | C_cond_parenthesized of cond
 
 (* Functions to construct the records above *)
-let newFuncDef (a, b, c) =
+let rec newFuncDef (a, b, c) =
   {
     header = a;
     local_def_list = b;
@@ -156,7 +156,9 @@ let newFuncDef (a, b, c) =
     stack_frame = None;
   }
 
-and newFuncDecl a = { header = a; func_def = None }
+and newFuncDecl a =
+  { header = a; func_def = (* dummy value *) newFuncDef (a, [], Block []) }
+
 and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
 and newFparDef (a, b, c) = { ref = a; id_list = b; fpar_type = c }
 and newFparType (a, b) : fparType = { data_type = a; array_dimensions = b }
