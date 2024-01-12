@@ -78,6 +78,7 @@ and localDef =
 and funcDecl = {
   header : header;
   mutable func_def : funcDef;
+  mutable is_redundant : bool;
 }
 
 and varDef = {

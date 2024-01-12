@@ -84,6 +84,7 @@ and localDef =
 and funcDecl = {
   header : header;
   mutable func_def : funcDef;
+  mutable is_redundant : bool;
 }
 
 and varDef = {
@@ -156,7 +157,11 @@ let rec newFuncDef (a, b, c) =
   }
 
 and newFuncDecl a =
-  { header = a; func_def = (* dummy value *) newFuncDef (a, [], Block []) }
+  {
+    header = a;
+    func_def = (* dummy value *) newFuncDef (a, [], Block []);
+    is_redundant = false;
+  }
 
 and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
 and newFparDef (a, b, c) = { ref = a; id_list = b; fpar_type = c }

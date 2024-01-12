@@ -320,6 +320,9 @@ and sem_localDefList = function
             (fun ld ->
               match ld with
               | L_funcDef fdef -> fdef.header.id = fdecl.header.id
+              | L_funcDecl fdecl2 ->
+                  fdecl2.is_redundant <- fdecl2.header.id = fdecl.header.id;
+                  false
               | _ -> false)
             tail
         with
@@ -346,7 +349,12 @@ and sem_localDef = function
 
 (** [sem_funcDecl (fd : Ast.funcDef)] semantically analyses the header of the
     function declaration [fd] (uses the function [sem_header]). Returns [unit]. *)
-and sem_funcDecl fd = sem_header false fd.header
+and sem_funcDecl fd =
+  if not fd.is_redundant then
+    sem_header false fd.header
+  else
+    Printf.eprintf "Warning: Function '%s' has redundant declarations.\n"
+      fd.header.id
 
 (** [sem_varDef (vd : Ast.varDef)] enters in the symbolTable every variable
     defined in the variable definition [vd]. Returns [unit]. *)

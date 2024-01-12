@@ -618,7 +618,9 @@ and gen_funcDef funcDef =
                 ignore (build_store arrayPtr position builder))
           v.id_list
     | L_funcDef fd -> gen_funcDef fd
-    | L_funcDecl fdl -> failwith "TODO gen_funcDef: iterate (L_funcDecl _)"
+    | L_funcDecl fdecl ->
+        if not fdecl.is_redundant then
+          failwith "TODO gen_funcDef: iterate (L_funcDecl _)"
   in
   List.iter iterate funcDef.local_def_list;
 
