@@ -116,13 +116,13 @@ and gen_funcCall stackFrame funcDef (fc : Ast.funcCall) =
       let result_access_link : Llvm.llvalue =
         let rec get_parent_calle_stack_frame funcDefSource sourceStackFrame
             funcDef : Llvm.llvalue =
-          (* assert sourceStackFrame = stack_frame_bar; *)
           let resultOpt =
             List.find_map
               (fun ld ->
                 match ld with
                 | L_varDef _ -> None
-                | L_funcDecl fd -> failwith "TODO"
+                | L_funcDecl fdecl ->
+                    if fc.id = fdecl.header.id then fdecl.func_def else None
                 | L_funcDef fd -> if fc.id = fd.header.id then Some fd else None)
               funcDef.local_def_list
           in
