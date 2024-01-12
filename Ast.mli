@@ -23,7 +23,6 @@ and compOperator =
   | O_not_equal
 
 and stackFrame = {
-  parent_stack_frame : stackFrame option;
   stack_frame_type : Llvm.lltype;
   access_link : Llvm.lltype option;
   mutable stack_frame_addr : Llvm.llvalue option;

@@ -161,7 +161,10 @@ and gen_lvalue funcDef lv =
   let gen_lvalue_address id =
     let rec iterate i stack_frame_alloca stackFrame =
       if i >= stackFrame.stack_frame_length then
-        match stackFrame.parent_stack_frame with
+        let parentStackFrame =
+          Option.map (fun fd -> Option.get fd.stack_frame) funcDef.parent_func
+        in
+        match parentStackFrame with
         | Some sfParent ->
             let access_link =
               build_struct_gep
@@ -737,13 +740,13 @@ and define_lib_funcs () =
 
 and set_stack_frames funcDef =
   let set_stack_frame () =
-    let parent_stack_frame =
+    let parentStackFrame =
       Option.map (fun fd -> Option.get fd.stack_frame) funcDef.parent_func
     in
     let access_link_opt : Llvm.lltype option =
       Option.map
         (fun parent_fd ->
-          pointer_type (Option.get parent_stack_frame).stack_frame_type)
+          pointer_type (Option.get parentStackFrame).stack_frame_type)
         funcDef.parent_func
     in
     let params_list : Ast.fparDef list =
@@ -772,7 +775,7 @@ and set_stack_frames funcDef =
     let stack_frame_length =
       Array.length (struct_element_types stack_frame_type)
     in
-    let isRoot = parent_stack_frame = None in
+    let isRoot = access_link_opt = None in
     let var_par_records =
       let initial_index = if isRoot then 0 else 1 in
       let par_records =
@@ -804,7 +807,6 @@ and set_stack_frames funcDef =
     funcDef.stack_frame <-
       Some
         {
-          parent_stack_frame;
           stack_frame_type;
           access_link = access_link_opt;
           stack_frame_addr = None;

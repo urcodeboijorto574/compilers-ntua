@@ -25,7 +25,6 @@ and compOperator =
   | O_not_equal
 
 and stackFrame = {
-  parent_stack_frame : stackFrame option;
   stack_frame_type : Llvm.lltype;
   (* [access_link] is a pointer lltype that points to the stack frame of its
      parents' stack frame type *)
