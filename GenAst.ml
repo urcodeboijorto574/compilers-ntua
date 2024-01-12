@@ -537,9 +537,7 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
         function_type return_type param_types_array
       in
       declare_function name ft the_module
-  | Some x ->
-      (* TODO: Check whether this case should or should not be erroneous *)
-      failwith "semantic analysis error: function already defined"
+  | Some x -> x
 
 and gen_funcDef funcDef =
   let stackFrame = Option.get funcDef.stack_frame in
@@ -620,7 +618,9 @@ and gen_funcDef funcDef =
     | L_funcDef fd -> gen_funcDef fd
     | L_funcDecl fdecl ->
         if not fdecl.is_redundant then
-          failwith "TODO gen_funcDef: iterate (L_funcDecl _)"
+          ignore
+            (gen_header fdecl.header
+               (Option.get fdecl.func_def.stack_frame).access_link)
   in
   List.iter iterate funcDef.local_def_list;
 
