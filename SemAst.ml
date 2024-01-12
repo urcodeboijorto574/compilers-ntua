@@ -311,7 +311,30 @@ and sem_fparDef = function
 
 (** [sem_localDefList (ldl : Ast.localDef list)] semantically analyses the
     function's local definitions list [ldl]. Returns [unit]. *)
-and sem_localDefList = function [] -> () | ldl -> List.iter sem_localDef ldl
+and sem_localDefList = function
+  | [] -> ()
+  | L_funcDecl fdecl :: tail ->
+      let correspondingFuncDef =
+        match
+          List.find_opt
+            (fun ld ->
+              match ld with
+              | L_funcDef fdef -> fdef.header.id = fdecl.header.id
+              | _ -> false)
+            tail
+        with
+        | Some (L_funcDef fd) -> fd
+        | _ ->
+            Printf.eprintf
+              "\027[31mError\027[0m: Function '%s' declared but never defined.\n"
+              fdecl.header.id;
+            failwith "Function declared but never defined"
+      in
+      fdecl.func_def <- Some correspondingFuncDef;
+      sem_localDefList tail
+  | ld :: tail ->
+      sem_localDef ld;
+      sem_localDefList tail
 
 (** [sem_localDef (ld : Ast.localDef)] adds in the symbolTable the functions and
     parameters defined in the local definition [ld]. Returns [unit]. *)
@@ -322,8 +345,7 @@ and sem_localDef = function
 
 (** [sem_funcDecl (fd : Ast.funcDef)] semantically analyses the header of the
     function declaration [fd] (uses the function [sem_header]). Returns [unit]. *)
-and sem_funcDecl fd =
-  (* TODO: set func_def field of funcDecls*) sem_header false fd.header
+and sem_funcDecl fd = sem_header false fd.header
 
 (** [sem_varDef (vd : Ast.varDef)] enters in the symbolTable every variable
     defined in the variable definition [vd]. Returns [unit]. *)
