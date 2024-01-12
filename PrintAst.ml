@@ -8,7 +8,7 @@ let rec print_fparDef_list fpar_def_list =
       if tail <> [] then Printf.printf "; ";
       print_fparDef_list tail
 
-and print_funcDef funcDef =
+and print_funcDef (funcDef : Ast.funcDef) =
   Printf.printf "FuncDef(";
   print_header funcDef.header;
   Printf.printf ", ";
@@ -82,11 +82,9 @@ and print_localDef localDef =
   Printf.printf ")"
 
 and print_funcDecl funcDecl =
-  match funcDecl with
-  | FuncDecl_Header f ->
-      Printf.printf "FuncDecl(";
-      print_header f;
-      Printf.printf ";)"
+  Printf.printf "FuncDecl(";
+  print_header funcDecl.header;
+  Printf.printf ";)"
 
 and print_idList idList =
   match idList with

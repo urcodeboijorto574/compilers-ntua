@@ -122,7 +122,7 @@ and gen_funcCall stackFrame funcDef (fc : Ast.funcCall) =
               (fun ld ->
                 match ld with
                 | L_varDef _ -> None
-                | L_funcDecl (FuncDecl_Header h) -> failwith "TODO"
+                | L_funcDecl fd -> failwith "TODO"
                 | L_funcDef fd -> if fc.id = fd.header.id then Some fd else None)
               funcDef.local_def_list
           in

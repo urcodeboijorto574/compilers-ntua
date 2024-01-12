@@ -82,7 +82,10 @@ and localDef =
   | L_funcDecl of funcDecl
   | L_varDef of varDef
 
-and funcDecl = FuncDecl_Header of header
+and funcDecl = {
+  header : header;
+  mutable func_def : funcDef option;
+}
 
 and varDef = {
   id_list : string list;
@@ -153,6 +156,7 @@ let newFuncDef (a, b, c) =
     stack_frame = None;
   }
 
+and newFuncDecl a = { header = a; func_def = None }
 and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
 and newFparDef (a, b, c) = { ref = a; id_list = b; fpar_type = c }
 and newFparType (a, b) : fparType = { data_type = a; array_dimensions = b }

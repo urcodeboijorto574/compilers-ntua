@@ -116,7 +116,7 @@ local_def:
   | var_def { L_varDef($1) }
 
 func_decl:
-    header T_semicolon { FuncDecl_Header($1) }
+    header T_semicolon { newFuncDecl($1) }
 
 var_def:
     T_var T_identifier id_list T_colon var_type T_semicolon { newVarDef($2 :: $3, $5) }

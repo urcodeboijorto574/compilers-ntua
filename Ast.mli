@@ -76,7 +76,10 @@ and localDef =
   | L_funcDecl of funcDecl
   | L_varDef of varDef
 
-and funcDecl = FuncDecl_Header of header
+and funcDecl = {
+  header : header;
+  mutable func_def : funcDef option;
+}
 
 and varDef = {
   id_list : string list;
@@ -139,6 +142,7 @@ and cond =
 
 (* Functions to construct the records above *)
 val newFuncDef : header * localDef list * block -> funcDef
+val newFuncDecl : header -> funcDecl
 val newHeader : string * fparDef list * retType -> header
 val newFparDef : bool * string list * fparType -> fparDef
 val newFparType : dataType * int list -> fparType

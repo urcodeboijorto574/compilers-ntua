@@ -322,7 +322,8 @@ and sem_localDef = function
 
 (** [sem_funcDecl (fd : Ast.funcDef)] semantically analyses the header of the
     function declaration [fd] (uses the function [sem_header]). Returns [unit]. *)
-and sem_funcDecl = function FuncDecl_Header h -> sem_header false h
+and sem_funcDecl fd =
+  (* TODO: set func_def field of funcDecls*) sem_header false fd.header
 
 (** [sem_varDef (vd : Ast.varDef)] enters in the symbolTable every variable
     defined in the variable definition [vd]. Returns [unit]. *)
