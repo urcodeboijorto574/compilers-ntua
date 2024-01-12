@@ -46,6 +46,7 @@ fun main() : nothing
     sum <- 0;
     while i < size do {
       sum <- a[i] + sum;
+      i <- i + 1;
     }
     return sum;
   }
