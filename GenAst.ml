@@ -114,8 +114,8 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
       Array.of_list args
     else
       let result_access_link : Llvm.llvalue =
-        let rec get_parent_calle_stack_frame funcDefSource sourceStackFrameAddr
-            funcDef : Llvm.llvalue =
+        let rec get_parent_calle_stack_frame sourceStackFrameAddr funcDef :
+            Llvm.llvalue =
           let resultOpt =
             List.find_map
               (fun ld ->
@@ -141,13 +141,13 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
                 ("stack_frame_parent" ^ "")
                 builder
             in
-            get_parent_calle_stack_frame (Some funcDef) parent_stack_frame
+            get_parent_calle_stack_frame parent_stack_frame
               (Option.get funcDef.parent_func)
         in
         let stackFrameAddr =
           Option.get (Option.get funcDef.stack_frame).stack_frame_addr
         in
-        get_parent_calle_stack_frame None stackFrameAddr funcDef
+        get_parent_calle_stack_frame stackFrameAddr funcDef
       in
       Array.of_list (result_access_link :: args)
   in
@@ -609,8 +609,8 @@ and gen_funcDef funcDef =
   let struct_index = ref (Array.length (params funcDef_ll)) in
   let rec iterate local_def =
     match local_def with
-    | L_varDef v ->
-        let varDefList = expand_var_def_list [ v ] in
+    | L_varDef vd ->
+        let varDefList = expand_var_def_list [ vd ] in
         Array.iteri
           (fun i vd -> gen_varDef stackFrameAlloca (i + !struct_index) vd)
           (Array.of_list varDefList);
@@ -630,8 +630,7 @@ and gen_funcDef funcDef =
 
   if block_terminator @@ insertion_block builder = None then
     ignore (build_ret_void builder);
-  blocks_list :=
-    List.tl !blocks_list (* if blocks_list = [] this will throw Failure _ *);
+  blocks_list := List.tl !blocks_list;
   if !blocks_list <> [] then
     position_at_end (List.hd !blocks_list) builder
 

@@ -284,9 +284,7 @@ and sem_header isPartOfAFuncDef = function
 (** [sem_fparDefList (fpdl : Ast.fparDef list)] semantically analyses the
     function's parameter definitions [fpdl]. Returns
     [(int * Types.t_type * Symbol.param_passing) list]. *)
-and sem_fparDefList = function
-  | [] -> []
-  | h :: t -> sem_fparDef h :: sem_fparDefList t
+and sem_fparDefList fpdl = List.map sem_fparDef fpdl
 
 (** [sem_fparDef (fpd : Ast.fparDef)] semantically analyses the function's
     parameter definition [fpd]. Returns
