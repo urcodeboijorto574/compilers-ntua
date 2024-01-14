@@ -27,11 +27,19 @@ let rec sem_funcDef fd =
       if isMainProgram then Stack.push None funcDefAncestors;
       fd.parent_func <- Stack.top funcDefAncestors;
       sem_header true h;
+      if Types.debugMode then
+        Printf.printf "Opening new scope for '%s' function\n" h.id;
+      Symbol.open_scope h.id;
+      let add_fparDef (fpd : fparDef) : unit =
+        let typ = Ast.t_type_of_fparType fpd.fpar_type in
+        List.iter (fun id -> Symbol.enter_parameter id typ fpd.ref) fpd.id_list
+      in
+      List.iter add_fparDef h.fpar_def_list;
       Stack.push (Some fd) funcDefAncestors;
       sem_localDefList l;
       ignore (Stack.pop funcDefAncestors);
 
-      let overloadedParVarNameOption =
+      let overloadedParVarNameOption : string option =
         let duplicate_element lst =
           let rec helper seen = function
             | [] -> None
@@ -73,7 +81,7 @@ let rec sem_funcDef fd =
             failwith "Overloaded variable name");
           resultList
         in
-        let rec share_common_elem l1 l2 =
+        let rec share_common_elem l1 l2 : 'a option =
           match l1 with
           | [] -> None
           | head :: tail ->
@@ -136,25 +144,16 @@ and sem_header isPartOfAFuncDef = function
             "\027[31mError\027[0m: Main function shouldn't have parameters.\n";
           failwith "Main function shouldn't have parameters");
 
-      let add_params_to_scope () =
-        if isPartOfAFuncDef then begin
-          if Types.debugMode then
-            Printf.printf "Opening new scope for '%s' function\n" ident;
-          Symbol.open_scope ident;
-          let add_fparDef : fparDef -> unit = function
-            | { ref = r; id_list = idl; fpar_type = fpt } ->
-                List.iter
-                  (fun id -> enter_parameter id (Ast.t_type_of_fparType fpt) r)
-                  idl
-          in
-          List.iter add_fparDef fpdl
-        end
-      in
       let resultLookUpOption = look_up_entry ident in
-      if resultLookUpOption = None then (
-        enter_function ident (sem_fparDefList fpdl) (Ast.t_type_of_retType rt)
-          Symbol.(if isPartOfAFuncDef then DEFINED else DECLARED);
-        add_params_to_scope ())
+      if
+        resultLookUpOption = None
+        || not
+             (Symbol.equal_scopes (Option.get resultLookUpOption).scope
+                !current_scope)
+      then
+        Symbol.enter_function ident (sem_fparDefList fpdl)
+          (Ast.t_type_of_retType rt)
+          Symbol.(if isPartOfAFuncDef then DEFINED else DECLARED)
       else
         try
           let functionEntry =
@@ -174,7 +173,7 @@ and sem_header isPartOfAFuncDef = function
                      "byRef"))
               functionEntry.parameters_list;
             Printf.printf "]\n");
-          let returnTypeFromHeader = Ast.t_type_of_retType rt in
+          let returnTypeFromHeader : Types.t_type = Ast.t_type_of_retType rt in
           let paramListFromHeader : (int * Types.t_type * bool) list =
             let rec helper : fparDef list -> (int * Types.t_type * bool) list =
               function
@@ -202,7 +201,7 @@ and sem_header isPartOfAFuncDef = function
               Printf.printf "]\n");
             resultList
           in
-          let matchingNumOfParams =
+          let matchingNumOfParams : bool =
             let lengthOfParamListHeader =
               let rec f accum = function
                 | [] -> accum
@@ -212,7 +211,7 @@ and sem_header isPartOfAFuncDef = function
             in
             List.length functionEntry.parameters_list = lengthOfParamListHeader
           in
-          let matchingParamTypes =
+          let matchingParamTypes : bool =
             let lists_are_equal paramListEntry paramListHeader =
               let elems_are_equal x y =
                 match y with
@@ -226,23 +225,13 @@ and sem_header isPartOfAFuncDef = function
             in
             lists_are_equal functionEntry.parameters_list paramListFromHeader
           in
-
           if Types.debugMode then
             Printf.printf
               "(Option.get resultLookUpOption).scope.depth = %d, \
                !current_scope.depth = %d\n"
               (Option.get resultLookUpOption).scope.depth !current_scope.depth;
 
-          if
-            not
-              (Symbol.equal_scopes (Option.get resultLookUpOption).scope
-                 !current_scope)
-          then (
-            enter_function ident (sem_fparDefList fpdl)
-              (Ast.t_type_of_retType rt)
-              Symbol.(if isPartOfAFuncDef then DEFINED else DECLARED);
-            add_params_to_scope ())
-          else if not matchingNumOfParams then
+          if not matchingNumOfParams then
             raise Overloaded_functions
           else if functionEntry.return_type <> returnTypeFromHeader then
             raise Expected_type_not_returned
@@ -250,9 +239,8 @@ and sem_header isPartOfAFuncDef = function
             raise Non_matching_parameter_types
           else if functionEntry.state = Symbol.DEFINED then
             raise Redifined_function
-          else (
-            Symbol.set_func_defined functionEntry;
-            add_params_to_scope ())
+          else
+            Symbol.set_func_defined functionEntry
         with
         | Shared_name_func_var ->
             Printf.eprintf
@@ -356,14 +344,13 @@ and sem_funcDecl fd =
 
 (** [sem_varDef (vd : Ast.varDef)] enters in the symbolTable every variable
     defined in the variable definition [vd]. Returns [unit]. *)
-and sem_varDef = function
-  | { id_list = idl; var_type = vt } ->
-      if List.exists (fun n -> n = 0) vt.array_dimensions then (
-        Printf.eprintf
-          "\027[31mError\027[0m: Array declared to have size a non-positive \
-           number.\n";
-        failwith "Array of zero size");
-      List.iter (fun i -> enter_variable i (Ast.t_type_of_varType vt)) idl
+and sem_varDef vd =
+  if List.exists (Int.equal 0) vd.var_type.array_dimensions then (
+    Printf.eprintf
+      "\027[31mError\027[0m: Array declared to have size a non-positive number.\n";
+    failwith "Array of zero size");
+  let typ = Ast.t_type_of_varType vd.var_type in
+  List.iter (fun i -> Symbol.enter_variable i typ) vd.id_list
 
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
     block [bl]. Returns [Types.t_type option]. *)
