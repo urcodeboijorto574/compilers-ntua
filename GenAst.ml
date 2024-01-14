@@ -10,8 +10,6 @@ open Ast
 open Symbol
 open Types
 
-exception Error of string
-
 let context = global_context ()
 let the_module = create_module context "my_module"
 let builder = builder context
@@ -39,9 +37,12 @@ let build_nop () =
   let zero = const_int bool_type 0 in
   build_add zero zero "nop" builder
 
-(* Symbol table that holds the memory location of the variable in question*)
+(* [named_values] holds the memory allocation of variables. *)
 let named_values : (string, llvalue) Hashtbl.t = Hashtbl.create 2000
-let named_functions = Hashtbl.create 2000
+
+(** [named_functions] stores the expanded fparDef list of a function. *)
+let named_functions : (string, Ast.fparDef list) Hashtbl.t = Hashtbl.create 2000
+
 let blocks_list = ref []
 
 let rec lltype_of_t_type x =
@@ -81,7 +82,7 @@ and lltype_of_varDef vd =
   let isArray = vd.var_type.array_dimensions <> [] in
   if isArray then pointer_type result else result
 
-let rec expand_fpar_def_list (def_list : fparDef list) : fparDef list =
+let expand_fpar_def_list (def_list : fparDef list) : fparDef list =
   let expand_fpar_def def =
     List.map
       (fun id -> { ref = def.ref; id_list = [ id ]; fpar_type = def.fpar_type })
