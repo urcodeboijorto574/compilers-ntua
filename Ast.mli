@@ -38,7 +38,7 @@ and stackFrame = {
 and funcDef = {
   header : header;
   local_def_list : localDef list;
-  block : block;
+  block : stmt list;
   mutable parent_func : funcDef option;
   mutable stack_frame : stackFrame option;
 }
@@ -91,11 +91,9 @@ and varType = {
   array_dimensions : int list;
 }
 
-and block = Block of stmt list
-
 and stmt =
   | S_assignment of lvalue * expr
-  | S_block of block
+  | S_block of stmt list
   | S_func_call of funcCall
   | S_if of cond * stmt
   | S_if_else of cond * stmt * stmt
@@ -141,7 +139,7 @@ and cond =
   | C_cond_parenthesized of cond
 
 (* Functions to construct the records above *)
-val newFuncDef : header * localDef list * block -> funcDef
+val newFuncDef : header * localDef list * stmt list -> funcDef
 val newFuncDecl : header -> funcDecl
 val newHeader : string * fparDef list * retType -> header
 val newFparDef : bool * string list * fparType -> fparDef

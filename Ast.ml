@@ -44,7 +44,7 @@ and stackFrame = {
 and funcDef = {
   header : header;
   local_def_list : localDef list;
-  block : block;
+  block : stmt list;
   mutable parent_func : funcDef option;
   mutable stack_frame : stackFrame option;
 }
@@ -97,11 +97,9 @@ and varType = {
   array_dimensions : int list;
 }
 
-and block = Block of stmt list
-
 and stmt =
   | S_assignment of lvalue * expr
-  | S_block of block
+  | S_block of stmt list
   | S_func_call of funcCall
   | S_if of cond * stmt
   | S_if_else of cond * stmt * stmt
@@ -159,7 +157,7 @@ let rec newFuncDef (a, b, c) =
 and newFuncDecl a =
   {
     header = a;
-    func_def = (* dummy value *) newFuncDef (a, [], Block []);
+    func_def = (* dummy value *) newFuncDef (a, [], []);
     is_redundant = false;
   }
 

@@ -355,8 +355,8 @@ and sem_varDef vd =
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
     block [bl]. Returns [Types.t_type option]. *)
 and sem_block = function
-  | Block [] -> None
-  | Block stmtList ->
+  | [] -> None
+  | stmtList ->
       let rec get_type_of_stmt_list res warningRaised = function
         | [] -> res
         | head :: tail -> (

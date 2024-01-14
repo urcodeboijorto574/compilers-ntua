@@ -147,11 +147,9 @@ and print_stmt stmt =
   Printf.printf ")"
 
 and print_block block =
-  match block with
-  | Block stmt_list ->
-      Printf.printf "Block({";
-      List.iter print_stmt stmt_list;
-      Printf.printf "})"
+  Printf.printf "Block({";
+  List.iter print_stmt block;
+  Printf.printf "})"
 
 and print_funcCall funcCall =
   Printf.printf "FuncCall(";

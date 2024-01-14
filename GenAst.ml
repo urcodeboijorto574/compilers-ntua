@@ -378,7 +378,7 @@ and gen_stmt funcDef stmt =
             | E_expr_parenthesized e -> type_of_expr e
           in
           Some (match e_opt with None -> T_none | Some e -> type_of_expr e)
-      | S_block (Block l) ->
+      | S_block stmtList ->
           let rec type_of_stmt_list = function
             | [] -> None
             | h :: t ->
@@ -388,7 +388,7 @@ and gen_stmt funcDef stmt =
                 else
                   type_of_stmt_list t
           in
-          type_of_stmt_list l
+          type_of_stmt_list stmtList
       | S_if_else (c, s1, s2) -> begin
           match get_const_cond_value c with
           | Some b -> type_of_stmt (if b then s1 else s2)
@@ -425,13 +425,13 @@ and gen_stmt funcDef stmt =
   | S_func_call fc -> gen_funcCall funcDef fc
   | S_block b -> begin
       match b with
-      | Block [] -> build_nop ()
-      | Block l ->
+      | [] -> build_nop ()
+      | stmtList ->
           let get_last_elem = function
             | [] -> assert false
             | l -> List.(hd (rev l))
           in
-          get_last_elem (List.map (gen_stmt funcDef) l)
+          get_last_elem (List.map (gen_stmt funcDef) stmtList)
     end
   | S_if (c, s) ->
       let start_basic_block = insertion_block builder in
@@ -626,8 +626,7 @@ and gen_funcDef funcDef =
   List.iter iterate funcDef.local_def_list;
 
   (* Generation of block *)
-  let stmt_list = match funcDef.block with Block b -> b in
-  ignore (List.map (gen_stmt funcDef) stmt_list);
+  ignore (List.map (gen_stmt funcDef) funcDef.block);
 
   if block_terminator @@ insertion_block builder = None then
     ignore (build_ret_void builder);

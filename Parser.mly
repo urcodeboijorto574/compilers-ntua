@@ -56,7 +56,7 @@
 %type <funcDecl> func_decl
 %type <varDef> var_def
 %type <varType> var_type
-%type <block> block
+%type <stmt list> block
 %type <stmt list> stmt_list
 %type <stmt> stmt
 %type <lvalue> l_value
@@ -125,7 +125,7 @@ var_type:
     data_type array_dimensions { newVarType ($1, $2) }
 
 block:
-    T_left_br stmt_list T_right_br { Block $2 }
+    T_left_br stmt_list T_right_br { $2 }
 
 stmt_list:
     (* nothing *) { [] }
