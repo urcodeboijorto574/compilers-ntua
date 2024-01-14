@@ -599,12 +599,12 @@ and gen_funcDef funcDef =
     build_alloca stackFrame.stack_frame_type ("stack_frame_" ^ name) builder
   in
   stackFrame.stack_frame_addr <- Some stackFrameAlloca;
-  let args_array =
+  let params_array : Ast.fparDef array =
     Array.of_list (expand_fpar_def_list funcDef.header.fpar_def_list)
   in
 
   (* Generation of parameters *)
-  Array.iteri (gen_param funcDef args_array) (params funcDef_ll);
+  Array.iteri (gen_param funcDef params_array) (params funcDef_ll);
 
   (* Generation of local definitions *)
   let struct_index = ref (Array.length (params funcDef_ll)) in
