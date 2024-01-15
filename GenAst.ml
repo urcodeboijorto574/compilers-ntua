@@ -881,17 +881,19 @@ let add_opts pm =
   List.iter (fun f -> f pm) opts
 
 let gen_on asts =
-  (* Llvm_all_backends.initialize ();
-     let triple = Target.default_triple () in
-     set_target_triple triple the_module;
-     let target = Target.by_triple triple in
-     let machine = TargetMachine.create ~triple target in
-     let dly = TargetMachine.data_layout machine in
-     set_data_layout (DataLayout.as_string dly) the_module; *)
+  Llvm_all_backends.initialize ();
+  let triple = Target.default_triple () in
+  set_target_triple triple the_module;
+  let target = Target.by_triple triple in
+  let machine = TargetMachine.create ~triple target in
+  let dly = TargetMachine.data_layout machine in
+  set_data_layout (DataLayout.as_string dly) the_module;
+
   define_lib_funcs ();
   set_stack_frames asts;
-  gen_funcDef asts
-(* let mpm = PassManager.create () in
-   add_opts mpm;
-   ignore (PassManager.run_module the_module mpm);
-   assert_valid_module the_module *)
+  gen_funcDef asts;
+
+  let mpm = PassManager.create () in
+  add_opts mpm;
+  ignore (PassManager.run_module the_module mpm);
+  assert_valid_module the_module
