@@ -45,6 +45,41 @@ let named_functions : (string, Ast.fparDef list) Hashtbl.t = Hashtbl.create 2000
 
 let blocks_list = ref []
 
+(** [t_type_of_stmt (s : Ast.stmt)] takes a statement [s] and returns a
+    [Types.t_type option]. If the statement [s] is a return statement or a
+    statement that always includes a return statement, then [Some t] is
+    returned, with [t] being the type of the expression returned, else [None]. *)
+let rec t_type_of_stmt (s : Ast.stmt) : Types.t_type option =
+  let rec t_type_of_expr = function
+    | E_const_int _ | E_sgn_expr _ | E_op_expr_expr _ -> T_int
+    | E_const_char _ -> T_char
+    | E_lvalue lv -> (Option.get lv.lv_type).elem_type
+    | E_func_call fc -> Option.get fc.ret_type
+    | E_expr_parenthesized e -> t_type_of_expr e
+  in
+  match s with
+  | S_return e_opt ->
+      Some (match e_opt with None -> T_none | Some e -> t_type_of_expr e)
+  | S_block stmtList -> begin
+      match stmtList with
+      | [] -> None
+      | s :: tail ->
+          let typeOfS = t_type_of_stmt s in
+          if typeOfS <> None then typeOfS else t_type_of_stmt (S_block tail)
+    end
+  | S_if_else (c, s1, s2) -> begin
+      match (t_type_of_stmt s1, t_type_of_stmt s2) with
+      | None, None -> None
+      | Some t1, Some t2 -> Some t1
+      | typeOfS1, typeOfS2 ->
+          Option.bind (get_const_cond_value c) (fun b ->
+              if b then typeOfS1 else typeOfS2)
+    end
+  | S_if (c, s) | S_while (c, s) ->
+      Option.bind (get_const_cond_value c) (fun b ->
+          if b then t_type_of_stmt s else None)
+  | S_assignment _ | S_func_call _ | S_semicolon -> None
+
 let rec lltype_of_t_type x =
   match x with
   | T_int -> int_type
@@ -354,84 +389,19 @@ and gen_cond funcDef = function
       | O_not_equal -> build_comp Ne "not_equal")
   | C_cond_parenthesized c -> gen_cond funcDef c
 
-and gen_stmt funcDef stmt =
-  (* [extract_ret_stmt (s : Ast.stmt)] calculates whether the statment [s] always
-     includes a return statement, and if it is, a ret statement is generated in
-     the LLVM IR code so that a type error is caught. If the statement [s]
-     doesn't return a value, a default value [dv] is returned. Returns
-     [Llvm.llvalue]. *)
-  let extract_ret_stmt s =
-    (* [type_of_stmt (s : Ast.stmt)] takes a statement [s] and returns a
-       [Types.t_type option]. If the statement [s] is a return statement or a
-       statement that always includes a return statement, then [Some t] is
-       returned, with [t] being the type of the expression returned, else [None].
-       Returns [Types.t_type option]. *)
-    let rec type_of_stmt : Ast.stmt -> Types.t_type option = function
-      | S_return e_opt ->
-          (* [type_of_expr (e : Ast.expr)] takes an expression [e] and returns
-             its type. Returns [Types.t_type]. *)
-          let rec type_of_expr = function
-            | E_const_int _ | E_sgn_expr _ | E_op_expr_expr _ -> T_int
-            | E_const_char _ -> T_char
-            | E_lvalue lv -> (Option.get lv.lv_type).elem_type
-            | E_func_call fc -> Option.get fc.ret_type
-            | E_expr_parenthesized e -> type_of_expr e
-          in
-          Some (match e_opt with None -> T_none | Some e -> type_of_expr e)
-      | S_block stmtList ->
-          let rec type_of_stmt_list = function
-            | [] -> None
-            | h :: t ->
-                let typeOfHead = type_of_stmt h in
-                if typeOfHead <> None then
-                  typeOfHead
-                else
-                  type_of_stmt_list t
-          in
-          type_of_stmt_list stmtList
-      | S_if_else (c, s1, s2) -> begin
-          match get_const_cond_value c with
-          | Some b -> type_of_stmt (if b then s1 else s2)
-          | None ->
-              let typeOfS1 = type_of_stmt s1 in
-              let typeOfS2 = type_of_stmt s2 in
-              if typeOfS1 = None || typeOfS2 = None then
-                None
-              else
-                typeOfS1
-        end
-      | S_while (c, s) | S_if (c, s) -> begin
-          match get_const_cond_value c with
-          | None | Some false -> None
-          | Some true -> type_of_stmt s
-        end
-      | S_assignment _ | S_func_call _ | S_semicolon -> None
-    in
-    match type_of_stmt s with
-    | None -> build_nop ()
-    | Some t -> begin
-        match t with
-        | T_int -> build_ret (const_int int_type 0) builder
-        | T_char -> build_ret (const_int char_type 0) builder
-        | T_none -> build_nop ()
-        | T_array _ | T_func _ -> assert false
-      end
-  in
-  match stmt with
+and gen_stmt funcDef returnValueAddrOpt : Ast.stmt -> unit = function
   | S_assignment (lv, expr) ->
       let lv_address = gen_lvalue funcDef lv in
       let lv_value = gen_expr false funcDef expr in
-      build_store lv_value lv_address builder
-  | S_func_call fc -> gen_funcCall funcDef fc
-  | S_block b -> begin
-      match b with
-      | [] -> build_nop ()
-      | stmtList ->
-          let get_last_elem = function
-            | [] -> assert false
-            | l -> List.(hd (rev l))
-          in
-          get_last_elem (List.map (gen_stmt funcDef) stmtList)
+      ignore (build_store lv_value lv_address builder)
+  | S_func_call fc -> ignore (gen_funcCall funcDef fc)
+  | S_block stmtList -> begin
+      match stmtList with
+      | [] -> ()
+      | s :: tail ->
+          gen_stmt funcDef returnValueAddrOpt s;
+          if t_type_of_stmt s = None then
+            gen_stmt funcDef returnValueAddrOpt (S_block tail)
     end
   | S_if (c, s) ->
       let start_basic_block = insertion_block builder in
@@ -449,13 +419,12 @@ and gen_stmt funcDef stmt =
         (build_cond_br (cond_val ()) then_basic_block merge_basic_block builder);
 
       position_at_end then_basic_block builder;
-      ignore (gen_stmt funcDef s);
+      ignore (gen_stmt funcDef returnValueAddrOpt s);
       let new_then_basic_block = insertion_block builder in
 
       position_at_end new_then_basic_block builder;
       ignore (build_br merge_basic_block builder);
-      position_at_end merge_basic_block builder;
-      extract_ret_stmt stmt
+      position_at_end merge_basic_block builder
   | S_if_else (c, s1, s2) ->
       let start_basic_block = insertion_block builder in
       let function_bb = block_parent start_basic_block in
@@ -475,19 +444,18 @@ and gen_stmt funcDef stmt =
         (build_cond_br (cond_val ()) then_basic_block else_basic_block builder);
 
       position_at_end then_basic_block builder;
-      ignore (gen_stmt funcDef s1);
+      ignore (gen_stmt funcDef returnValueAddrOpt s1);
       let new_then_basic_block = insertion_block builder in
       position_at_end new_then_basic_block builder;
       ignore (build_br merge_basic_block builder);
 
       position_at_end else_basic_block builder;
-      ignore (gen_stmt funcDef s2);
+      ignore (gen_stmt funcDef returnValueAddrOpt s2);
       let new_else_basic_block = insertion_block builder in
       position_at_end new_else_basic_block builder;
       ignore (build_br merge_basic_block builder);
 
-      position_at_end merge_basic_block builder;
-      extract_ret_stmt stmt
+      position_at_end merge_basic_block builder
   | S_while (c, s) ->
       let start_basic_block = insertion_block builder in
       let function_bb = block_parent start_basic_block in
@@ -502,23 +470,24 @@ and gen_stmt funcDef stmt =
       position_at_end start_basic_block builder;
       ignore
         (build_cond_br (cond_val ()) while_basic_block cont_basic_block builder);
-      position_at_end while_basic_block builder;
-      ignore (gen_stmt funcDef s);
 
+      position_at_end while_basic_block builder;
+      ignore (gen_stmt funcDef returnValueAddrOpt s);
       let new_while_basic_block = insertion_block builder in
+
       position_at_end new_while_basic_block builder;
       ignore
         (build_cond_br (cond_val ()) while_basic_block cont_basic_block builder);
 
-      position_at_end cont_basic_block builder;
-      extract_ret_stmt stmt
-  | S_return expr_opt -> (
-      match expr_opt with
-      | None -> build_ret_void builder
-      | Some e ->
-          let ll_expr = gen_expr false funcDef e in
-          build_ret ll_expr builder)
-  | S_semicolon -> build_nop ()
+      position_at_end cont_basic_block builder
+  | S_return expr_opt ->
+      Option.iter
+        (fun e ->
+          let returnValue = gen_expr false funcDef e in
+          let returnValueAddr = Option.get returnValueAddrOpt in
+          ignore (build_store returnValue returnValueAddr builder))
+        expr_opt
+  | S_semicolon -> ()
 
 and gen_varDef sf_alloca struct_index v =
   let position =
@@ -626,7 +595,17 @@ and gen_funcDef funcDef =
   List.iter iterate funcDef.local_def_list;
 
   (* Generation of block *)
-  ignore (List.map (gen_stmt funcDef) funcDef.block);
+  let returnValueAddrOpt =
+    match t_type_of_t_func (Ast.t_type_of_retType funcDef.header.ret_type) with
+    | T_none -> None
+    | t -> Some (build_alloca (lltype_of_t_type t) "returned_value_ptr" builder)
+  in
+  gen_stmt funcDef returnValueAddrOpt (S_block funcDef.block);
+  (match returnValueAddrOpt with
+  | None -> ignore (build_ret_void builder)
+  | Some addr ->
+      let returnValue = build_load addr "returned_value" builder in
+      ignore (build_ret returnValue builder));
 
   if block_terminator @@ insertion_block builder = None then
     ignore (build_ret_void builder);
