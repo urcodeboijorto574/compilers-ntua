@@ -321,13 +321,22 @@ and gen_expr is_param_ref funcDef expr =
       | O_mod -> build_srem lhs_val rhs_val "modtmp" builder)
   | E_expr_parenthesized expr -> gen_expr false funcDef expr
 
-and gen_cond funcDef = function
+and gen_cond funcDef returnCondValueAddr = function
   | C_not_cond (lo, c) ->
-      let ll_cond = gen_cond funcDef c in
-      build_not ll_cond "not" builder
+      let returnCondValue =
+        let not_val =
+          gen_cond funcDef returnCondValueAddr c;
+          build_load returnCondValueAddr "not_cond_temp" builder
+        in
+        build_not not_val "not_cond" builder
+      in
+      ignore (build_store returnCondValue returnCondValueAddr builder)
   | C_cond_cond (c1, lo, c2) ->
-      let lhs_val = gen_cond funcDef c1 in
-      let is_good, opName, build_instr =
+      let lhs_cond =
+        gen_cond funcDef returnCondValueAddr c1;
+        build_load returnCondValueAddr "lhs_cond" builder
+      in
+      let shortCircuitableVal, opName, build_instr =
         match lo with
         | O_and -> (const_int bool_type 0, "and", build_and)
         | O_or -> (const_int bool_type 1, "or", build_or)
@@ -340,51 +349,51 @@ and gen_cond funcDef = function
       let merge_basic_block =
         append_block context "good_bad_cont" function_bb
       in
-      let result_bool () =
-        build_icmp Llvm.Icmp.Eq lhs_val is_good
+      let result_bool condition =
+        build_icmp Llvm.Icmp.Eq condition shortCircuitableVal
           (opName ^ "_short_circuit")
           builder
-      in
-      let resultCondition =
-        build_alloca bool_type ("result_" ^ opName) builder
       in
 
       position_at_end start_basic_block builder;
       ignore
-        (build_cond_br (result_bool ()) good_basic_block bad_basic_block builder);
+        (build_cond_br (result_bool lhs_cond) good_basic_block bad_basic_block
+           builder);
 
       position_at_end good_basic_block builder;
-      let resultGood = build_instr lhs_val is_good opName builder in
-      ignore (build_store resultGood resultCondition builder);
-      let new_good_basic_block = insertion_block builder in
-      position_at_end new_good_basic_block builder;
+      ignore (build_store lhs_cond returnCondValueAddr builder);
       ignore (build_br merge_basic_block builder);
 
       position_at_end bad_basic_block builder;
-      let rhs_val = gen_cond funcDef c2 in
-      let resultBad = build_instr lhs_val rhs_val opName builder in
-      ignore (build_store resultBad resultCondition builder);
-      let new_bad_basic_block = insertion_block builder in
-      position_at_end new_bad_basic_block builder;
+      let returnCondValue =
+        gen_cond funcDef returnCondValueAddr c2;
+        let new_bad_basic_block = insertion_block builder in
+        position_at_end new_bad_basic_block builder;
+        let rhs_cond = build_load returnCondValueAddr "rhs_cond" builder in
+        build_instr lhs_cond rhs_cond opName builder
+      in
+      ignore (build_store returnCondValue returnCondValueAddr builder);
       ignore (build_br merge_basic_block builder);
 
-      position_at_end merge_basic_block builder;
-      build_load resultCondition (opName ^ "_result") builder
-  | C_expr_expr (e1, co, e2) -> (
-      let lhs_val = gen_expr false funcDef e1 in
-      let rhs_val = gen_expr false funcDef e2 in
-      let open Icmp in
-      let build_comp predicate instr_name =
-        build_icmp predicate lhs_val rhs_val instr_name builder
+      position_at_end merge_basic_block builder
+  | C_expr_expr (e1, co, e2) ->
+      let returnCondValue =
+        let lhs_val = gen_expr false funcDef e1 in
+        let rhs_val = gen_expr false funcDef e2 in
+        let build_comp predicate instr_name =
+          build_icmp predicate lhs_val rhs_val instr_name builder
+        in
+        let open Icmp in
+        match co with
+        | O_equal -> build_comp Eq "equal"
+        | O_less -> build_comp Slt "less"
+        | O_greater -> build_comp Sgt "greater"
+        | O_less_eq -> build_comp Sle "less_eq"
+        | O_greater_eq -> build_comp Sge "greater_eq"
+        | O_not_equal -> build_comp Ne "not_equal"
       in
-      match co with
-      | O_equal -> build_comp Eq "equal"
-      | O_less -> build_comp Slt "less"
-      | O_greater -> build_comp Sgt "greater"
-      | O_less_eq -> build_comp Sle "less_eq"
-      | O_greater_eq -> build_comp Sge "greater_eq"
-      | O_not_equal -> build_comp Ne "not_equal")
-  | C_cond_parenthesized c -> gen_cond funcDef c
+      ignore (build_store returnCondValue returnCondValueAddr builder)
+  | C_cond_parenthesized c -> gen_cond funcDef returnCondValueAddr c
 
 and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
   | S_assignment (lv, expr) ->
@@ -405,23 +414,27 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
       let function_bb = block_parent start_basic_block in
       let then_basic_block = append_block context "then" function_bb in
       let merge_basic_block = append_block context "if_then_cont" function_bb in
+      let cond_val addr =
+        gen_cond funcDef addr c;
+        build_load addr "cond_result" builder
+      in
 
       position_at_end start_basic_block builder;
-      let cond_val () =
-        let zero = const_int bool_type 0 in
-        let ll_c = gen_cond funcDef c in
-        build_icmp Ne zero ll_c "if_then_cond" builder
+      let returnCondValueAddr =
+        build_alloca bool_type "cond_result_addr" builder
       in
       ignore
-        (build_cond_br (cond_val ()) then_basic_block merge_basic_block builder);
+        (build_cond_br
+           (cond_val returnCondValueAddr)
+           then_basic_block merge_basic_block builder);
 
       position_at_end then_basic_block builder;
-      ignore (gen_stmt funcDef returnValueAddrOpt returnBB s);
+      gen_stmt funcDef returnValueAddrOpt returnBB s;
       let new_then_basic_block = insertion_block builder in
-
       position_at_end new_then_basic_block builder;
       if t_type_of_stmt s = None then
         ignore (build_br merge_basic_block builder);
+
       position_at_end merge_basic_block builder
   | S_if_else (c, s1, s2) ->
       let start_basic_block = insertion_block builder in
@@ -431,25 +444,29 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
       let merge_basic_block =
         append_block context "if_then_else_cont" function_bb
       in
-
-      let cond_val () =
-        let zero = const_int bool_type 0 in
-        let ll_c = gen_cond funcDef c in
-        build_icmp Ne zero ll_c "if_then_else_cond" builder
+      let cond_val addr =
+        gen_cond funcDef addr c;
+        build_load addr "cond_result" builder
       in
+
       position_at_end start_basic_block builder;
+      let returnCondValueAddr =
+        build_alloca bool_type "cond_result_addr" builder
+      in
       ignore
-        (build_cond_br (cond_val ()) then_basic_block else_basic_block builder);
+        (build_cond_br
+           (cond_val returnCondValueAddr)
+           then_basic_block else_basic_block builder);
 
       position_at_end then_basic_block builder;
-      ignore (gen_stmt funcDef returnValueAddrOpt returnBB s1);
+      gen_stmt funcDef returnValueAddrOpt returnBB s1;
       let new_then_basic_block = insertion_block builder in
       position_at_end new_then_basic_block builder;
       if t_type_of_stmt s1 = None then
         ignore (build_br merge_basic_block builder);
 
       position_at_end else_basic_block builder;
-      ignore (gen_stmt funcDef returnValueAddrOpt returnBB s2);
+      gen_stmt funcDef returnValueAddrOpt returnBB s2;
       let new_else_basic_block = insertion_block builder in
       position_at_end new_else_basic_block builder;
       if t_type_of_stmt s2 = None then
@@ -461,25 +478,29 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
       let function_bb = block_parent start_basic_block in
       let while_basic_block = append_block context "while" function_bb in
       let cont_basic_block = append_block context "while_cont" function_bb in
-
-      let cond_val () =
-        let zero = const_int bool_type 0 in
-        let ll_c = gen_cond funcDef c in
-        build_icmp Ne zero ll_c "while_cond" builder
+      let cond_val addr =
+        gen_cond funcDef addr c;
+        build_load addr "cond_result" builder
       in
+
       position_at_end start_basic_block builder;
+      let returnCondValueAddr =
+        build_alloca bool_type "cond_result_addr" builder
+      in
       ignore
-        (build_cond_br (cond_val ()) while_basic_block cont_basic_block builder);
+        (build_cond_br
+           (cond_val returnCondValueAddr)
+           while_basic_block cont_basic_block builder);
 
       position_at_end while_basic_block builder;
-      ignore (gen_stmt funcDef returnValueAddrOpt returnBB s);
+      gen_stmt funcDef returnValueAddrOpt returnBB s;
       let new_while_basic_block = insertion_block builder in
-
       position_at_end new_while_basic_block builder;
       if t_type_of_stmt s = None then
         ignore
-          (build_cond_br (cond_val ()) while_basic_block cont_basic_block
-             builder);
+          (build_cond_br
+             (cond_val returnCondValueAddr)
+             while_basic_block cont_basic_block builder);
 
       position_at_end cont_basic_block builder
   | S_return expr_opt ->
