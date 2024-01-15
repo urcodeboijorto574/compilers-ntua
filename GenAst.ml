@@ -89,7 +89,7 @@ let rec lltype_of_t_type x =
   | T_func t -> lltype_of_t_type t
   | T_none -> void_type context
 
-and t_type_of_lltype lltype =
+let rec t_type_of_lltype lltype =
   match Llvm.classify_type lltype with
   | TypeKind.Integer -> begin
       match Llvm.integer_bitwidth lltype with
@@ -104,13 +104,13 @@ and t_type_of_lltype lltype =
   | TypeKind.Void -> T_none
   | _ -> raise (Invalid_argument "t_type is invalid")
 
-and lltype_of_fparDef x =
+let lltype_of_fparDef x =
   let t_type = Ast.t_type_of_dataType x.fpar_type.data_type in
   match x.ref with
   | false -> lltype_of_t_type t_type
   | true -> pointer_type (lltype_of_t_type t_type)
 
-and lltype_of_varDef vd =
+let lltype_of_varDef vd =
   let result =
     lltype_of_t_type (Ast.t_type_of_dataType vd.var_type.data_type)
   in
@@ -125,7 +125,7 @@ let expand_fpar_def_list (def_list : fparDef list) : fparDef list =
   in
   List.concat (List.map expand_fpar_def def_list)
 
-and expand_var_def_list (vdl : Ast.varDef list) : Ast.varDef list =
+let expand_var_def_list (vdl : Ast.varDef list) : Ast.varDef list =
   let expand_var_def (vd : Ast.varDef) : Ast.varDef list =
     List.map (fun id -> { id_list = [ id ]; var_type = vd.var_type }) vd.id_list
   in
@@ -556,7 +556,7 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
       declare_function name ft the_module
   | Some x -> x
 
-and gen_funcDef funcDef =
+let rec gen_funcDef funcDef =
   let stackFrame = Option.get funcDef.stack_frame in
   let funcDef_ll = gen_header funcDef.header stackFrame.access_link in
   let bb = append_block context ("entry_" ^ funcDef.header.id) funcDef_ll in
@@ -617,7 +617,7 @@ and gen_funcDef funcDef =
   if !blocks_list <> [] then
     position_at_end (List.hd !blocks_list) builder
 
-and define_lib_funcs () =
+let define_lib_funcs () =
   let define_lib_func
       ((name : string), (args : Ast.fparDef list), (ret_type : Ast.retType)) =
     let args = expand_fpar_def_list args in
@@ -721,7 +721,7 @@ and define_lib_funcs () =
   in
   List.iter define_lib_func lib_list
 
-and set_stack_frames funcDef =
+let rec set_stack_frames funcDef =
   let set_stack_frame () =
     let parentStackFrame =
       Option.map (fun fd -> Option.get fd.stack_frame) funcDef.parent_func
@@ -850,7 +850,7 @@ let add_opts pm =
   in
   List.iter (fun f -> f pm) opts
 
-and gen_on asts =
+let gen_on asts =
   (* Llvm_all_backends.initialize ();
      let triple = Target.default_triple () in
      set_target_triple triple the_module;
