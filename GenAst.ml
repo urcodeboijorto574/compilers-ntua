@@ -485,7 +485,7 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
           ignore (build_store returnValue returnValueAddr builder))
         expr_opt;
       ignore (build_br returnBB builder)
-  | S_semicolon -> ()
+  | S_semicolon -> ignore (build_nop ())
 
 and gen_varDef sf_alloca struct_index v =
   let position =
