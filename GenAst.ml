@@ -420,7 +420,8 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
       let new_then_basic_block = insertion_block builder in
 
       position_at_end new_then_basic_block builder;
-      ignore (build_br merge_basic_block builder);
+      if t_type_of_stmt s = None then
+        ignore (build_br merge_basic_block builder);
       position_at_end merge_basic_block builder
   | S_if_else (c, s1, s2) ->
       let start_basic_block = insertion_block builder in
@@ -444,13 +445,15 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
       ignore (gen_stmt funcDef returnValueAddrOpt returnBB s1);
       let new_then_basic_block = insertion_block builder in
       position_at_end new_then_basic_block builder;
-      ignore (build_br merge_basic_block builder);
+      if t_type_of_stmt s1 = None then
+        ignore (build_br merge_basic_block builder);
 
       position_at_end else_basic_block builder;
       ignore (gen_stmt funcDef returnValueAddrOpt returnBB s2);
       let new_else_basic_block = insertion_block builder in
       position_at_end new_else_basic_block builder;
-      ignore (build_br merge_basic_block builder);
+      if t_type_of_stmt s2 = None then
+        ignore (build_br merge_basic_block builder);
 
       position_at_end merge_basic_block builder
   | S_while (c, s) ->
@@ -473,8 +476,10 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
       let new_while_basic_block = insertion_block builder in
 
       position_at_end new_while_basic_block builder;
-      ignore
-        (build_cond_br (cond_val ()) while_basic_block cont_basic_block builder);
+      if t_type_of_stmt s = None then
+        ignore
+          (build_cond_br (cond_val ()) while_basic_block cont_basic_block
+             builder);
 
       position_at_end cont_basic_block builder
   | S_return expr_opt ->
