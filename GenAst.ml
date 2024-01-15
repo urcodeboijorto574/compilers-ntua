@@ -433,20 +433,18 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
       let new_then_basic_block = insertion_block builder in
       position_at_end new_then_basic_block builder;
       if t_type_of_stmt s = None then
-        ignore (build_br merge_basic_block builder);
+        ignore (build_br merge_basic_block builder)
+      else
+        ignore (build_br returnBB builder);
 
       position_at_end merge_basic_block builder
   | S_if_else (c, s1, s2) ->
-      let typeOfS1, typeOfS2 = (t_type_of_stmt s1, t_type_of_stmt s2) in
       let start_basic_block = insertion_block builder in
       let function_bb = block_parent start_basic_block in
       let then_basic_block = append_block context "then" function_bb in
       let else_basic_block = append_block context "else" function_bb in
-      let merge_basic_block_opt =
-        if typeOfS1 <> None && typeOfS2 <> None then
-          None
-        else
-          Some (append_block context "if_then_else_cont" function_bb)
+      let merge_basic_block =
+        append_block context "if_then_else_cont" function_bb
       in
       let cond_val addr =
         gen_cond funcDef addr c;
@@ -467,17 +465,20 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
       let new_then_basic_block = insertion_block builder in
       position_at_end new_then_basic_block builder;
       if t_type_of_stmt s1 = None then
-        ignore (build_br (Option.get merge_basic_block_opt) builder);
+        ignore (build_br merge_basic_block builder)
+      else
+        ignore (build_br returnBB builder);
 
       position_at_end else_basic_block builder;
       gen_stmt funcDef returnValueAddrOpt returnBB s2;
       let new_else_basic_block = insertion_block builder in
       position_at_end new_else_basic_block builder;
       if t_type_of_stmt s2 = None then
-        ignore (build_br (Option.get merge_basic_block_opt) builder);
+        ignore (build_br merge_basic_block builder)
+      else
+        ignore (build_br returnBB builder);
 
-      if merge_basic_block_opt <> None then
-        position_at_end (Option.get merge_basic_block_opt) builder
+      position_at_end merge_basic_block builder
   | S_while (c, s) ->
       let start_basic_block = insertion_block builder in
       let function_bb = block_parent start_basic_block in
@@ -505,7 +506,9 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
         ignore
           (build_cond_br
              (cond_val returnCondValueAddr)
-             while_basic_block cont_basic_block builder);
+             while_basic_block cont_basic_block builder)
+      else
+        ignore (build_br returnBB builder);
 
       position_at_end cont_basic_block builder
   | S_return expr_opt ->
@@ -514,8 +517,7 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
           let returnValue = gen_expr false funcDef e in
           let returnValueAddr = Option.get returnValueAddrOpt in
           ignore (build_store returnValue returnValueAddr builder))
-        expr_opt;
-      ignore (build_br returnBB builder)
+        expr_opt
   | S_semicolon -> ignore (build_nop ())
 
 and gen_varDef sf_alloca struct_index v =
