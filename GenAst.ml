@@ -69,11 +69,8 @@ let rec t_type_of_stmt (s : Ast.stmt) : Types.t_type option =
     end
   | S_if_else (c, s1, s2) -> begin
       match (t_type_of_stmt s1, t_type_of_stmt s2) with
-      | None, None -> None
-      | Some t1, Some t2 -> Some t1
-      | typeOfS1, typeOfS2 ->
-          Option.bind (get_const_cond_value c) (fun b ->
-              if b then typeOfS1 else typeOfS2)
+      | Some t1, Some _ -> Some t1
+      | _ -> None
     end
   | S_if (c, s) | S_while (c, s) ->
       Option.bind (get_const_cond_value c) (fun b ->
