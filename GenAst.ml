@@ -389,7 +389,7 @@ and gen_cond funcDef = function
       | O_not_equal -> build_comp Ne "not_equal")
   | C_cond_parenthesized c -> gen_cond funcDef c
 
-and gen_stmt funcDef returnValueAddrOpt : Ast.stmt -> unit = function
+and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
   | S_assignment (lv, expr) ->
       let lv_address = gen_lvalue funcDef lv in
       let lv_value = gen_expr false funcDef expr in
@@ -399,9 +399,9 @@ and gen_stmt funcDef returnValueAddrOpt : Ast.stmt -> unit = function
       match stmtList with
       | [] -> ()
       | s :: tail ->
-          gen_stmt funcDef returnValueAddrOpt s;
+          gen_stmt funcDef returnValueAddrOpt returnBB s;
           if t_type_of_stmt s = None then
-            gen_stmt funcDef returnValueAddrOpt (S_block tail)
+            gen_stmt funcDef returnValueAddrOpt returnBB (S_block tail)
     end
   | S_if (c, s) ->
       let start_basic_block = insertion_block builder in
@@ -419,7 +419,7 @@ and gen_stmt funcDef returnValueAddrOpt : Ast.stmt -> unit = function
         (build_cond_br (cond_val ()) then_basic_block merge_basic_block builder);
 
       position_at_end then_basic_block builder;
-      ignore (gen_stmt funcDef returnValueAddrOpt s);
+      ignore (gen_stmt funcDef returnValueAddrOpt returnBB s);
       let new_then_basic_block = insertion_block builder in
 
       position_at_end new_then_basic_block builder;
@@ -444,13 +444,13 @@ and gen_stmt funcDef returnValueAddrOpt : Ast.stmt -> unit = function
         (build_cond_br (cond_val ()) then_basic_block else_basic_block builder);
 
       position_at_end then_basic_block builder;
-      ignore (gen_stmt funcDef returnValueAddrOpt s1);
+      ignore (gen_stmt funcDef returnValueAddrOpt returnBB s1);
       let new_then_basic_block = insertion_block builder in
       position_at_end new_then_basic_block builder;
       ignore (build_br merge_basic_block builder);
 
       position_at_end else_basic_block builder;
-      ignore (gen_stmt funcDef returnValueAddrOpt s2);
+      ignore (gen_stmt funcDef returnValueAddrOpt returnBB s2);
       let new_else_basic_block = insertion_block builder in
       position_at_end new_else_basic_block builder;
       ignore (build_br merge_basic_block builder);
@@ -472,7 +472,7 @@ and gen_stmt funcDef returnValueAddrOpt : Ast.stmt -> unit = function
         (build_cond_br (cond_val ()) while_basic_block cont_basic_block builder);
 
       position_at_end while_basic_block builder;
-      ignore (gen_stmt funcDef returnValueAddrOpt s);
+      ignore (gen_stmt funcDef returnValueAddrOpt returnBB s);
       let new_while_basic_block = insertion_block builder in
 
       position_at_end new_while_basic_block builder;
@@ -486,7 +486,8 @@ and gen_stmt funcDef returnValueAddrOpt : Ast.stmt -> unit = function
           let returnValue = gen_expr false funcDef e in
           let returnValueAddr = Option.get returnValueAddrOpt in
           ignore (build_store returnValue returnValueAddr builder))
-        expr_opt
+        expr_opt;
+      ignore (build_br returnBB builder)
   | S_semicolon -> ()
 
 and gen_varDef sf_alloca struct_index v =
@@ -559,6 +560,9 @@ and gen_funcDef funcDef =
   let stackFrame = Option.get funcDef.stack_frame in
   let funcDef_ll = gen_header funcDef.header stackFrame.access_link in
   let bb = append_block context ("entry_" ^ funcDef.header.id) funcDef_ll in
+  let returnBB =
+    append_block context ("return_" ^ funcDef.header.id) funcDef_ll
+  in
   position_at_end bb builder;
   blocks_list := bb :: !blocks_list;
   let stackFrameAlloca =
@@ -600,15 +604,15 @@ and gen_funcDef funcDef =
     | T_none -> None
     | t -> Some (build_alloca (lltype_of_t_type t) "returned_value_ptr" builder)
   in
-  gen_stmt funcDef returnValueAddrOpt (S_block funcDef.block);
+  gen_stmt funcDef returnValueAddrOpt returnBB (S_block funcDef.block);
+  ignore (build_br returnBB builder);
+  position_at_end returnBB builder;
   (match returnValueAddrOpt with
   | None -> ignore (build_ret_void builder)
   | Some addr ->
       let returnValue = build_load addr "returned_value" builder in
       ignore (build_ret returnValue builder));
 
-  if block_terminator @@ insertion_block builder = None then
-    ignore (build_ret_void builder);
   blocks_list := List.tl !blocks_list;
   if !blocks_list <> [] then
     position_at_end (List.hd !blocks_list) builder
