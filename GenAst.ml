@@ -592,12 +592,15 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
 let rec gen_funcDef funcDef =
   let stackFrame = Option.get funcDef.stack_frame in
   let funcDef_ll = gen_header funcDef.header stackFrame.access_link in
-  let bb = append_block context ("entry_" ^ funcDef.header.id) funcDef_ll in
+  let entryBB =
+    append_block context ("entry_" ^ funcDef.header.id) funcDef_ll
+  in
+  let bodyBB = append_block context ("body_" ^ funcDef.header.id) funcDef_ll in
   let returnBB =
     append_block context ("return_" ^ funcDef.header.id) funcDef_ll
   in
-  position_at_end bb builder;
-  blocks_list := bb :: !blocks_list;
+  position_at_end entryBB builder;
+  blocks_list := entryBB :: !blocks_list;
   let stackFrameAlloca =
     let name =
       if funcDef.parent_func = None then "main" else funcDef.header.id
@@ -630,8 +633,10 @@ let rec gen_funcDef funcDef =
                (Option.get fdecl.func_def.stack_frame).access_link)
   in
   List.iter iterate funcDef.local_def_list;
+  ignore (build_br bodyBB builder);
 
   (* Generation of block *)
+  position_at_end bodyBB builder;
   let returnValueAddrOpt =
     match t_type_of_t_func (Ast.t_type_of_retType funcDef.header.ret_type) with
     | T_none -> None
