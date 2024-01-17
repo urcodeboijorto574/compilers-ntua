@@ -135,7 +135,7 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
   let args_array : Llvm.llvalue array =
     let args : Llvm.llvalue list =
       let rec gen_args fparDefList exprList =
-        let gen_arg fpd e = gen_expr fpd.ref funcDef e in
+        let gen_arg fpd e = gen_expr ~is_param_ref:fpd.ref funcDef e in
         match (fparDefList, exprList) with
         | [], [] -> []
         | [], _ | _, [] -> assert false
@@ -271,7 +271,7 @@ and gen_lvalue funcDef lv =
             let indicesList : Ast.expr list =
               List.rev (get_indices lv.lv_kind)
             in
-            List.map (gen_expr false funcDef) indicesList
+            List.map (gen_expr funcDef) indicesList
           in
           let rec get_final_index :
               Llvm.llvalue list * Llvm.llvalue list -> Llvm.llvalue = function
@@ -290,7 +290,7 @@ and gen_lvalue funcDef lv =
       build_gep arrayPtr [| index |] "array_element_ptr" builder
     end
 
-and gen_expr is_param_ref funcDef expr =
+and gen_expr ?(is_param_ref = false) funcDef expr =
   match expr with
   | E_const_int x -> const_int int_type x
   | E_const_char x -> const_int char_type (int_of_char x)
@@ -309,18 +309,18 @@ and gen_expr is_param_ref funcDef expr =
   | E_func_call fc -> gen_funcCall funcDef fc
   | E_sgn_expr (sign, expr) -> (
       match sign with
-      | O_plus -> gen_expr false funcDef expr
-      | O_minus -> build_neg (gen_expr false funcDef expr) "minus" builder)
+      | O_plus -> gen_expr funcDef expr
+      | O_minus -> build_neg (gen_expr funcDef expr) "minus" builder)
   | E_op_expr_expr (lhs, oper, rhs) -> (
-      let lhs_val = gen_expr false funcDef lhs in
-      let rhs_val = gen_expr false funcDef rhs in
+      let lhs_val = gen_expr funcDef lhs in
+      let rhs_val = gen_expr funcDef rhs in
       match oper with
       | O_plus -> build_add lhs_val rhs_val "addtmp" builder
       | O_minus -> build_sub lhs_val rhs_val "subtmp" builder
       | O_mul -> build_mul lhs_val rhs_val "multmp" builder
       | O_div -> build_sdiv lhs_val rhs_val "divtmp" builder
       | O_mod -> build_srem lhs_val rhs_val "modtmp" builder)
-  | E_expr_parenthesized expr -> gen_expr false funcDef expr
+  | E_expr_parenthesized expr -> gen_expr funcDef expr
 
 and gen_cond funcDef returnCondValueAddr = function
   | C_not_cond (lo, c) ->
@@ -379,8 +379,8 @@ and gen_cond funcDef returnCondValueAddr = function
       position_at_end merge_basic_block builder
   | C_expr_expr (e1, co, e2) ->
       let returnCondValue =
-        let lhs_val = gen_expr false funcDef e1 in
-        let rhs_val = gen_expr false funcDef e2 in
+        let lhs_val = gen_expr funcDef e1 in
+        let rhs_val = gen_expr funcDef e2 in
         let build_comp predicate instr_name =
           build_icmp predicate lhs_val rhs_val instr_name builder
         in
@@ -399,7 +399,7 @@ and gen_cond funcDef returnCondValueAddr = function
 and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
   | S_assignment (lv, expr) ->
       let lv_address = gen_lvalue funcDef lv in
-      let lv_value = gen_expr false funcDef expr in
+      let lv_value = gen_expr funcDef expr in
       ignore (build_store lv_value lv_address builder)
   | S_func_call fc -> ignore (gen_funcCall funcDef fc)
   | S_block stmtList -> begin
@@ -515,7 +515,7 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
   | S_return expr_opt ->
       Option.iter
         (fun e ->
-          let returnValue = gen_expr false funcDef e in
+          let returnValue = gen_expr funcDef e in
           let returnValueAddr = Option.get returnValueAddrOpt in
           ignore (build_store returnValue returnValueAddr builder))
         expr_opt
