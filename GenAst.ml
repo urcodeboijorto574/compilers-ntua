@@ -888,7 +888,7 @@ let add_opts pm =
   in
   List.iter (fun f -> f pm) opts
 
-let gen_on asts =
+let gen_on asts optimize =
   Llvm_all_backends.initialize ();
   let triple = Target.default_triple () in
   set_target_triple triple the_module;
@@ -901,7 +901,9 @@ let gen_on asts =
   set_stack_frames asts;
   gen_funcDef asts;
 
-  let mpm = PassManager.create () in
-  add_opts mpm;
-  ignore (PassManager.run_module the_module mpm);
+  if optimize = true then begin
+    let mpm = PassManager.create () in
+    add_opts mpm;
+    ignore (PassManager.run_module the_module mpm)
+  end;
   assert_valid_module the_module

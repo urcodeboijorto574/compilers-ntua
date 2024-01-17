@@ -1,9 +1,34 @@
 open Llvm
 open GenAst
+open Arg
+open Filename
 
 let main =
-  let lexbuf = Lexing.from_channel stdin in
+  let has_o_flag = ref false in
+  let has_f_flag = ref false in
+  let has_i_flag = ref false in
+  let filename = ref "" in
+  let usage_msg = "Usage: " ^ Sys.argv.(0) ^ " [-O] [-i | -f] filename" in
+
+  let speclist =
+    [
+      ("-O", Set has_o_flag, "Optimizaztion flag");
+      ( "-f",
+        Tuple [ Set has_f_flag; Clear has_i_flag ],
+        "Read from stdin, assembly code to stdout" );
+      ( "-i",
+        Tuple [ Set has_i_flag; Clear has_f_flag ],
+        "Read from stdin, intermediate code to stdout" );
+    ]
+  in
+
+  Arg.parse speclist (fun s -> filename := s) usage_msg;
+
   try
+    let input_from =
+      if !has_i_flag || !has_f_flag then stdin else Stdlib.open_in !filename
+    in
+    let lexbuf = Lexing.from_channel input_from in
     let asts = Parser.program Lexer.lexer lexbuf in
     if Types.debugMode then (
       Printf.printf "Syntactic analysis:\n";
@@ -16,22 +41,86 @@ let main =
     SemAst.sem_on asts;
     if Types.debugMode then Printf.printf "\n";
     Printf.printf "\027[32mSemantically correct.\027[0m\n%!";
-    GenAst.gen_on asts;
-
-    (* command to compile GenAst.ml
-       ocamlc -I /home/jimv/.opam/4.14.0/lib/llvm/ -c GenAst.ml*)
-
-    (* creates an a.ll file which includes the llvm
-       intermediate code*)
-    (* Then, the following 2 commands need to be executed:
-       llc -o a.s a.ll -> uses the llc compiler to create an
-                           a.s assembly file from the a.ll
-       clang -o a.out a.s ./lib/lib.a -> creates the executable a.out
-                               linking it with the library
-       ./a.out
-    *)
+    GenAst.gen_on asts !has_o_flag;
     print_module "a.ll" GenAst.the_module;
-    Printf.printf "\027[32mIR code generation completed.\027[0m\n%!"
-  with Parsing.Parse_error ->
-    Printf.eprintf "Syntax error\n";
+
+    let llc_command = "llc -o a.s a.ll" in
+    if Sys.command llc_command <> 0 then begin
+      Printf.printf "Internal error!\n";
+      exit 1
+    end;
+    let build_exec_command = "clang -o a.out a.s ./lib/lib.a" in
+    if Sys.command build_exec_command <> 0 then begin
+      Printf.printf "Internal error!\n";
+      exit 1
+    end;
+    if !has_i_flag && !has_f_flag then begin
+      usage_msg;
+      exit 1
+    end
+    else if !has_i_flag then begin
+      let i_command = "cat a.ll" in
+      if Sys.command i_command <> 0 then begin
+        Printf.printf "Internal error!\n";
+        exit 1
+      end;
+      let delete_command = "rm a.ll a.s" in
+      if Sys.command delete_command <> 0 then begin
+        Printf.printf "Internal error!\n";
+        exit 1
+      end;
+      Printf.printf "\027[32mIR code generation completed.\027[0m\n%!";
+      exit 0
+    end
+    else if !has_f_flag then begin
+      let f_command = "cat a.s" in
+      if Sys.command f_command <> 0 then begin
+        Printf.printf "Internal error!\n";
+        exit 1
+      end;
+      let delete_command = "rm a.ll a.s" in
+      if Sys.command delete_command <> 0 then begin
+        Printf.printf "Internal error!\n";
+        exit 1
+      end;
+      Printf.printf "\027[32mIR code generation completed.\027[0m\n%!";
+      exit 0
+    end
+    else if !has_i_flag = false && !has_f_flag = false then
+      begin
+        let extract_path_filename_and_extension filepath =
+          let path = dirname filepath in
+          let filename = basename filepath in
+          let extension = extension filepath in
+          (path, filename, extension)
+        in
+        let path, filename_with_extension, extension =
+          extract_path_filename_and_extension !filename
+        in
+        let filename = chop_extension filename_with_extension in
+        let ll_file = filename ^ ".imm" in
+        let asm_file = filename ^ ".asm" in
+        if Sys.command ("mv a.ll " ^ ll_file) <> 0 then begin
+          Printf.printf "Internal error!\n";
+          exit 1
+        end;
+        if Sys.command ("mv " ^ ll_file ^ " " ^ path ^ "/") <> 0 then begin
+          Printf.printf "Internal error!\n";
+          exit 1
+        end;
+        if Sys.command ("mv a.s " ^ asm_file) <> 0 then begin
+          Printf.printf "Internal error!\n";
+          exit 1
+        end;
+        if Sys.command ("mv " ^ asm_file ^ " " ^ path ^ "/") <> 0 then begin
+          Printf.printf "Internal error!\n";
+          exit 1
+        end;
+        Printf.printf "\027[32mIR code generation completed.\027[0m\n%!";
+        exit 0
+      end
+        Printf.printf "\027[32mIR code generation completed.\027[0m\n%!";
+    exit 0
+  with _ ->
+    Printf.printf "Syntax error\n";
     exit 1
