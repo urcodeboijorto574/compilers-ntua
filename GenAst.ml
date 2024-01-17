@@ -104,17 +104,11 @@ let rec t_type_of_lltype lltype =
   | _ -> raise (Invalid_argument "t_type is invalid")
 
 let lltype_of_fparDef fpd =
-  let t_type = Ast.t_type_of_dataType fpd.fpar_type.data_type in
-  match fpd.ref with
-  | false -> lltype_of_t_type t_type
-  | true -> pointer_type (lltype_of_t_type t_type)
+  let result = lltype_of_t_type (Ast.t_type_of_fparType fpd.fpar_type) in
+  let isArray = fpd.fpar_type.array_dimensions <> [] in
+  if isArray || not fpd.ref then result else pointer_type result
 
-let lltype_of_varDef vd =
-  let result =
-    lltype_of_t_type (Ast.t_type_of_dataType vd.var_type.data_type)
-  in
-  let isArray = vd.var_type.array_dimensions <> [] in
-  if isArray then pointer_type result else result
+let lltype_of_varDef vd = lltype_of_t_type (Ast.t_type_of_varType vd.var_type)
 
 let expand_fpar_def_list (def_list : fparDef list) : fparDef list =
   let expand_fpar_def def =
@@ -791,7 +785,7 @@ let rec set_stack_frames funcDef =
       Array.length (struct_element_types stack_frame_type)
     in
     let isRoot = access_link_opt = None in
-    let var_par_records : (string * int * bool * bool) list =
+    let al_par_var_records : (string * int * bool * bool) list =
       let initialIndex = if isRoot then 0 else 1 in
       let par_records =
         let rec par_records_of_fparDefs index = function
@@ -817,7 +811,11 @@ let rec set_stack_frames funcDef =
         in
         var_records_of_varDefs initialIndex vars_list
       in
-      par_records @ var_records
+      let par_var_records = par_records @ var_records in
+      if isRoot then
+        par_var_records
+      else
+        ("access_link", 0, true, false) :: par_var_records
     in
     funcDef.stack_frame <-
       Some
@@ -825,11 +823,7 @@ let rec set_stack_frames funcDef =
           stack_frame_type;
           access_link = access_link_opt;
           stack_frame_addr = None;
-          var_records =
-            (if isRoot then
-               var_par_records
-             else
-               ("access_link", 0, true, false) :: var_par_records);
+          var_records = al_par_var_records;
           stack_frame_length;
         }
   in
