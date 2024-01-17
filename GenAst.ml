@@ -129,7 +129,13 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
   let args_array : Llvm.llvalue array =
     let args : Llvm.llvalue list =
       let rec gen_args fparDefList exprList =
-        let gen_arg fpd e = gen_expr ~is_param_ref:fpd.ref funcDef e in
+        let gen_arg fpd e =
+          let is_param_ref =
+            let isArray = fpd.fpar_type.array_dimensions <> [] in
+            fpd.ref || isArray
+          in
+          gen_expr ~is_param_ref funcDef e
+        in
         match (fparDefList, exprList) with
         | [], [] -> []
         | [], _ | _, [] -> assert false
@@ -531,11 +537,7 @@ and gen_varDef sf_alloca struct_index vd =
       let t = lltype_of_t_type (Ast.t_type_of_dataType vd.var_type.data_type) in
       build_array_alloca t arraySize "array_alloca" builder
     in
-    let arrayPtr =
-      let zero = const_int int_type 0 in
-      build_gep array_alloca [| zero |] "array_ptr" builder
-    in
-    ignore (build_store arrayPtr position builder)
+    ignore (build_store array_alloca position builder)
 
 and gen_param funcDef (args_array : Ast.fparDef array) index param =
   let position =
@@ -792,8 +794,8 @@ let rec set_stack_frames funcDef =
           | [] -> []
           | (fpd : Ast.fparDef) :: tail ->
               let id = List.hd fpd.id_list in
-              let isRef = fpd.ref in
               let isArray = fpd.fpar_type.array_dimensions <> [] in
+              let isRef = fpd.ref && not isArray in
               (id, index, isRef, isArray)
               :: par_records_of_fparDefs (index + 1) tail
         in
