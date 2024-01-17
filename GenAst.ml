@@ -829,7 +829,7 @@ let rec set_stack_frames funcDef =
             (if isRoot then
                var_par_records
              else
-               ("access_link", 0, false, false) :: var_par_records);
+               ("access_link", 0, true, false) :: var_par_records);
           stack_frame_length;
         }
   in
