@@ -211,16 +211,15 @@ and gen_lvalue funcDef lv =
             search_address 0 parentStackFrameAlloca parentStackFrame
         | None -> failwith "variable not found"
       else
-        let var_name, elem_pos, is_ref, is_array =
+        let varName, elemPos, isRef, isArray =
           List.nth stackFrame.var_records i
         in
-        if var_name = id then
+        if varName = id then
           let paramAddr =
-            build_struct_gep stackFrameAlloca elem_pos (var_name ^ "_ptr")
-              builder
+            build_struct_gep stackFrameAlloca elemPos (varName ^ "_ptr") builder
           in
-          if is_ref || is_array then
-            build_load paramAddr (var_name ^ "_address") builder
+          if isArray || isRef then
+            build_load paramAddr (varName ^ "_address") builder
           else
             paramAddr
         else
@@ -534,7 +533,10 @@ and gen_varDef sf_alloca struct_index vd =
         let productOfList = List.fold_left (fun acc d -> acc * d) 1 dimList in
         const_int int_type productOfList
       in
-      let t = lltype_of_t_type (Ast.t_type_of_dataType vd.var_type.data_type) in
+      let t =
+        lltype_of_t_type
+          (Types.final_t_type_of_t_array (Ast.t_type_of_varType vd.var_type))
+      in
       build_array_alloca t arraySize "array_alloca" builder
     in
     ignore (build_store array_alloca position builder)
@@ -546,16 +548,17 @@ and gen_param funcDef (args_array : Ast.fparDef array) index param =
     in
     build_struct_gep stackFrameAlloca index "stack_frame_elem" builder
   in
-  let isRootFunction = funcDef.parent_func = None in
-  let isAccessLink = (not isRootFunction) && index = 0 in
-  if isAccessLink then (
-    set_value_name "access_link" position;
-    ignore (build_store param position builder))
-  else
-    let ith_param = args_array.(if isRootFunction then index else index - 1) in
-    let var_name = try List.hd ith_param.id_list with _ -> assert false in
-    set_value_name var_name position;
-    ignore (build_store param position builder)
+  let name =
+    let isRoot = funcDef.parent_func = None in
+    let isAccessLink = (not isRoot) && index = 0 in
+    if isAccessLink then
+      "access_link"
+    else
+      let ith_param = args_array.(if isRoot then index else index - 1) in
+      List.hd ith_param.id_list
+  in
+  set_value_name name position;
+  ignore (build_store param position builder)
 
 and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
   let name = header.id in
