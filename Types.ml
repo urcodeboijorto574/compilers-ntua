@@ -28,6 +28,11 @@ let construct_array_type dimList endType =
   | T_int | T_char -> helper 0 (List.length dimList) dimList
   | _ -> failwith "Can't construct array of non-integers and non-characters"
 
+let rec dimensions_list_of_t_array = function
+  | T_func _ | T_none -> raise (Invalid_argument "type is T_func or T_none")
+  | T_int | T_char -> []
+  | T_array (n, t) -> n :: dimensions_list_of_t_array t
+
 let rec equal_types t1 t2 =
   match (t1, t2) with
   | T_array (s1, t1'), T_array (s2, t2') ->

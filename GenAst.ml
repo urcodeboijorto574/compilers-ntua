@@ -254,13 +254,8 @@ and gen_lvalue funcDef lv =
         let indexExpr : Llvm.llvalue =
           let dimensions : Llvm.llvalue list =
             let dimensionsList : int list =
-              let rec get_dimensions : Types.t_type -> int list = function
-                | T_func _ | T_none -> assert false
-                | T_int | T_char -> []
-                | T_array (size, typ) -> size :: get_dimensions typ
-              in
               let arrayType = Option.get (Option.get lv.lv_type).array_type in
-              List.rev (get_dimensions arrayType)
+              List.rev (Types.dimensions_list_of_t_array arrayType)
             in
             List.map (const_int int_type) dimensionsList
           in
