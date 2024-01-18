@@ -23,6 +23,11 @@ val string_of_t_type : t_type -> string
     array. Returns [Types.t_type]. *)
 val construct_array_type : int list -> t_type -> t_type
 
+(** [dimensions_list_of_t_array t] converts the type [t] to a dimensions list
+    (it is the reverse operation of construct_array_type). Raises
+    [Invalid_argument] if [t] is [T_func] or [T_none]. *)
+val dimensions_list_of_t_array : t_type -> int list
+
 (** [equal_types] takes two arguments of type [t_type] and checks if they are
     the same. If they are the same [true] is returned, otherwise [false]. *)
 val equal_types : t_type -> t_type -> bool
