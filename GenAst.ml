@@ -99,6 +99,7 @@ let rec t_type_of_lltype lltype =
   | TypeKind.Array ->
       T_array
         (Llvm.array_length lltype, t_type_of_lltype (Llvm.element_type lltype))
+  | TypeKind.Pointer -> T_array (-1, t_type_of_lltype (Llvm.element_type lltype))
   | TypeKind.Function -> T_func (t_type_of_lltype (return_type lltype))
   | TypeKind.Void -> T_none
   | _ -> raise (Invalid_argument "t_type is invalid")
