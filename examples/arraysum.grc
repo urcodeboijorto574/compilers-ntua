@@ -23,10 +23,10 @@ fun main() : nothing
   {
     n <- 0;
     i <- 0;
-    j <- 0;
-    k <- 0;
     while i < 2 do {
+      j <- 0;
       while j < 3 do {
+        k <- 0;
         while k < 4 do {
           a[i][j][k] <- n;
           incrByStep(n, 8);
@@ -40,7 +40,6 @@ fun main() : nothing
 
   fun array1DSum(ref a : int[]; size : int) : int
     var sum, i : int;
-
   { $array1DSum
     i <- 0;
     sum <- 0;
@@ -53,12 +52,11 @@ fun main() : nothing
 
   fun array2DSum(ref a : int[3][4]) : int
     var sum, i, j : int;
-
   { $array2DSum
     i <- 0;
-    j <- 0;
     sum <- 0;
     while i < 3 do {
+      j <- 0;
       while j < 4 do {
         sum <- sum + a[i][j];
         j <- j + 1;
@@ -77,9 +75,9 @@ fun main() : nothing
   writeString("Calculating the sum of the array using the \'array1DSum\' function.\n");
 
   i <- 0;
-  j <- 0;
   sum[0] <- 0;
   while i < 2 do {
+    j <- 0;
     while j < 3 do {
       sum[0] <- sum[0] + array1DSum(arr[i][j], 4);
       j <- j + 1;
