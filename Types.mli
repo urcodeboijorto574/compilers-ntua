@@ -1,7 +1,7 @@
 type t_type =
   | T_int
   | T_char
-  | T_array of t_type * int
+  | T_array of int * t_type
   | T_none
   | T_func of t_type
 
@@ -31,7 +31,7 @@ val equal_types : t_type -> t_type -> bool
     type [ti]. Returns [Types.t_type]. *)
 val t_type_of_t_func : t_type -> t_type
 
-(** [t_type_of_t_array t] takes a [T_array (ti, size)] type and returns the
+(** [t_type_of_t_array t] takes a [T_array (size, ti)] type and returns the
     encapsulated type [ti]. Returns [Types.t_type]. *)
 val t_type_of_t_array : t_type -> t_type
 

@@ -484,7 +484,7 @@ and sem_lvalue lv =
         resultArrayType := Some entryType;
         entryType
     | L_string s ->
-        let resultType = Types.T_array (Types.T_char, String.length s + 1) in
+        let resultType = Types.T_array (String.length s + 1, Types.T_char) in
         resultArrayType := Some resultType;
         resultType
         (* Note: the last character of a string literal is not the '\0' character. *)
@@ -506,7 +506,7 @@ and sem_lvalue lv =
           | L_comp (lvalue, _) -> get_name_of_lv lvalue
         in
         match sem_lvalue_kind lv with
-        | Types.T_array (t, n) ->
+        | Types.T_array (n, t) ->
             if n <> -1 then begin
               match Ast.get_const_expr_value e with
               | None -> ()
