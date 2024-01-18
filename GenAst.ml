@@ -250,36 +250,39 @@ and gen_lvalue funcDef lv =
         gen_lvalue_kind lv.lv_kind
       in
       let index : Llvm.llvalue =
-        let indexExpr : Llvm.llvalue =
-          let dimensions : Llvm.llvalue list =
-            let dimensionsList : int list =
-              let arrayType = Option.get (Option.get lv.lv_type).array_type in
-              List.rev (Types.dimensions_list_of_t_array arrayType)
-            in
-            List.map (const_int int_type) dimensionsList
+        let dimensions : Llvm.llvalue list =
+          let dimensionsList : int list =
+            let arrayType = Option.get (Option.get lv.lv_type).array_type in
+            Types.dimensions_list_of_t_array arrayType
           in
-          let indices : Llvm.llvalue list =
+          List.map (const_int int_type) dimensionsList
+        in
+        let indices : Llvm.llvalue list =
+          let indicesList : Ast.expr list =
             let rec get_indices : Ast.lvalue_kind -> Ast.expr list = function
               | L_id _ | L_string _ -> []
               | L_comp (lvk, i) -> i :: get_indices lvk
             in
-            let indicesList : Ast.expr list =
-              List.rev (get_indices lv.lv_kind)
-            in
-            List.map (gen_expr funcDef) indicesList
+            List.rev (get_indices lv.lv_kind)
           in
-          let rec get_final_index :
-              Llvm.llvalue list * Llvm.llvalue list -> Llvm.llvalue = function
-            | [], _ | _, [] -> const_int int_type 0
-            | i :: _, _ :: [] -> i
-            | i :: itail, d :: dtail ->
-                let product = build_mul i d "prod_temp" builder in
-                build_add product
-                  (get_final_index (itail, dtail))
-                  "index_temp" builder
-          in
-          get_final_index (indices, dimensions)
+          List.map (gen_expr funcDef) indicesList
         in
+        let product_of_list : Llvm.llvalue list -> Llvm.llvalue =
+          List.fold_left
+            (fun acc n -> build_mul acc n "product_temp" builder)
+            (const_int int_type 1)
+        in
+        let rec get_final_index :
+            Llvm.llvalue list * Llvm.llvalue list -> Llvm.llvalue = function
+          | [], _ -> const_int int_type 0
+          | i :: itail, d :: dtail ->
+              build_add
+                (build_mul i (product_of_list dtail) "product_temp" builder)
+                (get_final_index (itail, dtail))
+                "add_temp" builder
+          | _ (* #indices > #dimensions *) -> assert false
+        in
+        let indexExpr = get_final_index (indices, dimensions) in
         build_intcast indexExpr int_type "index" builder
       in
       build_gep arrayPtr [| index |] "array_element_ptr" builder
