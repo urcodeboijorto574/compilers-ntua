@@ -83,7 +83,7 @@ let rec t_type_of_stmt (s : Ast.stmt) : Types.t_type option =
 let rec lltype_of_t_type = function
   | T_int -> int_type
   | T_char -> char_type
-  | T_array (t, n) ->
+  | T_array (n, t) ->
       pointer_type (lltype_of_t_type (Types.final_t_type_of_t_array t))
   | T_func t -> lltype_of_t_type t
   | T_none -> void_type context
@@ -98,7 +98,7 @@ let rec t_type_of_lltype lltype =
     end
   | TypeKind.Array ->
       T_array
-        (t_type_of_lltype (Llvm.element_type lltype), Llvm.array_length lltype)
+        (Llvm.array_length lltype, t_type_of_lltype (Llvm.element_type lltype))
   | TypeKind.Function -> T_func (t_type_of_lltype (return_type lltype))
   | TypeKind.Void -> T_none
   | _ -> raise (Invalid_argument "t_type is invalid")
@@ -256,7 +256,7 @@ and gen_lvalue funcDef lv =
               let rec get_dimensions : Types.t_type -> int list = function
                 | T_func _ | T_none -> assert false
                 | T_int | T_char -> []
-                | T_array (typ, size) -> size :: get_dimensions typ
+                | T_array (size, typ) -> size :: get_dimensions typ
               in
               let arrayType = Option.get (Option.get lv.lv_type).array_type in
               List.rev (get_dimensions arrayType)
