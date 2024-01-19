@@ -251,6 +251,24 @@ and gen_lvalue funcDef lv =
         gen_lvalue_kind lv.lv_kind
       in
       let index : Llvm.llvalue =
+        (* [get_final_index] calculates the final index by multiplying each
+            index in indexList with the corresponding dimensions in dimList.
+            The function follows the following algorithm:
+            - Step 1: Remove the first dimension in dimList
+            - Step 2: Reverse both lists
+            - Step 3: Append at the start of the dimList a single '1'
+            - Step 4: If indexList and dimList have equal lengths, got to Step 7
+            - Step 5: Append at the start of the indexList a single '0'
+            - Step 6: Go to Step 4
+            - Step 7: Replace the nth element of dimList with the product of its
+                      first n elements, for n from 1 to the length of dimList
+            - Step 8: Find every product of corresponding elements in the two
+                      lists and calculate their sum.
+            - End:    The sum found in Step 8 is the final index
+
+            The list modifications said above happen outside of the
+            get_final_index function. [dimProducts] is the altered dimensions'
+            list and [indicesFinal] is the altered indices' list. *)
         let dimProducts =
           let dimensions : Llvm.llvalue list =
             let dimensionsList : int list =
