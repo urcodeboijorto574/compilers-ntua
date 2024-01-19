@@ -228,3 +228,10 @@ let get_undefined_functions () =
       | ENTRY_variable _ | ENTRY_parameter _ -> ())
     !symbolTable;
   match !undefinedFunctionsList with [] -> None | l -> Some l
+
+let extract_function_depth (compId : string) : int =
+  let open String in
+  let nameLparNum = List.hd (split_on_char ')' compId) in
+  try int_of_string List.(hd (tl (split_on_char '(' nameLparNum)))
+  with Failure _ ->
+    raise (Invalid_argument "complex string doesn't contain the depth")
