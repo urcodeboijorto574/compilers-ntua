@@ -126,7 +126,9 @@ let expand_var_def_list (vdl : Ast.varDef list) : Ast.varDef list =
   List.concat (List.map expand_var_def vdl)
 
 let rec gen_funcCall funcDef (fc : Ast.funcCall) =
-  let callee : Llvm.llvalue = Option.get (lookup_function fc.id the_module) in
+  let callee : Llvm.llvalue =
+    Option.get (lookup_function fc.comp_id the_module)
+  in
   let args_array : Llvm.llvalue array =
     let args : Llvm.llvalue list =
       let rec gen_args fparDefList exprList =
@@ -143,7 +145,7 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
         | fpd :: fpdTail, expr :: exprTail ->
             gen_arg fpd expr :: gen_args fpdTail exprTail
       in
-      let fpar_def_list = Hashtbl.find named_functions fc.id in
+      let fpar_def_list = Hashtbl.find named_functions fc.comp_id in
       gen_args fpar_def_list fc.expr_list
     in
     if List.mem fc.id lib_function_names then
@@ -594,12 +596,12 @@ and gen_param funcDef (args_array : Ast.fparDef array) index param =
     ignore (build_store param position builder)
 
 and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
-  let name = header.id in
+  let name = header.comp_id in
   let args = expand_fpar_def_list header.fpar_def_list in
   Hashtbl.add named_functions name args;
   match lookup_function name the_module with
   | None ->
-      let name = if access_link = None then "main" else header.id in
+      let name = if access_link = None then "main" else header.comp_id in
       let ft =
         let return_type =
           lltype_of_t_type (Ast.t_type_of_retType header.ret_type)
