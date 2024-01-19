@@ -17,22 +17,6 @@ let int_type = i64_type context
 let char_type = i8_type context
 let bool_type = i1_type context
 
-let lib_function_names =
-  [
-    "writeInteger";
-    "writeChar";
-    "writeString";
-    "readInteger";
-    "readChar";
-    "readString";
-    "ascii";
-    "chr";
-    "strlen";
-    "strcmp";
-    "strcpy";
-    "strcat";
-  ]
-
 let build_nop () =
   let zero = const_int bool_type 0 in
   build_add zero zero "nop" builder
@@ -148,7 +132,7 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
       let fpar_def_list = Hashtbl.find named_functions fc.comp_id in
       gen_args fpar_def_list fc.expr_list
     in
-    if List.mem fc.id lib_function_names then
+    if List.mem fc.id Symbol.lib_function_names then
       Array.of_list args
     else
       let result_access_link : Llvm.llvalue =

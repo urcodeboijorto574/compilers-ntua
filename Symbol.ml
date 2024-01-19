@@ -1,3 +1,19 @@
+let lib_function_names =
+  [
+    "writeInteger";
+    "writeChar";
+    "writeString";
+    "readInteger";
+    "readChar";
+    "readString";
+    "ascii";
+    "chr";
+    "strlen";
+    "strcmp";
+    "strcpy";
+    "strcat";
+  ]
+
 type param_passing =
   | BY_VALUE
   | BY_REFERENCE
