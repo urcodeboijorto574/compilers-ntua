@@ -171,13 +171,7 @@ let look_up_entry (id : string) =
       in
       Hashtbl.iter
         (fun key entry ->
-          if
-            not
-              (key = "writeInteger" || key = "writeChar" || key = "writeString"
-             || key = "readInteger" || key = "readChar" || key = "readString"
-             || key = "ascii" || key = "chr" || key = "strlen" || key = "strcmp"
-             || key = "strcpy" || key = "strcat")
-          then (
+          if not (List.mem key lib_function_names) then (
             printedSmth := true;
             Printf.printf
               "\tKey: '%s', Value: { id = '%s'; scope = %s(%d); kind = %s }\n"
