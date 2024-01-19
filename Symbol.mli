@@ -6,7 +6,6 @@ and scope = {
   name : string;
   parent : scope option;
   depth : int;
-  mutable scope_entries : entry list;
 }
 
 and entry = {

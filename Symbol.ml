@@ -6,7 +6,6 @@ and scope = {
   name : string;
   parent : scope option;
   depth : int;
-  mutable scope_entries : entry list;
 }
 
 and entry = {
@@ -39,9 +38,7 @@ and entry_function = {
 }
 
 let set_func_defined entryFunc = entryFunc.state <- DEFINED
-
-let current_scope =
-  ref { name = ""; parent = None; depth = 0; scope_entries = [] }
+let current_scope = ref { name = ""; parent = None; depth = 0 }
 
 let open_scope str =
   current_scope :=
@@ -49,7 +46,6 @@ let open_scope str =
       name = str;
       parent = Some !current_scope;
       depth = !current_scope.depth + 1;
-      scope_entries = [];
     }
 
 and close_scope () =
@@ -70,7 +66,7 @@ let symbolTable = ref (Hashtbl.create 0)
 
 let create_symbol_table numOfBuckets =
   symbolTable := Hashtbl.create numOfBuckets;
-  current_scope := { name = ""; parent = None; depth = 0; scope_entries = [] }
+  current_scope := { name = ""; parent = None; depth = 0 }
 
 (** [enter_entry i e] takes an identifier [i] and an entry kind [e] and creates
     and adds a new entry in the symbolTable. *)
@@ -78,8 +74,7 @@ let enter_entry ident eKind =
   let e = { id = ident; scope = !current_scope; kind = eKind } in
   Hashtbl.add !symbolTable ident e;
   if Types.debugMode then
-    Printf.printf "entering entry %s in current scope\n" e.id;
-  !current_scope.scope_entries <- e :: !current_scope.scope_entries
+    Printf.printf "entering entry %s in current scope\n" e.id
 
 let enter_variable id typ =
   enter_entry id (ENTRY_variable { variable_type = typ })
