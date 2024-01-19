@@ -131,8 +131,10 @@ let rec sem_funcDef fd =
     and [false] when it's part of a function declaration) and the function's
     header [h]. If [h] is part of a function definition, then a new scope is
     opened and the function's parameters are inserted in it. Returns [unit]. *)
-and sem_header isPartOfAFuncDef = function
+and sem_header isPartOfAFuncDef header =
+  match header with
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } -> (
+      header.comp_id <- ident ^ "(" ^ string_of_int !current_scope.depth ^ ")";
       let isMainProgram = !current_scope.depth = 0 in
       if isMainProgram then
         if rt <> Nothing then (
@@ -619,6 +621,10 @@ and sem_funcCall fc =
       let resultLookUpOption = look_up_entry ident in
       try
         if resultLookUpOption = None then raise Not_found;
+        fc.comp_id <-
+          ident ^ "("
+          ^ string_of_int (Option.get resultLookUpOption).scope.depth
+          ^ ")";
         let functionEntry =
           match (Option.get resultLookUpOption).kind with
           | ENTRY_function ef -> ef
