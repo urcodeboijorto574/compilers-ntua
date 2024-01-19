@@ -51,6 +51,7 @@ and funcDef = {
 
 and header = {
   id : string;
+  mutable comp_id : string;
   fpar_def_list : fparDef list;
   ret_type : retType;
 }
@@ -133,6 +134,7 @@ and expr =
 
 and funcCall = {
   id : string;
+  mutable comp_id : string;
   expr_list : expr list;
   mutable ret_type : Types.t_type option;
       (* 'ret_type' is not an encapsulation of T_func *)
@@ -161,13 +163,15 @@ and newFuncDecl a =
     is_redundant = false;
   }
 
-and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
+and newHeader (a, b, c) =
+  { id = a; comp_id = a; fpar_def_list = b; ret_type = c }
+
 and newFparDef (a, b, c) = { ref = a; id_list = b; fpar_type = c }
 and newFparType (a, b) : fparType = { data_type = a; array_dimensions = b }
 and newVarDef (a, b) = { id_list = a; var_type = b }
 and newVarType (a, b) : varType = { data_type = a; array_dimensions = b }
 and newLValue a = { lv_kind = a; lv_type = None }
-and newFuncCall (a, b) = { id = a; expr_list = b; ret_type = None }
+and newFuncCall (a, b) = { id = a; comp_id = a; expr_list = b; ret_type = None }
 
 (* Type conversion functions *)
 let t_type_of_dataType = function

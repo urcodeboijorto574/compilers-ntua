@@ -45,6 +45,7 @@ and funcDef = {
 
 and header = {
   id : string;
+  mutable comp_id : string;
   fpar_def_list : fparDef list;
   ret_type : retType;
 }
@@ -127,9 +128,10 @@ and expr =
 
 and funcCall = {
   id : string;
+  mutable comp_id : string;
   expr_list : expr list;
   mutable ret_type : Types.t_type option;
-  (* 'ret_type' is not an encapsulation of T_func *)
+      (* 'ret_type' is not an encapsulation of T_func *)
 }
 
 and cond =
