@@ -251,39 +251,58 @@ and gen_lvalue funcDef lv =
         gen_lvalue_kind lv.lv_kind
       in
       let index : Llvm.llvalue =
-        let dimensions : Llvm.llvalue list =
-          let dimensionsList : int list =
-            let arrayType = Option.get (Option.get lv.lv_type).array_type in
-            Types.dimensions_list_of_t_array arrayType
+        let dimProducts =
+          let dimensions : Llvm.llvalue list =
+            let dimensionsList : int list =
+              let arrayType = Option.get (Option.get lv.lv_type).array_type in
+              Types.dimensions_list_of_t_array arrayType
+            in
+            List.map (const_int int_type) dimensionsList
           in
-          List.map (const_int int_type) dimensionsList
+          let dimensionsFinal =
+            const_int int_type 1 :: List.rev (List.tl dimensions)
+          in
+          snd
+            (List.fold_left_map
+               (fun acc num ->
+                 let product = build_mul num acc "product_temp" builder in
+                 (product, product))
+               (const_int int_type 1) dimensionsFinal)
         in
         let indices : Llvm.llvalue list =
           let indicesList : Ast.expr list =
-            let rec get_indices : Ast.lvalue_kind -> Ast.expr list = function
+            let rec get_indices_reversed : Ast.lvalue_kind -> Ast.expr list =
+              function
               | L_id _ | L_string _ -> []
-              | L_comp (lvk, i) -> i :: get_indices lvk
+              | L_comp (lvk, i) -> i :: get_indices_reversed lvk
             in
-            List.rev (get_indices lv.lv_kind)
+            List.rev (get_indices_reversed lv.lv_kind)
           in
           List.map (gen_expr funcDef) indicesList
         in
-        let product_of_list : Llvm.llvalue list -> Llvm.llvalue =
-          List.fold_left
-            (fun acc n -> build_mul acc n "product_temp" builder)
-            (const_int int_type 1)
+        let indicesFinal =
+          let indicesRev = List.rev indices in
+          let rec get_filled_indices counter targetLen l1 =
+            if counter = targetLen then
+              l1
+            else
+              get_filled_indices (counter + 1) targetLen
+                (const_int int_type 0 :: l1)
+          in
+          get_filled_indices (List.length indicesRev) (List.length dimProducts)
+            indicesRev
         in
         let rec get_final_index :
             Llvm.llvalue list * Llvm.llvalue list -> Llvm.llvalue = function
           | [], _ -> const_int int_type 0
-          | i :: itail, d :: dtail ->
+          | d :: dtail, i :: itail ->
               build_add
-                (build_mul i (product_of_list dtail) "product_temp" builder)
-                (get_final_index (itail, dtail))
+                (build_mul i d "product_temp" builder)
+                (get_final_index (dtail, itail))
                 "add_temp" builder
           | _ (* #indices > #dimensions *) -> assert false
         in
-        let indexExpr = get_final_index (indices, dimensions) in
+        let indexExpr = get_final_index (dimProducts, indicesFinal) in
         build_intcast indexExpr int_type "index" builder
       in
       build_gep arrayPtr [| index |] "array_element_ptr" builder
