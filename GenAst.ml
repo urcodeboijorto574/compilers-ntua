@@ -80,8 +80,7 @@ let rec t_type_of_stmt (s : Ast.stmt) : Types.t_type option =
           if b then t_type_of_stmt s else None)
   | S_assignment _ | S_func_call _ | S_semicolon -> None
 
-let rec lltype_of_t_type x =
-  match x with
+let rec lltype_of_t_type = function
   | T_int -> int_type
   | T_char -> char_type
   | T_array (t, n) ->
@@ -104,9 +103,9 @@ let rec t_type_of_lltype lltype =
   | TypeKind.Void -> T_none
   | _ -> raise (Invalid_argument "t_type is invalid")
 
-let lltype_of_fparDef x =
-  let t_type = Ast.t_type_of_dataType x.fpar_type.data_type in
-  match x.ref with
+let lltype_of_fparDef fpd =
+  let t_type = Ast.t_type_of_dataType fpd.fpar_type.data_type in
+  match fpd.ref with
   | false -> lltype_of_t_type t_type
   | true -> pointer_type (lltype_of_t_type t_type)
 
@@ -193,49 +192,46 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
 
 and gen_lvalue funcDef lv =
   let gen_lvalue_address id =
-    let rec iterate i stack_frame_alloca stackFrame =
-      if i >= stackFrame.stack_frame_length then
-        let parentStackFrame =
+    let rec search_address i stackFrameAlloca stackFrame =
+      let isIndexOutOfBounds = i >= stackFrame.stack_frame_length in
+      if isIndexOutOfBounds then
+        let parentStackFrameOpt =
           Option.map (fun fd -> Option.get fd.stack_frame) funcDef.parent_func
         in
-        match parentStackFrame with
-        | Some sfParent ->
-            let access_link =
+        match parentStackFrameOpt with
+        | Some parentStackFrame ->
+            let access_link_ptr =
               build_struct_gep
                 (Option.get stackFrame.stack_frame_addr)
                 0 "access_link_ptr" builder
             in
-            let parentStackFrameAddr =
-              build_load access_link "access_link_val" builder
+            let parentStackFrameAlloca =
+              build_load access_link_ptr "access_link_val" builder
             in
-            iterate 0 parentStackFrameAddr sfParent
+            search_address 0 parentStackFrameAlloca parentStackFrame
         | None -> failwith "variable not found"
       else
         let var_name, elem_pos, is_ref, is_array =
           List.nth stackFrame.var_records i
         in
-        if var_name = id then begin
-          let addr =
-            build_struct_gep stack_frame_alloca elem_pos var_name builder
+        if var_name = id then
+          let paramAddr =
+            build_struct_gep stackFrameAlloca elem_pos (var_name ^ "_ptr")
+              builder
           in
-          if is_ref = false then begin
-            match is_array with
-            | true -> build_load addr (var_name ^ "_address") builder
-            | false -> addr
-          end
+          if is_ref || is_array then
+            build_load paramAddr (var_name ^ "_address") builder
           else
-            build_load addr (var_name ^ "_address") builder
-        end
+            paramAddr
         else
-          iterate (i + 1) stack_frame_alloca stackFrame
+          search_address (i + 1) stackFrameAlloca stackFrame
     in
     let initialIndex = if funcDef.parent_func = None then 0 else 1 in
     let stackFrameAddr =
       Option.get (Option.get funcDef.stack_frame).stack_frame_addr
     in
-    iterate initialIndex stackFrameAddr (Option.get funcDef.stack_frame)
+    search_address initialIndex stackFrameAddr (Option.get funcDef.stack_frame)
   in
-
   match lv.lv_kind with
   | L_id id -> gen_lvalue_address id
   | L_string s ->
@@ -253,28 +249,30 @@ and gen_lvalue funcDef lv =
         in
         gen_lvalue_kind lv.lv_kind
       in
-      let index =
-        let dimensions : Llvm.llvalue list =
-          let rec get_dimensions : Types.t_type -> int list = function
-            | T_func _ | T_none -> assert false
-            | T_int | T_char -> []
-            | T_array (typ, size) -> size :: get_dimensions typ
-          in
-          let dimensionsList : int list =
-            let arrayType = Option.get (Option.get lv.lv_type).array_type in
-            List.rev (get_dimensions arrayType)
-          in
-          List.map (const_int int_type) dimensionsList
-        in
-        let indices : Llvm.llvalue list =
-          let rec get_indices : Ast.lvalue_kind -> Ast.expr list = function
-            | L_id _ | L_string _ -> []
-            | L_comp (lvk, i) -> i :: get_indices lvk
-          in
-          let indicesList : Ast.expr list = List.rev (get_indices lv.lv_kind) in
-          List.map (gen_expr false funcDef) indicesList
-        in
+      let index : Llvm.llvalue =
         let indexExpr : Llvm.llvalue =
+          let dimensions : Llvm.llvalue list =
+            let dimensionsList : int list =
+              let rec get_dimensions : Types.t_type -> int list = function
+                | T_func _ | T_none -> assert false
+                | T_int | T_char -> []
+                | T_array (typ, size) -> size :: get_dimensions typ
+              in
+              let arrayType = Option.get (Option.get lv.lv_type).array_type in
+              List.rev (get_dimensions arrayType)
+            in
+            List.map (const_int int_type) dimensionsList
+          in
+          let indices : Llvm.llvalue list =
+            let rec get_indices : Ast.lvalue_kind -> Ast.expr list = function
+              | L_id _ | L_string _ -> []
+              | L_comp (lvk, i) -> i :: get_indices lvk
+            in
+            let indicesList : Ast.expr list =
+              List.rev (get_indices lv.lv_kind)
+            in
+            List.map (gen_expr false funcDef) indicesList
+          in
           let rec get_final_index :
               Llvm.llvalue list * Llvm.llvalue list -> Llvm.llvalue = function
             | [], _ | _, [] -> const_int int_type 0
@@ -523,31 +521,27 @@ and gen_stmt funcDef returnValueAddrOpt returnBB : Ast.stmt -> unit = function
         expr_opt
   | S_semicolon -> ignore (build_nop ())
 
-and gen_varDef sf_alloca struct_index v =
+and gen_varDef sf_alloca struct_index vd =
   let position =
-    build_struct_gep sf_alloca struct_index (List.hd v.id_list) builder
+    build_struct_gep sf_alloca struct_index (List.hd vd.id_list) builder
   in
-  let isArray = v.var_type.array_dimensions <> [] in
-  match isArray with
-  | false -> set_value_name (List.hd v.id_list) position
-  | true ->
-      let dimList = v.var_type.array_dimensions in
-      let array_alloca =
-        let arraySize : Llvm.llvalue =
-          let productOfList = List.fold_left (fun acc d -> acc * d) 1 dimList in
-          const_int int_type productOfList
-        in
-        let t =
-          lltype_of_t_type (Ast.t_type_of_dataType v.var_type.data_type)
-        in
-        build_array_alloca t arraySize "array_alloca" builder
+  set_value_name (List.hd vd.id_list) position;
+  let isArray = vd.var_type.array_dimensions <> [] in
+  if isArray then
+    let dimList = vd.var_type.array_dimensions in
+    let array_alloca =
+      let arraySize : Llvm.llvalue =
+        let productOfList = List.fold_left (fun acc d -> acc * d) 1 dimList in
+        const_int int_type productOfList
       in
-      set_value_name (List.hd v.id_list) position;
-      let arrayPtr =
-        let zero = const_int int_type 0 in
-        build_gep array_alloca [| zero |] "array_ptr" builder
-      in
-      ignore (build_store arrayPtr position builder)
+      let t = lltype_of_t_type (Ast.t_type_of_dataType vd.var_type.data_type) in
+      build_array_alloca t arraySize "array_alloca" builder
+    in
+    let arrayPtr =
+      let zero = const_int int_type 0 in
+      build_gep array_alloca [| zero |] "array_ptr" builder
+    in
+    ignore (build_store arrayPtr position builder)
 
 and gen_param funcDef (args_array : Ast.fparDef array) index param =
   let position =
@@ -797,8 +791,8 @@ let rec set_stack_frames funcDef =
       Array.length (struct_element_types stack_frame_type)
     in
     let isRoot = access_link_opt = None in
-    let var_par_records =
-      let initial_index = if isRoot then 0 else 1 in
+    let var_par_records : (string * int * bool * bool) list =
+      let initialIndex = if isRoot then 0 else 1 in
       let par_records =
         let rec par_records_of_fparDefs index = function
           | [] -> []
@@ -809,9 +803,9 @@ let rec set_stack_frames funcDef =
               (id, index, isRef, isArray)
               :: par_records_of_fparDefs (index + 1) tail
         in
-        par_records_of_fparDefs initial_index params_list
+        par_records_of_fparDefs initialIndex params_list
       in
-      let initial_index = initial_index + List.length par_records in
+      let initialIndex = initialIndex + List.length par_records in
       let var_records =
         let rec var_records_of_varDefs index = function
           | [] -> []
@@ -821,7 +815,7 @@ let rec set_stack_frames funcDef =
               (id, index, false, isArray)
               :: var_records_of_varDefs (index + 1) tail
         in
-        var_records_of_varDefs initial_index vars_list
+        var_records_of_varDefs initialIndex vars_list
       in
       par_records @ var_records
     in
