@@ -135,7 +135,7 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
             let isArray = fpd.fpar_type.array_dimensions <> [] in
             fpd.ref || isArray
           in
-          gen_expr is_param_ref funcDef e
+          gen_expr ~is_param_ref funcDef e
         in
         match (fparDefList, exprList) with
         | [], [] -> []
