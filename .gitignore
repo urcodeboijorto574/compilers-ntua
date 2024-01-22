@@ -6,6 +6,9 @@
 !README.md
 !Makefile
 !.ocamlformat
+!build.sh
+!mybuild.sh
+!run.sh
 
 !Main.ml
 
@@ -21,7 +24,15 @@
 !Types.ml
 !Types.mli
 
+!GenAst.mli
+
 !PrintAst.ml
 !PrintAst.mli
 !SemAst.ml
 !SemAst.mli
+!GenAst.ml
+!GenAst2.ml
+
+!lib
+!lib.c
+!buildlib.sh

@@ -1,7 +1,7 @@
 type t_type =
   | T_int
   | T_char
-  | T_array of t_type * int
+  | T_array of int * t_type
   | T_none
   | T_func of t_type
 
@@ -9,6 +9,9 @@ type t_type =
 
 (** [debugMode] is [true] when debug messages will be printed out. *)
 val debugMode : bool
+
+val debugModeCodeGen : bool
+val debugModeI10 : bool
 
 (** [string_of_t_type t] takes a [t : t_type] and returns a string corresponding
     to the type given. Returns [string]. *)
@@ -20,22 +23,28 @@ val string_of_t_type : t_type -> string
     array. Returns [Types.t_type]. *)
 val construct_array_type : int list -> t_type -> t_type
 
+(** [dimensions_list_of_t_array t] converts the type [t] to a dimensions list
+    (it is the reverse operation of construct_array_type). Raises
+    [Invalid_argument] if [t] is [T_func] or [T_none]. *)
+val dimensions_list_of_t_array : t_type -> int list
+
 (** [equal_types] takes two arguments of type [t_type] and checks if they are
     the same. If they are the same [true] is returned, otherwise [false]. *)
 val equal_types : t_type -> t_type -> bool
 
-(** [t_type_of_dataType dt] takes an object [dt] of type [Ast.dataType] and
-    returns the corresponding type. Returns [Types.t_type]. *)
-val t_type_of_dataType : Ast.dataType -> t_type
+(** [t_type_of_t_func t] takes a [T_func ti] type and returns the encapsulated
+    type [ti]. Returns [Types.t_type]. *)
+val t_type_of_t_func : t_type -> t_type
 
-(** [t_type_of_retType rt] takes an object [rt] of type [Ast.retType] and
-    returns the corresponding [t_type] (encapsulated in [T_func]). *)
-val t_type_of_retType : Ast.retType -> t_type
+(** [t_type_of_t_array t] takes a [T_array (size, ti)] type and returns the
+    encapsulated type [ti]. Returns [Types.t_type]. *)
+val t_type_of_t_array : t_type -> t_type
 
-(** [t_type_of_fparType fpt] takes an object [fpt] of type [Ast.fparType] and
-    returns the corresponding type. Returns [Types.t_type]. *)
-val t_type_of_fparType : Ast.fparType -> t_type
+(** [final_t_type_of_t_array t] returns the type of data that an array stores.
+    The only types that can be returned are [T_int] and [T_char]. Raises
+    [Invalid_argument] if the argument is not of [T_array] or [T_int] and
+    [T_char]. Returns [Types.t_type]. *)
+val final_t_type_of_t_array : t_type -> t_type
 
-(** [t_type_of_fparType vt] takes an object [vt] of type [Ast.varType] and
-    returns the corresponding type. Returns [Types.t_type]. *)
-val t_type_of_varType : Ast.varType -> t_type
+(* Functions that convert types defined in Ast to t_type types are defined in
+   Ast. *)

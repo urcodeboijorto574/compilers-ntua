@@ -1,3 +1,7 @@
+(** [lib_function_names] contains all the names of the standard library
+    functions *)
+val lib_function_names : string list
+
 type param_passing =
   | BY_VALUE
   | BY_REFERENCE
@@ -6,7 +10,6 @@ and scope = {
   name : string;
   parent : scope option;
   depth : int;
-  mutable scope_entries : entry list;
 }
 
 and entry = {

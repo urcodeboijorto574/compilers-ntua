@@ -8,7 +8,7 @@ let rec print_fparDef_list fpar_def_list =
       if tail <> [] then Printf.printf "; ";
       print_fparDef_list tail
 
-and print_funcDef funcDef =
+and print_funcDef (funcDef : Ast.funcDef) =
   Printf.printf "FuncDef(";
   print_header funcDef.header;
   Printf.printf ", ";
@@ -82,11 +82,9 @@ and print_localDef localDef =
   Printf.printf ")"
 
 and print_funcDecl funcDecl =
-  match funcDecl with
-  | FuncDecl_Header f ->
-      Printf.printf "FuncDecl(";
-      print_header f;
-      Printf.printf ";)"
+  Printf.printf "FuncDecl(";
+  print_header funcDecl.header;
+  Printf.printf ";)"
 
 and print_idList idList =
   match idList with
@@ -149,11 +147,9 @@ and print_stmt stmt =
   Printf.printf ")"
 
 and print_block block =
-  match block with
-  | Block stmt_list ->
-      Printf.printf "Block({";
-      List.iter print_stmt stmt_list;
-      Printf.printf "})"
+  Printf.printf "Block({";
+  List.iter print_stmt block;
+  Printf.printf "})"
 
 and print_funcCall funcCall =
   Printf.printf "FuncCall(";
@@ -171,18 +167,17 @@ and print_exprList expr_list =
       print_exprList tail
 
 and print_lvalue lvalue =
-  let help lvalue =
-    match lvalue with
+  let rec print_lvalue_kind = function
     | L_id id -> Printf.printf "%s" id
-    | L_string str -> Printf.printf "%s" str
+    | L_string str -> Printf.printf "\"%s\"" str
     | L_comp (l, e) ->
-        print_lvalue l;
+        print_lvalue_kind l;
         Printf.printf "[";
         print_expr e;
         Printf.printf "]"
   in
   Printf.printf "Lvalue(";
-  help lvalue;
+  print_lvalue_kind lvalue.lv_kind;
   Printf.printf ")"
 
 and print_expr expr =

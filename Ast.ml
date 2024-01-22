@@ -1,3 +1,5 @@
+open Llvm
+
 type arithmOperator =
   | O_plus
   | O_minus
@@ -22,14 +24,34 @@ and compOperator =
   | O_greater_eq
   | O_not_equal
 
+and stackFrame = {
+  stack_frame_type : Llvm.lltype;
+  (* [access_link] is a pointer lltype that points to the stack frame of its
+     parents' stack frame type *)
+  access_link : Llvm.lltype option;
+  (* [stack_frame_addr] is the allocated memory for the stack frame *)
+  mutable stack_frame_addr : Llvm.llvalue option;
+  (* [var_records] is a list of tuples with 4 fields each:
+      1st field: the name of the variable
+      2nd field: the position of the record in the stack frame
+      3rd field: the variable is reference (only for parameters)
+      4th field: the variable is an array *)
+  var_records : (string * int * bool * bool) list;
+  (* [stack_frame_length] is the numbers of fields that the struct has *)
+  stack_frame_length : int;
+}
+
 and funcDef = {
   header : header;
   local_def_list : localDef list;
-  block : block;
+  block : stmt list;
+  mutable parent_func : funcDef option;
+  mutable stack_frame : stackFrame option;
 }
 
 and header = {
   id : string;
+  mutable comp_id : string;
   fpar_def_list : fparDef list;
   ret_type : retType;
 }
@@ -60,7 +82,11 @@ and localDef =
   | L_funcDecl of funcDecl
   | L_varDef of varDef
 
-and funcDecl = FuncDecl_Header of header
+and funcDecl = {
+  header : header;
+  mutable func_def : funcDef;
+  mutable is_redundant : bool;
+}
 
 and varDef = {
   id_list : string list;
@@ -72,11 +98,9 @@ and varType = {
   array_dimensions : int list;
 }
 
-and block = Block of stmt list
-
 and stmt =
   | S_assignment of lvalue * expr
-  | S_block of block
+  | S_block of stmt list
   | S_func_call of funcCall
   | S_if of cond * stmt
   | S_if_else of cond * stmt * stmt
@@ -84,10 +108,20 @@ and stmt =
   | S_return of expr option
   | S_semicolon
 
-and lvalue =
+and lvalue = {
+  lv_kind : lvalue_kind;
+  mutable lv_type : lvalue_type option;
+}
+
+and lvalue_kind =
   | L_id of string
   | L_string of string
-  | L_comp of lvalue * expr
+  | L_comp of lvalue_kind * expr
+
+and lvalue_type = {
+  elem_type : Types.t_type;
+  array_type : Types.t_type option;
+}
 
 and expr =
   | E_const_int of int
@@ -100,7 +134,10 @@ and expr =
 
 and funcCall = {
   id : string;
+  mutable comp_id : string;
   expr_list : expr list;
+  mutable ret_type : Types.t_type option;
+      (* 'ret_type' is not an encapsulation of T_func *)
 }
 
 and cond =
@@ -110,13 +147,48 @@ and cond =
   | C_cond_parenthesized of cond
 
 (* Functions to construct the records above *)
-let newFuncDef (a, b, c) = { header = a; local_def_list = b; block = c }
-and newHeader (a, b, c) = { id = a; fpar_def_list = b; ret_type = c }
+let rec newFuncDef (a, b, c) =
+  {
+    header = a;
+    local_def_list = b;
+    block = c;
+    parent_func = None;
+    stack_frame = None;
+  }
+
+and newFuncDecl a =
+  {
+    header = a;
+    func_def = (* dummy value *) newFuncDef (a, [], []);
+    is_redundant = false;
+  }
+
+and newHeader (a, b, c) =
+  { id = a; comp_id = a; fpar_def_list = b; ret_type = c }
+
 and newFparDef (a, b, c) = { ref = a; id_list = b; fpar_type = c }
 and newFparType (a, b) : fparType = { data_type = a; array_dimensions = b }
 and newVarDef (a, b) = { id_list = a; var_type = b }
 and newVarType (a, b) : varType = { data_type = a; array_dimensions = b }
-and newFuncCall (a, b) = { id = a; expr_list = b }
+and newLValue a = { lv_kind = a; lv_type = None }
+and newFuncCall (a, b) = { id = a; comp_id = a; expr_list = b; ret_type = None }
+
+(* Type conversion functions *)
+let t_type_of_dataType = function
+  | ConstInt -> Types.T_int
+  | ConstChar -> Types.T_char
+
+let t_type_of_retType = function
+  | RetDataType dt -> Types.T_func (t_type_of_dataType dt)
+  | Nothing -> Types.T_func Types.T_none
+
+let t_type_of_fparType : fparType -> Types.t_type = function
+  | { data_type = dt; array_dimensions = dimList } ->
+      Types.construct_array_type dimList (t_type_of_dataType dt)
+
+let t_type_of_varType : varType -> Types.t_type = function
+  | { data_type = dt; array_dimensions = dimList } ->
+      Types.construct_array_type dimList (t_type_of_dataType dt)
 
 (* Helper functions for checks *)
 

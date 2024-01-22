@@ -5,21 +5,27 @@ else
    EXE=
 endif
 
-OCAMLC_FLAGS=-g
-OCAMLC=ocamlc
+OCAMLOPT_FLAGS=-g
+OCAMLOPT=ocamlopt
 OCAMLDEP=ocamldep
+OCAMLFIND=ocamlfind
+PACKAGES=-package llvm -package llvm.analysis -package llvm.target \
+		-package llvm.scalar_opts -package llvm.ipo \
+		-package llvm.vectorize -package llvm.all_backends \
+	   	-package unix
 
-%.cmo: %.ml %.mli
-	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
+
+%.cmx: %.ml %.mli
+	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -c $<
 
 %.cmi: %.mli
-	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
+	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -c $<
+	
+%.cmx %.cmi: %.ml
+	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -c $<
 
-%.cmo %.cmi: %.ml
-	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
-
-grace$(EXE): Types.cmo Symbol.cmo PrintAst.cmo Ast.cmo SemAst.cmo Lexer.cmo Parser.cmo Main.cmo
-	$(OCAMLC) $(OCAMLC_FLAGS) -o $@ $^
+grace$(EXE): Types.cmx Symbol.cmx PrintAst.cmx Ast.cmx SemAst.cmx Lexer.cmx Parser.cmx GenAst.cmx Main.cmx
+	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -linkpkg -o $@ $^
 
 Lexer.ml: Lexer.mll
 	ocamllex -o $@ $<
@@ -31,17 +37,17 @@ Parser.ml Parser.mli: Parser.mly
 
 -include .depend
 
-depend: Types.ml Types.mli Symbol.ml Symbol.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli Ast.ml Ast.mli Lexer.ml Lexer.mli Parser.ml Parser.mli Main.ml
+depend: Types.ml Types.mli Symbol.ml Symbol.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli Ast.ml Ast.mli Lexer.ml Lexer.mli Parser.ml Parser.mli GenAst.ml GenAst.mli Main.ml
 	$(OCAMLDEP) $^ > .depend
 
 clean:
-	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer.cmx Lexer Lexer.o Parser.automaton Parser.conflicts *.cmo *.cmi *~
+	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer.cmx Lexer Lexer.o Parser.automaton Parser.conflicts *.cmx *.cmi *~ *.o a.ll a.s a.out
 
 distclean: clean
 	$(RM) grace$(EXE) .depend
 
-# To format the ocaml code, first install the ocamlformat tool with "opam install ocamlformat"
-format: Ast.ml Lexer.mli Main.ml Symbol.ml Symbol.mli Types.ml Types.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli
+# To format the OCaml code, first install the ocamlformat tool with "opam install ocamlformat"
+format: Ast.ml Lexer.mli Main.ml Symbol.ml Symbol.mli Types.ml Types.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli GenAst.ml GenAst.mli
 	ocamlformat -i $^
 
 update: clean format depend grace$(EXE)

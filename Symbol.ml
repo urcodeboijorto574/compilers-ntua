@@ -1,3 +1,19 @@
+let lib_function_names =
+  [
+    "writeInteger";
+    "writeChar";
+    "writeString";
+    "readInteger";
+    "readChar";
+    "readString";
+    "ascii";
+    "chr";
+    "strlen";
+    "strcmp";
+    "strcpy";
+    "strcat";
+  ]
+
 type param_passing =
   | BY_VALUE
   | BY_REFERENCE
@@ -6,7 +22,6 @@ and scope = {
   name : string;
   parent : scope option;
   depth : int;
-  mutable scope_entries : entry list;
 }
 
 and entry = {
@@ -39,9 +54,7 @@ and entry_function = {
 }
 
 let set_func_defined entryFunc = entryFunc.state <- DEFINED
-
-let current_scope =
-  ref { name = ""; parent = None; depth = 0; scope_entries = [] }
+let current_scope = ref { name = ""; parent = None; depth = 0 }
 
 let open_scope str =
   current_scope :=
@@ -49,7 +62,6 @@ let open_scope str =
       name = str;
       parent = Some !current_scope;
       depth = !current_scope.depth + 1;
-      scope_entries = [];
     }
 
 and close_scope () =
@@ -70,7 +82,7 @@ let symbolTable = ref (Hashtbl.create 0)
 
 let create_symbol_table numOfBuckets =
   symbolTable := Hashtbl.create numOfBuckets;
-  current_scope := { name = ""; parent = None; depth = 0; scope_entries = [] }
+  current_scope := { name = ""; parent = None; depth = 0 }
 
 (** [enter_entry i e] takes an identifier [i] and an entry kind [e] and creates
     and adds a new entry in the symbolTable. *)
@@ -78,8 +90,7 @@ let enter_entry ident eKind =
   let e = { id = ident; scope = !current_scope; kind = eKind } in
   Hashtbl.add !symbolTable ident e;
   if Types.debugMode then
-    Printf.printf "entering entry %s in current scope\n" e.id;
-  !current_scope.scope_entries <- e :: !current_scope.scope_entries
+    Printf.printf "entering entry %s in current scope\n" e.id
 
 let enter_variable id typ =
   enter_entry id (ENTRY_variable { variable_type = typ })
@@ -133,19 +144,19 @@ let add_standard_library () =
   in
   add_func_lib "writeInteger" [ (1, T_int) ] T_none;
   add_func_lib "writeChar" [ (1, T_char) ] T_none;
-  add_func_lib "writeString" [ (1, T_array (T_char, -1)) ] T_none;
+  add_func_lib "writeString" [ (1, T_array (-1, T_char)) ] T_none;
 
   add_func_lib "readInteger" [] T_int;
   add_func_lib "readChar" [] T_char;
-  add_func_lib "readString" [ (1, T_int); (1, T_array (T_char, -1)) ] T_none;
+  add_func_lib "readString" [ (1, T_int); (1, T_array (-1, T_char)) ] T_none;
 
   add_func_lib "ascii" [ (1, T_char) ] T_int;
   add_func_lib "chr" [ (1, T_int) ] T_char;
 
-  add_func_lib "strlen" [ (1, T_array (T_char, -1)) ] T_int;
-  add_func_lib "strcmp" [ (2, T_array (T_char, -1)) ] T_int;
-  add_func_lib "strcpy" [ (2, T_array (T_char, -1)) ] T_none;
-  add_func_lib "strcat" [ (2, T_array (T_char, -1)) ] T_none
+  add_func_lib "strlen" [ (1, T_array (-1, T_char)) ] T_int;
+  add_func_lib "strcmp" [ (2, T_array (-1, T_char)) ] T_int;
+  add_func_lib "strcpy" [ (2, T_array (-1, T_char)) ] T_none;
+  add_func_lib "strcat" [ (2, T_array (-1, T_char)) ] T_none
 
 let look_up_entry (id : string) =
   if Types.debugMode then (
@@ -160,13 +171,7 @@ let look_up_entry (id : string) =
       in
       Hashtbl.iter
         (fun key entry ->
-          if
-            not
-              (key = "writeInteger" || key = "writeChar" || key = "writeString"
-             || key = "readInteger" || key = "readChar" || key = "readString"
-             || key = "ascii" || key = "chr" || key = "strlen" || key = "strcmp"
-             || key = "strcpy" || key = "strcat")
-          then (
+          if not (List.mem key lib_function_names) then (
             printedSmth := true;
             Printf.printf
               "\tKey: '%s', Value: { id = '%s'; scope = %s(%d); kind = %s }\n"
@@ -180,19 +185,25 @@ let look_up_entry (id : string) =
     print_hashtable ());
 
   let resultEntryList =
+    (* Entries of ancestor scopes in decreasing order. *)
     List.stable_sort
       (fun e1 e2 -> compare e1.scope.depth e2.scope.depth * -1)
-      (List.filter
+      ((* Entries of ancestor scopes of the current scope. *)
+       List.filter
          (fun e ->
-           let rec is_ancestor sc_ref sc =
-             if sc_ref.parent = None then
-               sc.parent = None
+           (* [is_ancestor s1 s2] returns [true] if [s2] is part of [s1]'s
+              ancestor scopes or if [s1] and [s2] are the same scope. *)
+           let rec is_ancestor referenceScope candidateScope =
+             if referenceScope.parent = None then
+               candidateScope.parent = None
              else
-               sc.parent = None || equal_scopes sc_ref sc
-               || is_ancestor (Option.get sc_ref.parent) sc
+               candidateScope.parent = None
+               || equal_scopes referenceScope candidateScope
+               || is_ancestor (Option.get referenceScope.parent) candidateScope
            in
            is_ancestor !current_scope e.scope)
-         (Hashtbl.find_all !symbolTable id))
+         ((* Entries with [id] as their name. *)
+          Hashtbl.find_all !symbolTable id))
   in
   if Types.debugMode then (
     let print_entry_list () =
@@ -214,16 +225,16 @@ let look_up_entry (id : string) =
         (List.hd resultEntryList).scope.depth !current_scope.depth
     else
       Printf.printf "Entry '%s' not found in any scope.\n" id);
-  if resultEntryList = [] then None else Some (List.hd resultEntryList)
+  try Some (List.hd resultEntryList) with _ -> None
 
 let get_undefined_functions () =
   let undefinedFunctionsList = ref [] in
   Hashtbl.iter
-    (fun i e ->
+    (fun id e ->
       match e.kind with
       | ENTRY_function ef ->
           if ef.state = DECLARED then
-            undefinedFunctionsList := i :: !undefinedFunctionsList
+            undefinedFunctionsList := id :: !undefinedFunctionsList
       | ENTRY_variable _ | ENTRY_parameter _ -> ())
     !symbolTable;
-  !undefinedFunctionsList
+  match !undefinedFunctionsList with [] -> None | l -> Some l
