@@ -49,6 +49,3 @@ distclean: clean
 # To format the OCaml code, first install the ocamlformat tool with "opam install ocamlformat"
 format: Ast.ml Lexer.mli Main.ml Symbol.ml Symbol.mli Types.ml Types.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli GenAst.ml GenAst.mli
 	ocamlformat -i $^
-
-update: clean format depend grace$(EXE)
-	make clean
