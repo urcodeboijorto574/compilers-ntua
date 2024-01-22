@@ -16,9 +16,9 @@ exception Passing_error
 let funcDefAncestors : funcDef option Stack.t = Stack.create ()
 
 (** [sem_funcDef (fd : Ast.funcDef)] semantically analyses the function
-    definition [fd]. After semantically analysing the header, local definitions
-    list and the block, it is checked if in the function's block a value of the
-    expected type is returned. *)
+    definition [fd]. The field 'parent_func' of [fd] is set. After semantically
+    analysing the header, local definitions list and the block, it is checked if
+    in the function's block a value of the expected type is returned. *)
 let rec sem_funcDef fd : unit =
   let isMainProgram = !current_scope.depth = 0 in
   if isMainProgram then Symbol.add_standard_library ();
@@ -126,8 +126,9 @@ let rec sem_funcDef fd : unit =
 (** [sem_header (isPartOfAFuncDef : bool) (h : Ast.header)] takes
     [isPartOfAFuncDef] ([true] when the header is part of a function definition
     and [false] when it's part of a function declaration) and the function's
-    header [h]. If [h] is part of a function definition, then a new scope is
-    opened and the function's parameters are inserted in it. *)
+    header [h]. The field 'comp_id' of [h] is set. If [h] is part of a function
+    definition, then a new scope is opened and the function's parameters are
+    inserted in it. *)
 and sem_header isPartOfAFuncDef header : unit =
   if not (List.mem header.id Symbol.lib_function_names) then begin
     let postfix : string =
@@ -314,7 +315,8 @@ and sem_fparDef fpd : int * Types.t_type * Symbol.param_passing =
     if fpd.ref then BY_REFERENCE else BY_VALUE )
 
 (** [sem_localDefList (ldl : Ast.localDef list)] semantically analyses the
-    function's local definitions list [ldl]. *)
+    function's local definitions list [ldl]. The fields 'is_redundant' and
+    'func_def of the funcDecl are set. *)
 and sem_localDefList : Ast.localDef list -> unit = function
   | [] -> ()
   | L_funcDecl fdecl :: tail ->
@@ -472,7 +474,8 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
       match x with None -> Some T_none | Some e -> Some (sem_expr e))
   | S_semicolon -> None
 
-(** [sem_lvalue (lval : Ast.lvalue)] returns the type of the l-value [lval]. *)
+(** [sem_lvalue (lval : Ast.lvalue)] returns the type of the l-value [lval].
+    Also, the field 'lv_type' of [lv] is set. *)
 and sem_lvalue lv : Types.t_type =
   let resultArrayType : Types.t_type option ref = ref None in
   let rec sem_lvalue_kind = function
@@ -626,7 +629,8 @@ and sem_cond : Ast.cond -> unit = function
 
 (** [sem_funcCall (fc : Ast.funcCall)] returns the return type of function call
     [fc]. Additionally, it checks if the types of its arguments match the
-    expected ones defined in the function's header. *)
+    expected ones defined in the function's header. The fields 'comp_id' and
+    'ret_type' of [fc] are set. *)
 and sem_funcCall fc : Types.t_type =
   let resultLookUpOption = look_up_entry fc.id in
   try
