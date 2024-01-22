@@ -13,7 +13,7 @@ exception Passing_error
 
 (** [funcDefAncestors] is a stack that stores all the ancestors of a funcDef in
     runtime. *)
-let funcDefAncestors = Stack.create ()
+let funcDefAncestors : funcDef option Stack.t = Stack.create ()
 
 (** [sem_funcDef (fd : Ast.funcDef)] semantically analyses the function
     definition [fd]. After semantically analysing the header, local definitions
@@ -134,7 +134,24 @@ let rec sem_funcDef fd =
 and sem_header isPartOfAFuncDef header =
   match header with
   | { id = ident; fpar_def_list = fpdl; ret_type = rt } -> (
-      header.comp_id <- ident ^ "(" ^ string_of_int !current_scope.depth ^ ")";
+      if not (List.mem ident Symbol.lib_function_names) then begin
+        let postfix : string =
+          let ancestorsNames : string list =
+            List.rev
+              (Stack.fold
+                 (fun acc (fd : Ast.funcDef option) ->
+                   if fd <> None then
+                     (Option.get fd).header.id :: acc
+                   else
+                     acc)
+                 [] funcDefAncestors)
+          in
+          "("
+          ^ string_of_int (Hashtbl.hash (String.concat "" ancestorsNames))
+          ^ ")"
+        in
+        header.comp_id <- ident ^ postfix
+      end;
       let isMainProgram = !current_scope.depth = 0 in
       if isMainProgram then
         if rt <> Nothing then (
@@ -621,11 +638,21 @@ and sem_funcCall fc =
       let resultLookUpOption = look_up_entry ident in
       try
         if resultLookUpOption = None then raise Not_found;
-        if not (List.mem fc.id Symbol.lib_function_names) then
-          fc.comp_id <-
-            ident ^ "("
-            ^ string_of_int (Option.get resultLookUpOption).scope.depth
-            ^ ")";
+        if not (List.mem fc.id Symbol.lib_function_names) then begin
+          let postfix =
+            let ancestorsNames =
+              let rec get_ancestorsNames = function
+                | None -> []
+                | Some scope -> scope.name :: get_ancestorsNames scope.parent
+              in
+              get_ancestorsNames (Some (Option.get resultLookUpOption).scope)
+            in
+            "("
+            ^ string_of_int (Hashtbl.hash (String.concat "" ancestorsNames))
+            ^ ")"
+          in
+          fc.comp_id <- ident ^ postfix
+        end;
         let functionEntry =
           match (Option.get resultLookUpOption).kind with
           | ENTRY_function ef -> ef

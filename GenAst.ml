@@ -144,11 +144,12 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
                 match ld with
                 | L_varDef _ -> None
                 | L_funcDecl fdecl ->
-                    if fc.id = fdecl.header.id then
+                    if fc.comp_id = fdecl.header.comp_id then
                       Some fdecl.func_def
                     else
                       None
-                | L_funcDef fd -> if fc.id = fd.header.id then Some fd else None)
+                | L_funcDef fd ->
+                    if fc.comp_id = fd.header.comp_id then Some fd else None)
               funcDef.local_def_list
           in
           if resultOpt <> None then
@@ -174,7 +175,7 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
       Array.of_list (result_access_link :: args)
   in
   build_call callee args_array
-    (if Option.get fc.ret_type <> T_none then fc.id ^ "_result" else "")
+    (if Option.get fc.ret_type <> T_none then fc.comp_id ^ "_result" else "")
     builder
 
 and gen_lvalue funcDef lv =
@@ -585,7 +586,7 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
   Hashtbl.add named_functions name args;
   match lookup_function name the_module with
   | None ->
-      let name = if access_link = None then "main" else header.comp_id in
+      let name = if access_link = None then "main" else name in
       let ft =
         let return_type =
           lltype_of_t_type (Ast.t_type_of_retType header.ret_type)
@@ -615,7 +616,7 @@ let rec gen_funcDef funcDef =
   blocks_list := entryBB :: !blocks_list;
   let stackFrameAlloca =
     let name =
-      if funcDef.parent_func = None then "main" else funcDef.header.id
+      if funcDef.parent_func = None then "main" else funcDef.header.comp_id
     in
     build_alloca stackFrame.stack_frame_type ("stack_frame_" ^ name) builder
   in
@@ -794,7 +795,7 @@ let rec set_stack_frames funcDef =
       expand_var_def_list (extract_var_defs funcDef.local_def_list)
     in
     let stack_frame_type : Llvm.lltype =
-      named_struct_type context ("frame_" ^ funcDef.header.id)
+      named_struct_type context ("frame_" ^ funcDef.header.comp_id)
     in
     let stack_frame_records_arr : Llvm.lltype array =
       let stack_frame_records =
