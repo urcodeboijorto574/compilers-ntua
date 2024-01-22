@@ -14,13 +14,13 @@ val debugModeCodeGen : bool
 val debugModeI10 : bool
 
 (** [string_of_t_type t] takes a [t : t_type] and returns a string corresponding
-    to the type given. Returns [string]. *)
+    to the type given. *)
 val string_of_t_type : t_type -> string
 
 (** [construct_array_type arrayList dataType] takes two arguments,
     [arrayList : int list], which represents the dimensions of the array, and
     [dataType], which is the type of expressions that will be stored in the
-    array. Returns [Types.t_type]. *)
+    array. *)
 val construct_array_type : int list -> t_type -> t_type
 
 (** [dimensions_list_of_t_array t] converts the type [t] to a dimensions list
@@ -33,17 +33,17 @@ val dimensions_list_of_t_array : t_type -> int list
 val equal_types : t_type -> t_type -> bool
 
 (** [t_type_of_t_func t] takes a [T_func ti] type and returns the encapsulated
-    type [ti]. Returns [Types.t_type]. *)
+    type [ti]. *)
 val t_type_of_t_func : t_type -> t_type
 
 (** [t_type_of_t_array t] takes a [T_array (size, ti)] type and returns the
-    encapsulated type [ti]. Returns [Types.t_type]. *)
+    encapsulated type [ti]. *)
 val t_type_of_t_array : t_type -> t_type
 
 (** [final_t_type_of_t_array t] returns the type of data that an array stores.
     The only types that can be returned are [T_int] and [T_char]. Raises
     [Invalid_argument] if the argument is not of [T_array] or [T_int] and
-    [T_char]. Returns [Types.t_type]. *)
+    [T_char]. *)
 val final_t_type_of_t_array : t_type -> t_type
 
 (* Functions that convert types defined in Ast to t_type types are defined in

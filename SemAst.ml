@@ -18,8 +18,8 @@ let funcDefAncestors : funcDef option Stack.t = Stack.create ()
 (** [sem_funcDef (fd : Ast.funcDef)] semantically analyses the function
     definition [fd]. After semantically analysing the header, local definitions
     list and the block, it is checked if in the function's block a value of the
-    expected type is returned. Returns [unit]. *)
-let rec sem_funcDef fd =
+    expected type is returned. *)
+let rec sem_funcDef fd : unit =
   let isMainProgram = !current_scope.depth = 0 in
   if isMainProgram then Symbol.add_standard_library ();
   if isMainProgram then Stack.push None funcDefAncestors;
@@ -127,8 +127,8 @@ let rec sem_funcDef fd =
     [isPartOfAFuncDef] ([true] when the header is part of a function definition
     and [false] when it's part of a function declaration) and the function's
     header [h]. If [h] is part of a function definition, then a new scope is
-    opened and the function's parameters are inserted in it. Returns [unit]. *)
-and sem_header isPartOfAFuncDef header =
+    opened and the function's parameters are inserted in it. *)
+and sem_header isPartOfAFuncDef header : unit =
   if not (List.mem header.id Symbol.lib_function_names) then begin
     let postfix : string =
       let ancestorsNames : string list =
@@ -291,14 +291,13 @@ and sem_header isPartOfAFuncDef header =
         failwith "Parameter types differ between declarations"
 
 (** [sem_fparDefList (fpdl : Ast.fparDef list)] semantically analyses the
-    function's parameter definitions [fpdl]. Returns
-    [(int * Types.t_type * Symbol.param_passing) list]. *)
-and sem_fparDefList fpdl = List.map sem_fparDef fpdl
+    function's parameter definitions [fpdl]. *)
+and sem_fparDefList fpdl : (int * Types.t_type * Symbol.param_passing) list =
+  List.map sem_fparDef fpdl
 
 (** [sem_fparDef (fpd : Ast.fparDef)] semantically analyses the function's
-    parameter definition [fpd]. Returns
-    [int * Types.t_type * Symbol.param_passing]. *)
-and sem_fparDef fpd =
+    parameter definition [fpd]. *)
+and sem_fparDef fpd : int * Types.t_type * Symbol.param_passing =
   if List.exists (fun n -> n = 0) fpd.fpar_type.array_dimensions then (
     Printf.eprintf
       "\027[31mError\027[0m: Array declared to have size a non-positive number.\n";
@@ -315,8 +314,8 @@ and sem_fparDef fpd =
     if fpd.ref then BY_REFERENCE else BY_VALUE )
 
 (** [sem_localDefList (ldl : Ast.localDef list)] semantically analyses the
-    function's local definitions list [ldl]. Returns [unit]. *)
-and sem_localDefList = function
+    function's local definitions list [ldl]. *)
+and sem_localDefList : Ast.localDef list -> unit = function
   | [] -> ()
   | L_funcDecl fdecl :: tail ->
       let correspondingFuncDef =
@@ -346,15 +345,15 @@ and sem_localDefList = function
       sem_localDefList tail
 
 (** [sem_localDef (ld : Ast.localDef)] adds in the symbolTable the functions and
-    parameters defined in the local definition [ld]. Returns [unit]. *)
-and sem_localDef = function
+    parameters defined in the local definition [ld]. *)
+and sem_localDef : Ast.localDef -> unit = function
   | L_funcDef fd -> sem_funcDef fd
   | L_funcDecl fd -> sem_funcDecl fd
   | L_varDef vd -> sem_varDef vd
 
 (** [sem_funcDecl (fd : Ast.funcDef)] semantically analyses the header of the
-    function declaration [fd] (uses the function [sem_header]). Returns [unit]. *)
-and sem_funcDecl fd =
+    function declaration [fd] (uses the function [sem_header]). *)
+and sem_funcDecl fd : unit =
   if not fd.is_redundant then
     sem_header false fd.header
   else
@@ -362,8 +361,8 @@ and sem_funcDecl fd =
       fd.header.id
 
 (** [sem_varDef (vd : Ast.varDef)] enters in the symbolTable every variable
-    defined in the variable definition [vd]. Returns [unit]. *)
-and sem_varDef vd =
+    defined in the variable definition [vd]. *)
+and sem_varDef vd : unit =
   if List.exists (Int.equal 0) vd.var_type.array_dimensions then (
     Printf.eprintf
       "\027[31mError\027[0m: Array declared to have size a non-positive number.\n";
@@ -372,8 +371,8 @@ and sem_varDef vd =
   List.iter (fun i -> Symbol.enter_variable i typ) vd.id_list
 
 (** [sem_block (bl : Ast.block)] semantically analyses every statement of the
-    block [bl]. Returns [Types.t_type option]. *)
-and sem_block = function
+    block [bl]. *)
+and sem_block : Ast.stmt list -> Types.t_type option = function
   | [] -> None
   | stmtList ->
       let rec get_type_of_stmt_list res warningRaised = function
@@ -392,9 +391,8 @@ and sem_block = function
       get_type_of_stmt_list None false stmtList
 
 (** [sem_stmt (s : Ast.stmt)] semantically analyses the statement [s] and
-    returns [Some t] if [s] is a return statement or [None] if not. Returns
-    [Types.t_type option]. *)
-and sem_stmt = function
+    returns [Some t] if [s] is a return statement or [None] if not. *)
+and sem_stmt : Ast.stmt -> Types.t_type option = function
   | S_assignment (lv, e) -> (
       (match lv.lv_kind with
       | L_comp (L_string _, _) ->
@@ -474,9 +472,8 @@ and sem_stmt = function
       match x with None -> Some T_none | Some e -> Some (sem_expr e))
   | S_semicolon -> None
 
-(** [sem_lvalue (lval : Ast.lvalue)] returns the type of the l-value [lval].
-    Returns [Types.t_type]. *)
-and sem_lvalue lv =
+(** [sem_lvalue (lval : Ast.lvalue)] returns the type of the l-value [lval]. *)
+and sem_lvalue lv : Types.t_type =
   let resultArrayType : Types.t_type option ref = ref None in
   let rec sem_lvalue_kind = function
     | L_id id ->
@@ -550,9 +547,8 @@ and sem_lvalue lv =
     lv.lv_type <- Some { elem_type = resultType; array_type = !resultArrayType };
   resultType
 
-(** [sem_expr (e : Ast.expr)] returns the type of the expression [e]. Returns
-    [Types.t_type]. *)
-and sem_expr = function
+(** [sem_expr (e : Ast.expr)] returns the type of the expression [e]. *)
+and sem_expr : Ast.expr -> Types.t_type = function
   | E_const_int ci -> Types.T_int
   | E_const_char cc -> Types.T_char
   | E_lvalue lv ->
@@ -608,9 +604,8 @@ and sem_expr = function
       Types.T_int
   | E_expr_parenthesized e -> sem_expr e
 
-(** [sem_cond (c : Ast.cond)] semantically analyses condition [c]. Returns
-    [unit]. *)
-and sem_cond = function
+(** [sem_cond (c : Ast.cond)] semantically analyses condition [c]. *)
+and sem_cond : Ast.cond -> unit = function
   | C_not_cond (lo, c) -> sem_cond c
   | C_cond_cond (c1, lo, c2) ->
       sem_cond c1;
@@ -631,8 +626,8 @@ and sem_cond = function
 
 (** [sem_funcCall (fc : Ast.funcCall)] returns the return type of function call
     [fc]. Additionally, it checks if the types of its arguments match the
-    expected ones defined in the function's header. Returns [Types.t_type]. *)
-and sem_funcCall fc =
+    expected ones defined in the function's header. *)
+and sem_funcCall fc : Types.t_type =
   let resultLookUpOption = look_up_entry fc.id in
   try
     if resultLookUpOption = None then raise Not_found;
@@ -732,8 +727,7 @@ and sem_funcCall fc =
       failwith "r-value passed by reference"
 
 (** [sem_on (ast : Ast.funcDef)] semantically analyses the root of the ast [ast]
-    (produced by the parser). It also initializes the SymbolTable. Returns
-    [unit]. *)
-and sem_on asts =
+    (produced by the parser). It also initializes the SymbolTable. *)
+and sem_on asts : unit =
   Symbol.create_symbol_table 100;
   sem_funcDef asts

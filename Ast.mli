@@ -154,7 +154,7 @@ val newFuncCall : string * expr list -> funcCall
 (* Type conversion functions *)
 
 (** [t_type_of_dataType dt] takes an object [dt] of type [dataType] and
-    returns the corresponding type. Returns [Types.t_type]. *)
+    returns the corresponding type. *)
 val t_type_of_dataType : dataType -> Types.t_type
 
 (** [t_type_of_retType rt] takes an object [rt] of type [retType] and
@@ -162,20 +162,19 @@ val t_type_of_dataType : dataType -> Types.t_type
 val t_type_of_retType : retType -> Types.t_type
 
 (** [t_type_of_fparType fpt] takes an object [fpt] of type [fparType] and
-    returns the corresponding type. Returns [Types.t_type]. *)
+    returns the corresponding type. *)
 val t_type_of_fparType : fparType -> Types.t_type
 
 (** [t_type_of_fparType vt] takes an object [vt] of type [varType] and
-    returns the corresponding type. Returns [Types.t_type]. *)
+    returns the corresponding type. *)
 val t_type_of_varType : varType -> Types.t_type
 
 (* Helper functions for checks *)
 
 (** [get_const_expr_value e] checks whether an expression [e] has a constant
-    integer value or not. Returns [int option]. *)
+    integer value or not. *)
 val get_const_expr_value : expr -> int option
 
 (** [get_const_cond_value c] checks whether a condition [c] has a constant
-    value. If so, a warning message gets printed in standard error output.
-    Returns [bool option]. *)
+    value. If so, a warning message gets printed in standard error output. *)
 val get_const_cond_value : cond -> bool option
