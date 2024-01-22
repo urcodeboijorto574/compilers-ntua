@@ -105,8 +105,3 @@ val look_up_entry : string -> entry option
     undefined or [Some sl] with [sl] being a list of the names of the functions
     that are not defined. *)
 val get_undefined_functions : unit -> string list option
-
-(** [extract_function_depth id] return the depth of the function with [id] as
-    its name. The identifier is composed by 2 parts: the first is the original
-    identifier and the second is the function's depth surrounded by parentheses. *)
-val extract_function_depth : string -> int
