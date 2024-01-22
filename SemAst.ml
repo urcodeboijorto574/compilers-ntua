@@ -256,13 +256,7 @@ and sem_header isPartOfAFuncDef header =
                !current_scope.depth = %d\n"
               (Option.get resultLookUpOption).scope.depth !current_scope.depth;
 
-          if
-            not
-              (Symbol.equal_scopes (Option.get resultLookUpOption).scope
-                 !current_scope)
-          then
-            enter_function_in_symbolTable ()
-          else if not matchingNumOfParams then
+          if not matchingNumOfParams then
             raise Overloaded_functions
           else if functionEntry.return_type <> returnTypeFromHeader then
             raise Expected_type_not_returned

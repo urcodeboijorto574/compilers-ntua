@@ -237,4 +237,4 @@ let get_undefined_functions () =
             undefinedFunctionsList := id :: !undefinedFunctionsList
       | ENTRY_variable _ | ENTRY_parameter _ -> ())
     !symbolTable;
-  match !undefinedFunctionsList with [] -> None | l -> Some l
+  !undefinedFunctionsList
