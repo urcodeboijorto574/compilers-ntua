@@ -98,6 +98,12 @@ rule lexer = parse
   | _ as chr { Printf.eprintf "Unknown character '%c' at line %d.\n" chr !num_lines; lexer lexbuf }
 
 and strings = parse
+  | "'" {
+      Printf.eprintf
+        "Error: line %d: single quotes are not permitted in strings (maybe you forgot a \'\\\'?).\n"
+        !num_lines;
+      T_eof
+    }
   | "\\x" (digit_hex as d1) (digit_hex as d2) {
       add_in_list (Char.chr (int_of_hex d1 d2));
       strings lexbuf

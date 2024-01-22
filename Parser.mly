@@ -2,9 +2,7 @@
   open Ast
   open Types
 
-  let rec string_list_of_char_list = function
-    | [] -> []
-    | h :: t -> (String.make 1 h) :: string_list_of_char_list t
+  let rec string_list_of_char_list chrList = List.map (String.make 1) chrList
 %}
 
 (* Token declarations *)
