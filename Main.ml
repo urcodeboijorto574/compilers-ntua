@@ -48,9 +48,11 @@ let main =
        if Types.debugMode then Printf.printf "\n";
        Printf.printf "\027[32mSemantically correct.\027[0m\n%!";
        GenAst.gen_on asts !has_o_flag
-     with e ->
-       Printf.printf "Syntax error\n";
-       exit 1);
+     with
+    | Parsing.Parse_error ->
+        Printf.printf "Syntax error\n";
+        exit 1
+    | _ -> exit 1);
     print_module "a.ll" GenAst.the_module;
     let llc_command = "llc -o a.s a.ll" in
     ignore (Sys.command llc_command);
@@ -96,11 +98,11 @@ let main =
       ignore (finish_0 ());
       exit 0
     end
-  with e -> (
-    match e with
-    | Parsing.Parse_error ->
-        Printf.printf "Syntax error\n";
-        exit 1
-    | _ ->
-        Printf.printf "Internal error!\n";
-        exit 1)
+  with
+  | Failure _ -> exit 1
+  | Parsing.Parse_error ->
+      Printf.printf "Syntax error\n";
+      exit 1
+  | _ ->
+      Printf.printf "Internal error!\n";
+      exit 1
