@@ -64,16 +64,8 @@ let main =
       ignore (Sys.command deleteCommand)
     end
     else begin
-      let extract_path_filename_and_extension filepath =
-        let path = dirname filepath in
-        let filename = basename filepath in
-        let extension = extension filepath in
-        (path, filename, extension)
-      in
-      let path, filename_with_extension, extension =
-        extract_path_filename_and_extension !filename
-      in
-      let filename = chop_extension filename_with_extension in
+      let path = dirname !filename in
+      let filename = chop_extension (basename !filename) in
       let ll_file = filename ^ ".imm" in
       let asm_file = filename ^ ".asm" in
       ignore (Sys.command ("mv a.ll " ^ ll_file));
