@@ -75,9 +75,6 @@ let main =
     exit 0
   with
   | Failure _ -> exit 1
-  | Parsing.Parse_error ->
-      Printf.printf "Syntax error\n";
-      exit 1
   | _ ->
       Printf.printf "Internal error!\n";
       exit 1
