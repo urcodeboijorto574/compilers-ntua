@@ -68,10 +68,8 @@ let main =
       let filename = chop_extension (basename !filename) in
       let ll_file = filename ^ ".imm" in
       let asm_file = filename ^ ".asm" in
-      ignore (Sys.command ("mv a.ll " ^ ll_file));
-      ignore (Sys.command ("mv " ^ ll_file ^ " " ^ path ^ "/"));
-      ignore (Sys.command ("mv a.s " ^ asm_file));
-      ignore (Sys.command ("mv " ^ asm_file ^ " " ^ path ^ "/"))
+      ignore (Sys.command ("mv a.ll " ^ path ^ "/" ^ ll_file));
+      ignore (Sys.command ("mv a.s " ^ path ^ "/" ^ asm_file))
     end;
     Printf.printf "\027[32mIR code generation completed.\027[0m\n%!";
     exit 0
