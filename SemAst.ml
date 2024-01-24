@@ -20,111 +20,108 @@ let funcDefAncestors : funcDef option Stack.t = Stack.create ()
     list and the block, it is checked if in the function's block a value of the
     expected type is returned. Returns [unit]. *)
 let rec sem_funcDef fd =
-  match fd with
-  | { header = h; local_def_list = l; block = b } ->
-      let isMainProgram = !current_scope.depth = 0 in
-      if isMainProgram then Symbol.add_standard_library ();
-      if isMainProgram then Stack.push None funcDefAncestors;
-      fd.parent_func <- Stack.top funcDefAncestors;
-      sem_header true h;
-      if Types.debugMode then
-        Printf.printf "Opening new scope for '%s' function\n" h.id;
-      Symbol.open_scope h.id;
-      let add_fparDef (fpd : fparDef) : unit =
-        let typ = Ast.t_type_of_fparType fpd.fpar_type in
-        List.iter (fun id -> Symbol.enter_parameter id typ fpd.ref) fpd.id_list
-      in
-      List.iter add_fparDef h.fpar_def_list;
-      Stack.push (Some fd) funcDefAncestors;
-      sem_localDefList l;
-      ignore (Stack.pop funcDefAncestors);
+  let isMainProgram = !current_scope.depth = 0 in
+  if isMainProgram then Symbol.add_standard_library ();
+  if isMainProgram then Stack.push None funcDefAncestors;
+  fd.parent_func <- Stack.top funcDefAncestors;
+  sem_header true fd.header;
+  if Types.debugMode then
+    Printf.printf "Opening new scope for '%s' function\n" fd.header.id;
+  Symbol.open_scope fd.header.id;
+  let add_fparDef (fpd : fparDef) : unit =
+    let typ = Ast.t_type_of_fparType fpd.fpar_type in
+    List.iter (fun id -> Symbol.enter_parameter id typ fpd.ref) fpd.id_list
+  in
+  List.iter add_fparDef fd.header.fpar_def_list;
+  Stack.push (Some fd) funcDefAncestors;
+  sem_localDefList fd.local_def_list;
+  ignore (Stack.pop funcDefAncestors);
 
-      let overloadedParVarNameOption : string option =
-        let duplicate_element lst =
-          let rec helper seen = function
-            | [] -> None
-            | h :: t -> if List.mem h seen then Some h else helper (h :: seen) t
-          in
-          helper [] lst
-        in
-        let parNames : string list =
-          let rec get_par_names = function
-            | [] -> []
-            | { id_list = il; ref; fpar_type } :: tail ->
-                il @ get_par_names tail
-          in
-          let resultList = get_par_names h.fpar_def_list in
-          let overloadedParNameOption = duplicate_element resultList in
-          if overloadedParNameOption <> None then (
-            Printf.eprintf
-              "\027[31mError\027[0m: Parameter name '%s' in function '%s' is \
-               used twice.\n"
-              (Option.get overloadedParNameOption)
-              h.id;
-            failwith "Overloaded parameter name");
-          resultList
-        in
-        let varNames : string list =
-          let rec get_var_names = function
-            | [] -> []
-            | L_funcDef _ :: tail | L_funcDecl _ :: tail -> get_var_names tail
-            | L_varDef vd :: tail -> vd.id_list @ get_var_names tail
-          in
-          let resultList = get_var_names l in
-          let overloadedVarNameOption = duplicate_element resultList in
-          if overloadedVarNameOption <> None then (
-            Printf.eprintf
-              "\027[31mError\027[0m: Variable '%s' is declared twice in the \
-               function '%s'.\n"
-              (Option.get overloadedVarNameOption)
-              h.id;
-            failwith "Overloaded variable name");
-          resultList
-        in
-        let rec share_common_elem l1 l2 : 'a option =
-          match l1 with
-          | [] -> None
-          | head :: tail ->
-              if List.mem head l2 then Some head else share_common_elem tail l2
-        in
-        share_common_elem parNames varNames
+  let overloadedParVarNameOption : string option =
+    let duplicate_element lst =
+      let rec helper seen = function
+        | [] -> None
+        | h :: t -> if List.mem h seen then Some h else helper (h :: seen) t
       in
-      if overloadedParVarNameOption <> None then (
+      helper [] lst
+    in
+    let parNames : string list =
+      let rec get_par_names = function
+        | [] -> []
+        | { id_list = il; ref; fpar_type } :: tail -> il @ get_par_names tail
+      in
+      let resultList = get_par_names fd.header.fpar_def_list in
+      let overloadedParNameOption = duplicate_element resultList in
+      if overloadedParNameOption <> None then (
         Printf.eprintf
-          "\027[31mError\027[0m: The name '%s' is shared between a variable \
-           and a parameter in the function '%s'.\n"
-          (Option.get overloadedParVarNameOption)
-          h.id;
-        failwith "Overloaded variable/parameter name");
+          "\027[31mError\027[0m: Parameter name '%s' in function '%s' is used \
+           twice.\n"
+          (Option.get overloadedParNameOption)
+          fd.header.id;
+        failwith "Overloaded parameter name");
+      resultList
+    in
+    let varNames : string list =
+      let rec get_var_names = function
+        | [] -> []
+        | L_funcDef _ :: tail | L_funcDecl _ :: tail -> get_var_names tail
+        | L_varDef vd :: tail -> vd.id_list @ get_var_names tail
+      in
+      let resultList = get_var_names fd.local_def_list in
+      let overloadedVarNameOption = duplicate_element resultList in
+      if overloadedVarNameOption <> None then (
+        Printf.eprintf
+          "\027[31mError\027[0m: Variable '%s' is declared twice in the \
+           function '%s'.\n"
+          (Option.get overloadedVarNameOption)
+          fd.header.id;
+        failwith "Overloaded variable name");
+      resultList
+    in
+    let rec share_common_elem l1 l2 : 'a option =
+      match l1 with
+      | [] -> None
+      | head :: tail ->
+          if List.mem head l2 then Some head else share_common_elem tail l2
+    in
+    share_common_elem parNames varNames
+  in
+  if overloadedParVarNameOption <> None then (
+    Printf.eprintf
+      "\027[31mError\027[0m: The name '%s' is shared between a variable and a \
+       parameter in the function '%s'.\n"
+      (Option.get overloadedParVarNameOption)
+      fd.header.id;
+    failwith "Overloaded variable/parameter name");
 
-      let isMainProgram = !current_scope.depth = 1 in
-      if isMainProgram then begin
-        let funcIdList = Symbol.get_undefined_functions () in
-        if funcIdList <> [] then (
-          List.iter
-            (fun fid ->
-              Printf.eprintf
-                "\027[31mError\027[0m: Function '%s' is declared, but not \
-                 defined.\n"
-                fid)
-            funcIdList;
-          failwith "Undefined function")
-      end;
-      let expectedReturnType = Ast.t_type_of_retType h.ret_type in
-      let typeReturnedInBlock =
-        Types.T_func (match sem_block b with None -> T_none | Some t -> t)
-      in
-      if expectedReturnType <> typeReturnedInBlock then (
-        Printf.eprintf
-          "\027[31mError\027[0m: In function '%s': Expected type %s but got %s \
-           instead.\n"
-          h.id
-          (Types.string_of_t_type expectedReturnType)
-          (Types.string_of_t_type typeReturnedInBlock);
-        failwith "Return statement doesn't return the expected type");
-      if Types.debugMode then
-        Printf.printf "Closing scope for '%s' function's declarations.\n" h.id;
-      Symbol.close_scope () (* TODO: raise warning for unused variables. *)
+  let isMainProgram = !current_scope.depth = 1 in
+  if isMainProgram then begin
+    let funcIdList = Symbol.get_undefined_functions () in
+    if funcIdList <> [] then (
+      List.iter
+        (fun fid ->
+          Printf.eprintf
+            "\027[31mError\027[0m: Function '%s' is declared, but not defined.\n"
+            fid)
+        funcIdList;
+      failwith "Undefined function")
+  end;
+  let expectedReturnType = Ast.t_type_of_retType fd.header.ret_type in
+  let typeReturnedInBlock =
+    Types.T_func (match sem_block fd.block with None -> T_none | Some t -> t)
+  in
+  if expectedReturnType <> typeReturnedInBlock then (
+    Printf.eprintf
+      "\027[31mError\027[0m: In function '%s': Expected type %s but got %s \
+       instead.\n"
+      fd.header.id
+      (Types.string_of_t_type expectedReturnType)
+      (Types.string_of_t_type typeReturnedInBlock);
+    failwith "Return statement doesn't return the expected type");
+  if Types.debugMode then
+    Printf.printf "Closing scope for '%s' function's declarations.\n"
+      fd.header.id;
+  Symbol.close_scope () (* TODO: raise warning for unused variables. *)
 
 (** [sem_header (isPartOfAFuncDef : bool) (h : Ast.header)] takes
     [isPartOfAFuncDef] ([true] when the header is part of a function definition
@@ -132,167 +129,166 @@ let rec sem_funcDef fd =
     header [h]. If [h] is part of a function definition, then a new scope is
     opened and the function's parameters are inserted in it. Returns [unit]. *)
 and sem_header isPartOfAFuncDef header =
-  match header with
-  | { id = ident; fpar_def_list = fpdl; ret_type = rt } -> (
-      if not (List.mem ident Symbol.lib_function_names) then begin
-        let postfix : string =
-          let ancestorsNames : string list =
-            List.rev
-              (Stack.fold
-                 (fun acc (fd : Ast.funcDef option) ->
-                   if fd <> None then
-                     (Option.get fd).header.id :: acc
-                   else
-                     acc)
-                 [] funcDefAncestors)
-          in
-          "("
-          ^ string_of_int (Hashtbl.hash (String.concat "" ancestorsNames))
-          ^ ")"
+  if not (List.mem header.id Symbol.lib_function_names) then begin
+    let postfix : string =
+      let ancestorsNames : string list =
+        List.rev
+          (Stack.fold
+             (fun acc (fd : Ast.funcDef option) ->
+               if fd <> None then
+                 (Option.get fd).header.id :: acc
+               else
+                 acc)
+             [] funcDefAncestors)
+      in
+      "(" ^ string_of_int (Hashtbl.hash (String.concat "" ancestorsNames)) ^ ")"
+    in
+    header.comp_id <- header.id ^ postfix
+  end;
+  let isMainProgram = !current_scope.depth = 0 in
+  if isMainProgram then
+    if header.ret_type <> Nothing then (
+      Printf.eprintf
+        "\027[31mError\027[0m: Main function must return 'nothing' type.\n";
+      failwith "Main function should return nothing")
+    else if header.fpar_def_list <> [] then (
+      Printf.eprintf
+        "\027[31mError\027[0m: Main function shouldn't have parameters.\n";
+      failwith "Main function shouldn't have parameters");
+
+  let resultLookUpOption = look_up_entry header.id in
+  if
+    resultLookUpOption = None
+    || not
+         (Symbol.equal_scopes (Option.get resultLookUpOption).scope
+            !current_scope)
+  then
+    Symbol.enter_function header.id
+      (sem_fparDefList header.fpar_def_list)
+      (Ast.t_type_of_retType header.ret_type)
+      Symbol.(if isPartOfAFuncDef then DEFINED else DECLARED)
+  else
+    try
+      let functionEntry =
+        match (Option.get resultLookUpOption).kind with
+        | ENTRY_function ef -> ef
+        | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
+      in
+      if Types.debugMode then (
+        Printf.printf "Parameter list from ST:\n\t[ ";
+        List.iter
+          (fun ep ->
+            Printf.printf "{ type('%s'), pass('%s') } "
+              (Types.string_of_t_type ep.parameter_type)
+              (if ep.passing = Symbol.BY_VALUE then
+                 "byVal"
+               else
+                 "byRef"))
+          functionEntry.parameters_list;
+        Printf.printf "]\n");
+      let returnTypeFromHeader : Types.t_type =
+        Ast.t_type_of_retType header.ret_type
+      in
+      let paramListFromHeader : (int * Types.t_type * bool) list =
+        let rec helper : fparDef list -> (int * Types.t_type * bool) list =
+          function
+          | [] -> []
+          | { ref = r; id_list = il; fpar_type = fpt } :: tail ->
+              let paramType = Ast.t_type_of_fparType fpt in
+              (List.length il, paramType, r) :: helper tail
         in
-        header.comp_id <- ident ^ postfix
-      end;
-      let isMainProgram = !current_scope.depth = 0 in
-      if isMainProgram then
-        if rt <> Nothing then (
-          Printf.eprintf
-            "\027[31mError\027[0m: Main function must return 'nothing' type.\n";
-          failwith "Main function should return nothing")
-        else if fpdl <> [] then (
-          Printf.eprintf
-            "\027[31mError\027[0m: Main function shouldn't have parameters.\n";
-          failwith "Main function shouldn't have parameters");
-
-      let resultLookUpOption = look_up_entry ident in
-      if
-        resultLookUpOption = None
-        || not
-             (Symbol.equal_scopes (Option.get resultLookUpOption).scope
-                !current_scope)
-      then
-        Symbol.enter_function ident (sem_fparDefList fpdl)
-          (Ast.t_type_of_retType rt)
-          Symbol.(if isPartOfAFuncDef then DEFINED else DECLARED)
-      else
-        try
-          let functionEntry =
-            match (Option.get resultLookUpOption).kind with
-            | ENTRY_function ef -> ef
-            | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
-          in
-          if Types.debugMode then (
-            Printf.printf "Parameter list from ST:\n\t[ ";
-            List.iter
-              (fun ep ->
-                Printf.printf "{ type('%s'), pass('%s') } "
-                  (Types.string_of_t_type ep.parameter_type)
-                  (if ep.passing = Symbol.BY_VALUE then
-                     "byVal"
-                   else
-                     "byRef"))
-              functionEntry.parameters_list;
-            Printf.printf "]\n");
-          let returnTypeFromHeader : Types.t_type = Ast.t_type_of_retType rt in
-          let paramListFromHeader : (int * Types.t_type * bool) list =
-            let rec helper : fparDef list -> (int * Types.t_type * bool) list =
-              function
-              | [] -> []
-              | { ref = r; id_list = il; fpar_type = fpt } :: tail ->
-                  let paramType = Ast.t_type_of_fparType fpt in
-                  (List.length il, paramType, r) :: helper tail
-            in
-            let resultList = helper fpdl in
-            if Types.debugMode then (
-              Printf.printf "Parameter list from this header:\n\t[ ";
-              List.iter
-                begin
-                  let rec print_elem = function
-                    | 0, t, r -> ()
-                    | n, t, r ->
-                        Printf.printf "{ type('%s'), pass('%s') } "
-                          (Types.string_of_t_type t)
-                          (if r then "byRef" else "byVal");
-                        print_elem (n - 1, t, r)
-                  in
-                  print_elem
-                end
-                resultList;
-              Printf.printf "]\n");
-            resultList
-          in
-          let matchingNumOfParams : bool =
-            let lengthOfParamListHeader =
-              let rec f accum = function
-                | [] -> accum
-                | (n, _, _) :: tail -> f (accum + n) tail
+        let resultList = helper header.fpar_def_list in
+        if Types.debugMode then (
+          Printf.printf "Parameter list from this header:\n\t[ ";
+          List.iter
+            begin
+              let rec print_elem = function
+                | 0, t, r -> ()
+                | n, t, r ->
+                    Printf.printf "{ type('%s'), pass('%s') } "
+                      (Types.string_of_t_type t)
+                      (if r then "byRef" else "byVal");
+                    print_elem (n - 1, t, r)
               in
-              f 0 paramListFromHeader
-            in
-            List.length functionEntry.parameters_list = lengthOfParamListHeader
+              print_elem
+            end
+            resultList;
+          Printf.printf "]\n");
+        resultList
+      in
+      let matchingNumOfParams : bool =
+        let lengthOfParamListHeader =
+          let rec f accum = function
+            | [] -> accum
+            | (n, _, _) :: tail -> f (accum + n) tail
           in
-          let matchingParamTypes : bool =
-            let lists_are_equal paramListEntry paramListHeader =
-              let elems_are_equal x y =
-                match y with
-                | _, t, r ->
-                    x.parameter_type = t || x.passing = Symbol.BY_REFERENCE = r
-              in
-              if List.length paramListEntry <> List.length paramListHeader then
-                false
-              else
-                List.for_all2 elems_are_equal paramListEntry paramListHeader
-            in
-            lists_are_equal functionEntry.parameters_list paramListFromHeader
+          f 0 paramListFromHeader
+        in
+        List.length functionEntry.parameters_list = lengthOfParamListHeader
+      in
+      let matchingParamTypes : bool =
+        let lists_are_equal paramListEntry paramListHeader =
+          let elems_are_equal x y =
+            match y with
+            | _, t, r ->
+                x.parameter_type = t || x.passing = Symbol.BY_REFERENCE = r
           in
-          if Types.debugMode then
-            Printf.printf
-              "(Option.get resultLookUpOption).scope.depth = %d, \
-               !current_scope.depth = %d\n"
-              (Option.get resultLookUpOption).scope.depth !current_scope.depth;
-
-          if Types.debugMode then
-            Printf.printf
-              "(Option.get resultLookUpOption).scope.depth = %d, \
-               !current_scope.depth = %d\n"
-              (Option.get resultLookUpOption).scope.depth !current_scope.depth;
-
-          if not matchingNumOfParams then
-            raise Overloaded_functions
-          else if functionEntry.return_type <> returnTypeFromHeader then
-            raise Expected_type_not_returned
-          else if not matchingParamTypes then
-            raise Non_matching_parameter_types
-          else if functionEntry.state = Symbol.DEFINED then
-            raise Redifined_function
+          if List.length paramListEntry <> List.length paramListHeader then
+            false
           else
-            Symbol.set_func_defined functionEntry
-        with
-        | Shared_name_func_var ->
-            Printf.eprintf
-              "\027[31mError\027[0m: Name '%s' is shared with a function and a \
-               variable.\n"
-              ident;
-            failwith "Function and variable share the same name"
-        | Overloaded_functions ->
-            Printf.eprintf
-              "\027[31mError\027[0m: Function '%s' is overloaded.\n" ident;
-            failwith "Function overload"
-        | Redifined_function ->
-            Printf.eprintf
-              "\027[31mError\027[0m: Function '%s' is defined twice.\n" ident;
-            failwith "Redefinition of function"
-        | Expected_type_not_returned ->
-            Printf.eprintf
-              "\027[31mError\027[0m: Return type of function '%s' differs \
-               between declarations\n"
-              ident;
-            failwith "Function's return type differs between declarations"
-        | Non_matching_parameter_types ->
-            Printf.eprintf
-              "\027[31mError\027[0m: Parameter types of function '%s' differ \
-               between declarations.\n"
-              ident;
-            failwith "Parameter types differ between declarations")
+            List.for_all2 elems_are_equal paramListEntry paramListHeader
+        in
+        lists_are_equal functionEntry.parameters_list paramListFromHeader
+      in
+      if Types.debugMode then
+        Printf.printf
+          "(Option.get resultLookUpOption).scope.depth = %d, \
+           !current_scope.depth = %d\n"
+          (Option.get resultLookUpOption).scope.depth !current_scope.depth;
+
+      if Types.debugMode then
+        Printf.printf
+          "(Option.get resultLookUpOption).scope.depth = %d, \
+           !current_scope.depth = %d\n"
+          (Option.get resultLookUpOption).scope.depth !current_scope.depth;
+
+      if not matchingNumOfParams then
+        raise Overloaded_functions
+      else if functionEntry.return_type <> returnTypeFromHeader then
+        raise Expected_type_not_returned
+      else if not matchingParamTypes then
+        raise Non_matching_parameter_types
+      else if functionEntry.state = Symbol.DEFINED then
+        raise Redifined_function
+      else
+        Symbol.set_func_defined functionEntry
+    with
+    | Shared_name_func_var ->
+        Printf.eprintf
+          "\027[31mError\027[0m: Name '%s' is shared with a function and a \
+           variable.\n"
+          header.id;
+        failwith "Function and variable share the same name"
+    | Overloaded_functions ->
+        Printf.eprintf "\027[31mError\027[0m: Function '%s' is overloaded.\n"
+          header.id;
+        failwith "Function overload"
+    | Redifined_function ->
+        Printf.eprintf "\027[31mError\027[0m: Function '%s' is defined twice.\n"
+          header.id;
+        failwith "Redefinition of function"
+    | Expected_type_not_returned ->
+        Printf.eprintf
+          "\027[31mError\027[0m: Return type of function '%s' differs between \
+           declarations\n"
+          header.id;
+        failwith "Function's return type differs between declarations"
+    | Non_matching_parameter_types ->
+        Printf.eprintf
+          "\027[31mError\027[0m: Parameter types of function '%s' differ \
+           between declarations.\n"
+          header.id;
+        failwith "Parameter types differ between declarations"
 
 (** [sem_fparDefList (fpdl : Ast.fparDef list)] semantically analyses the
     function's parameter definitions [fpdl]. Returns
@@ -302,23 +298,21 @@ and sem_fparDefList fpdl = List.map sem_fparDef fpdl
 (** [sem_fparDef (fpd : Ast.fparDef)] semantically analyses the function's
     parameter definition [fpd]. Returns
     [int * Types.t_type * Symbol.param_passing]. *)
-and sem_fparDef = function
-  | { ref = r; id_list = il; fpar_type = fpt } ->
-      if List.exists (fun n -> n = 0) fpt.array_dimensions then (
-        Printf.eprintf
-          "\027[31mError\027[0m: Array declared to have size a non-positive \
-           number.\n";
-        failwith "Array of zero size");
-      let paramIsArray = fpt.array_dimensions <> [] in
-      let passedByValue = not r in
-      if paramIsArray && passedByValue then (
-        Printf.eprintf
-          "\027[31mError\027[0m: Arrays should always be passed as parameters \
-           by reference.\n";
-        failwith "Array passed as a parameter by value");
-      ( List.length il,
-        Ast.t_type_of_fparType fpt,
-        if r then BY_REFERENCE else BY_VALUE )
+and sem_fparDef fpd =
+  if List.exists (fun n -> n = 0) fpd.fpar_type.array_dimensions then (
+    Printf.eprintf
+      "\027[31mError\027[0m: Array declared to have size a non-positive number.\n";
+    failwith "Array of zero size");
+  let paramIsArray = fpd.fpar_type.array_dimensions <> [] in
+  let passedByValue = not fpd.ref in
+  if paramIsArray && passedByValue then (
+    Printf.eprintf
+      "\027[31mError\027[0m: Arrays should always be passed as parameters by \
+       reference.\n";
+    failwith "Array passed as a parameter by value");
+  ( List.length fpd.id_list,
+    Ast.t_type_of_fparType fpd.fpar_type,
+    if fpd.ref then BY_REFERENCE else BY_VALUE )
 
 (** [sem_localDefList (ldl : Ast.localDef list)] semantically analyses the
     function's local definitions list [ldl]. Returns [unit]. *)
@@ -639,106 +633,103 @@ and sem_cond = function
     [fc]. Additionally, it checks if the types of its arguments match the
     expected ones defined in the function's header. Returns [Types.t_type]. *)
 and sem_funcCall fc =
-  match fc with
-  | { id = ident; expr_list = el; ret_type = rt } -> (
-      let resultLookUpOption = look_up_entry ident in
-      try
-        if resultLookUpOption = None then raise Not_found;
-        if not (List.mem fc.id Symbol.lib_function_names) then begin
-          let postfix =
-            let ancestorsNames =
-              let rec get_ancestorsNames = function
-                | None -> []
-                | Some scope -> scope.name :: get_ancestorsNames scope.parent
-              in
-              get_ancestorsNames (Some (Option.get resultLookUpOption).scope)
-            in
-            "("
-            ^ string_of_int (Hashtbl.hash (String.concat "" ancestorsNames))
-            ^ ")"
+  let resultLookUpOption = look_up_entry fc.id in
+  try
+    if resultLookUpOption = None then raise Not_found;
+    if not (List.mem fc.id Symbol.lib_function_names) then begin
+      let postfix =
+        let ancestorsNames =
+          let rec get_ancestorsNames = function
+            | None -> []
+            | Some scope -> scope.name :: get_ancestorsNames scope.parent
           in
-          fc.comp_id <- ident ^ postfix
-        end;
-        let functionEntry =
-          match (Option.get resultLookUpOption).kind with
-          | ENTRY_function ef -> ef
-          | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
+          get_ancestorsNames (Some (Option.get resultLookUpOption).scope)
         in
-        if rt = None then
-          fc.ret_type <- Some (Types.t_type_of_t_func functionEntry.return_type);
+        "("
+        ^ string_of_int (Hashtbl.hash (String.concat "" ancestorsNames))
+        ^ ")"
+      in
+      fc.comp_id <- fc.id ^ postfix
+    end;
+    let functionEntry =
+      match (Option.get resultLookUpOption).kind with
+      | ENTRY_function ef -> ef
+      | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
+    in
+    if fc.ret_type = None then
+      fc.ret_type <- Some (Types.t_type_of_t_func functionEntry.return_type);
 
-        if List.compare_lengths el functionEntry.parameters_list <> 0 then
-          raise Unexpected_number_of_parameters;
+    if List.compare_lengths fc.expr_list functionEntry.parameters_list <> 0 then
+      raise Unexpected_number_of_parameters;
 
-        let exprTypesListInFuncCall = List.map sem_expr el in
-        let paramTypesListFromST =
-          let rec get_entry_types_list = function
-            | [] -> []
-            | { parameter_type = pt; _ } :: tl -> pt :: get_entry_types_list tl
-          in
-          get_entry_types_list functionEntry.parameters_list
-        in
-        let typeListsAreEqual =
-          List.for_all2 Types.equal_types exprTypesListInFuncCall
-            paramTypesListFromST
-        in
-        if not typeListsAreEqual then raise Type_error;
+    let exprTypesListInFuncCall = List.map sem_expr fc.expr_list in
+    let paramTypesListFromST =
+      let rec get_entry_types_list = function
+        | [] -> []
+        | { parameter_type = pt; _ } :: tl -> pt :: get_entry_types_list tl
+      in
+      get_entry_types_list functionEntry.parameters_list
+    in
+    let typeListsAreEqual =
+      List.for_all2 Types.equal_types exprTypesListInFuncCall
+        paramTypesListFromST
+    in
+    if not typeListsAreEqual then raise Type_error;
 
-        let exprIsLValueList =
-          let rec is_lvalue_of_expr = function
-            | E_lvalue _ -> true
-            | E_expr_parenthesized expr -> is_lvalue_of_expr expr
-            | _ -> false
-          in
-          List.map is_lvalue_of_expr el
-        in
-        let paramIsByRefListFromST =
-          let get_is_ref_of_param_entry pe = pe.passing = Symbol.BY_REFERENCE in
-          List.map get_is_ref_of_param_entry functionEntry.parameters_list
-        in
-        let byRefListsAreEqual =
-          let helper eLV pBR = eLV || not pBR in
-          List.equal helper exprIsLValueList paramIsByRefListFromST
-        in
-        if not byRefListsAreEqual then raise Passing_error;
-        functionEntry.return_type
-      with
-      | Not_found ->
-          Printf.eprintf
-            "\027[31mError\027[0m: Function '%s' is called, but never declared.\n"
-            ident;
-          failwith "Undeclared function called"
-      | Shared_name_func_var ->
-          Printf.eprintf
-            "\027[31mError\027[0m: Name '%s' is shared with a function and a \
-             variable.\n"
-            ident;
-          failwith "Function and variable share the same name"
-      | Unexpected_number_of_parameters ->
-          let functionEntry =
-            match (Option.get resultLookUpOption).kind with
-            | ENTRY_function ef -> ef
-            | _ -> assert false
-          in
-          Printf.eprintf
-            "\027[31mError\027[0m: Function '%s' expected %d arguments, but \
-             instead got %d.\n"
-            ident
-            (List.length functionEntry.parameters_list)
-            (List.length el);
-          failwith "Unexpected number of parameters in function call"
-      | Type_error ->
-          Printf.eprintf
-            "\027[31mError\027[0m: Arguments' types of function '%s' don't \
-             match.\n"
-            ident;
-          failwith "The arguments' types don't match"
-      | Passing_error ->
-          Printf.eprintf
-            "\027[31mError\027[0m: '%s' function call: Expression that is \
-             passed by reference isn't an l-value.\n"
-            ident;
-          failwith "r-value passed by reference")
+    let exprIsLValueList =
+      let rec is_lvalue_of_expr = function
+        | E_lvalue _ -> true
+        | E_expr_parenthesized expr -> is_lvalue_of_expr expr
+        | _ -> false
+      in
+      List.map is_lvalue_of_expr fc.expr_list
+    in
+    let paramIsByRefListFromST =
+      let get_is_ref_of_param_entry pe = pe.passing = Symbol.BY_REFERENCE in
+      List.map get_is_ref_of_param_entry functionEntry.parameters_list
+    in
+    let byRefListsAreEqual =
+      let helper eLV pBR = eLV || not pBR in
+      List.equal helper exprIsLValueList paramIsByRefListFromST
+    in
+    if not byRefListsAreEqual then raise Passing_error;
+    functionEntry.return_type
+  with
+  | Not_found ->
+      Printf.eprintf
+        "\027[31mError\027[0m: Function '%s' is called, but never declared.\n"
+        fc.id;
+      failwith "Undeclared function called"
+  | Shared_name_func_var ->
+      Printf.eprintf
+        "\027[31mError\027[0m: Name '%s' is shared with a function and a \
+         variable.\n"
+        fc.id;
+      failwith "Function and variable share the same name"
+  | Unexpected_number_of_parameters ->
+      let functionEntry =
+        match (Option.get resultLookUpOption).kind with
+        | ENTRY_function ef -> ef
+        | _ -> assert false
+      in
+      Printf.eprintf
+        "\027[31mError\027[0m: Function '%s' expected %d arguments, but \
+         instead got %d.\n"
+        fc.id
+        (List.length functionEntry.parameters_list)
+        (List.length fc.expr_list);
+      failwith "Unexpected number of parameters in function call"
+  | Type_error ->
+      Printf.eprintf
+        "\027[31mError\027[0m: Arguments' types of function '%s' don't match.\n"
+        fc.id;
+      failwith "The arguments' types don't match"
+  | Passing_error ->
+      Printf.eprintf
+        "\027[31mError\027[0m: '%s' function call: Expression that is passed \
+         by reference isn't an l-value.\n"
+        fc.id;
+      failwith "r-value passed by reference"
 
 (** [sem_on (ast : Ast.funcDef)] semantically analyses the root of the ast [ast]
     (produced by the parser). It also initializes the SymbolTable. Returns
