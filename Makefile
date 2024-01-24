@@ -20,7 +20,7 @@ PACKAGES=-package llvm -package llvm.analysis -package llvm.target \
 
 %.cmi: %.mli
 	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -c $<
-	
+
 %.cmx %.cmi: %.ml
 	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -c $<
 
@@ -41,7 +41,7 @@ depend: Types.ml Types.mli Symbol.ml Symbol.mli PrintAst.ml PrintAst.mli SemAst.
 	$(OCAMLDEP) $^ > .depend
 
 clean:
-	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer.cmx Lexer Lexer.o Parser.automaton Parser.conflicts *.cmx *.cmi *~ *.o a.ll a.s a.out
+	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer.cmx Lexer Lexer.o Parser.automaton Parser.conflicts *.cmx *.cmi *~ *.o a.ll a.s a.out lib/lib.o
 
 distclean: clean
 	$(RM) grace$(EXE) .depend
