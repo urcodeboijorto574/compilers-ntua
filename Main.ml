@@ -57,17 +57,11 @@ let main =
     ignore (Sys.command llc_command);
     let build_exec_command = "clang -o a.out a.s ./lib/lib.a" in
     ignore (Sys.command build_exec_command);
-    if !has_i_flag then begin
-      let i_command = "cat a.ll" in
-      ignore (Sys.command i_command);
-      let delete_command = "rm a.ll a.s" in
-      ignore (Sys.command delete_command)
-    end
-    else if !has_f_flag then begin
-      let f_command = "cat a.s" in
-      ignore (Sys.command f_command);
-      let delete_command = "rm a.ll a.s" in
-      ignore (Sys.command delete_command)
+    if !has_i_flag || !has_f_flag then begin
+      let fileToPrint = if !has_i_flag then "a.ll" else "a.s" in
+      ignore (Sys.command ("cat " ^ fileToPrint));
+      let deleteCommand = "rm a.ll a.s" in
+      ignore (Sys.command deleteCommand)
     end
     else begin
       let extract_path_filename_and_extension filepath =
