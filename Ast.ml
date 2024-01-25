@@ -250,5 +250,6 @@ let get_const_cond_value c =
   | None -> None
   | Some v ->
       let string_of_v = if v then "true" else "false" in
-      Printf.eprintf "Warning: Condition is always %s.\n" string_of_v;
+      Printf.eprintf "\027[35mWarning\027[0m: Condition is always %s.\n"
+        string_of_v;
       Some v

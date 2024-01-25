@@ -112,7 +112,8 @@ let rec sem_funcDef fd : unit =
   let isMainProgram = !current_scope.depth = 1 in
   if isMainProgram then
     List.iter
-      (fun id -> Printf.printf "Warning: Unsused name '%s'.\n" id)
+      (fun id ->
+        Printf.printf "\027[35mWarning\027[0m: Unsused name '%s'.\n" id)
       (Symbol.get_unused_entries ());
 
   if Types.debugMode then
@@ -357,7 +358,8 @@ and sem_funcDecl fd : unit =
   if not fd.is_redundant then
     sem_header false fd.header
   else
-    Printf.eprintf "Warning: Function '%s' has redundant declarations.\n"
+    Printf.eprintf
+      "\027[35mWarning\027[0m: Function '%s' has redundant declarations.\n"
       fd.header.id
 
 (** [sem_varDef (vd : Ast.varDef)] enters in the symbolTable every variable
@@ -380,7 +382,8 @@ and sem_block (bl : Ast.stmt list) : Types.t_type option =
         | None -> get_type_of_stmt_list result warningRaised tail
         | Some typ ->
             if tail <> [] && not warningRaised then
-              Printf.eprintf "Warning: A section of a block is never reached.\n";
+              Printf.eprintf
+                "\027[35mWarning\027[0m: A section of a block is never reached.\n";
             get_type_of_stmt_list
               (if result = None then Some typ else result)
               true tail)
@@ -430,7 +433,8 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
       | T_func t ->
           if t <> T_none then
             Printf.eprintf
-              "Warning: The return value of the function '%s' is not used.\n"
+              "\027[35mWarning\027[0m: The return value of the function '%s' \
+               is not used.\n"
               fc.id;
           None
       | T_none | T_int | T_char | T_array _ -> assert false)
@@ -462,7 +466,8 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
       match constCondValue with
       | Some false -> None
       | Some true ->
-          if type_of_s = None then Printf.eprintf "Warning: Infinite loop.\n";
+          if type_of_s = None then
+            Printf.eprintf "\027[35mWarning\027[0m: Infinite loop.\n";
           type_of_s
       | None -> type_of_s)
   | S_return x -> (
