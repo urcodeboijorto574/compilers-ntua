@@ -92,20 +92,10 @@ let rec sem_funcDef fd : unit =
        parameter in the function '%s'.\n"
       (Option.get overloadedParVarNameOption)
       fd.header.id;
-    failwith "Overloaded variable/parameter name");
+    failwith "Parameter and variable share identifier");
 
   let isMainProgram = !current_scope.depth = 1 in
-  if isMainProgram then begin
-    let funcIdList = Symbol.get_undefined_functions () in
-    if funcIdList <> [] then (
-      List.iter
-        (fun fid ->
-          Printf.eprintf
-            "\027[31mError\027[0m: Function '%s' is declared, but not defined.\n"
-            fid)
-        funcIdList;
-      failwith "Undefined function")
-  end;
+  ignore isMainProgram;
   let expectedReturnType = Ast.t_type_of_retType fd.header.ret_type in
   let typeReturnedInBlock =
     Types.T_func (match sem_block fd.block with None -> T_none | Some t -> t)
@@ -512,7 +502,7 @@ and sem_lvalue lv : Types.t_type =
         let typeExpr = sem_expr e in
         if not Types.(equal_types T_int typeExpr) then (
           Printf.eprintf
-            "\027[31mError\027[0m: Expected type integer, but received %s.\n\
+            "\027[31mError\027[0m: Expected type integer, but received %s. \
              Index of array elements must be of integer type.\n"
             (Types.string_of_t_type typeExpr);
           failwith "Type error");
