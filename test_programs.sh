@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Declare counter of total, correct and erroneous programs
+totalCounter=0
+errorCounter=0
+correctCounter=0
+
 # Specify the directory
 directory=$1
 
@@ -7,36 +12,45 @@ directory=$1
 for file in "$directory"*.grc
 do
   if [ -f "$file" ]; then
-    echo "Compiling and running $file:"
-    immfile=${file::-3}imm
-    asmfile=${file::-3}asm
-
+    ((++totalCounter))
     # Extracting the file name without the directory path
     filename=$(basename "$file")
 
-    # Print a specific message before running the command
-    ./grace -O "$file"
+    # Remove any previously created executable
+    if [ -f "./a.out" ]; then
+      rm ./a.out
+    fi
+
+    # Print a start message
+    echo "$filename:"
 
     # Run the file
+    ./grace "$file"
+
+    # If compilation was successful, run the executable
     if [ -f "./a.out" ]; then
+      ((++correctCounter))
       ./a.out
-    fi
-
-    # Check if the files are generated
-    if [ -f $immfile ]; then
-      # Remove the unnecessary files (intermediate and final code)
-      rm $immfile
     else
-      echo "Error: Failed to generate .imm file for $filename"
+      ((++errorCounter))
     fi
 
+    # Create the names of the files with the intermediate and the finale code
+    immfile=${file::-3}imm
+    asmfile=${file::-3}asm
+
+    # Remove files containing the intermediate and the finale code
+    if [ -f $immfile ]; then
+      rm $immfile
+    fi
     if [ -f $asmfile ]; then
       rm $asmfile
-    else
-      echo "Error: Failed to generate .asm file for $filename"
     fi
 
     # Add a newline for better output separation
     echo
   fi
 done
+
+echo "Correct programs: $correctCounter/$totalCounter"
+echo "Erroneous programs: $errorCounter/$totalCounter"
