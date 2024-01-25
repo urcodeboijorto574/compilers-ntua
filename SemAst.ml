@@ -353,7 +353,7 @@ and sem_localDef : Ast.localDef -> unit = function
   | L_funcDecl fd -> sem_funcDecl fd
   | L_varDef vd -> sem_varDef vd
 
-(** [sem_funcDecl (fd : Ast.funcDef)] semantically analyses the header of the
+(** [sem_funcDecl (fd : Ast.funcDecl)] semantically analyses the header of the
     function declaration [fd] (uses the function [sem_header]). *)
 and sem_funcDecl fd : unit =
   if not fd.is_redundant then
@@ -372,25 +372,22 @@ and sem_varDef vd : unit =
   let typ = Ast.t_type_of_varType vd.var_type in
   List.iter (fun i -> Symbol.enter_variable i typ) vd.id_list
 
-(** [sem_block (bl : Ast.block)] semantically analyses every statement of the
-    block [bl]. *)
-and sem_block : Ast.stmt list -> Types.t_type option = function
-  | [] -> None
-  | stmtList ->
-      let rec get_type_of_stmt_list res warningRaised = function
-        | [] -> res
-        | head :: tail -> (
-            match sem_stmt head with
-            | None -> get_type_of_stmt_list res warningRaised tail
-            | Some typ ->
-                if tail <> [] && not warningRaised then
-                  Printf.eprintf
-                    "Warning: A section of a block is never reached.\n";
-                get_type_of_stmt_list
-                  (if res = None then Some typ else res)
-                  true tail)
-      in
-      get_type_of_stmt_list None false stmtList
+(** [sem_block (bl : Ast.stmt list)] semantically analyses every statement of
+    the block [bl]. *)
+and sem_block (bl : Ast.stmt list) : Types.t_type option =
+  let rec get_type_of_stmt_list result warningRaised = function
+    | [] -> result
+    | head :: tail -> (
+        match sem_stmt head with
+        | None -> get_type_of_stmt_list result warningRaised tail
+        | Some typ ->
+            if tail <> [] && not warningRaised then
+              Printf.eprintf "Warning: A section of a block is never reached.\n";
+            get_type_of_stmt_list
+              (if result = None then Some typ else result)
+              true tail)
+  in
+  get_type_of_stmt_list None false bl
 
 (** [sem_stmt (s : Ast.stmt)] semantically analyses the statement [s] and
     returns [Some t] if [s] is a return statement or [None] if not. *)
