@@ -231,18 +231,6 @@ let look_up_entry (id : string) =
       Printf.printf "Entry '%s' not found in any scope.\n" id);
   try Some (List.hd resultEntryList) with _ -> None
 
-let get_undefined_functions () =
-  let undefinedFunctionsList = ref [] in
-  Hashtbl.iter
-    (fun id e ->
-      match e.kind with
-      | ENTRY_function ef ->
-          if ef.state = DECLARED then
-            undefinedFunctionsList := id :: !undefinedFunctionsList
-      | ENTRY_variable _ | ENTRY_parameter _ -> ())
-    !symbolTable;
-  !undefinedFunctionsList
-
 let get_unused_entries () =
   let unusedEntriesList = ref [] in
   Hashtbl.iter
