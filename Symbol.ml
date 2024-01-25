@@ -28,6 +28,7 @@ and entry = {
   id : string;
   scope : scope;
   mutable kind : entry_kind;
+  mutable isUsed : bool;
 }
 
 and entry_kind =
@@ -54,6 +55,8 @@ and entry_function = {
 }
 
 let set_func_defined entryFunc = entryFunc.state <- DEFINED
+and set_entry_isUsed entry = entry.isUsed <- true
+
 let current_scope = ref { name = ""; parent = None; depth = 0 }
 
 let open_scope str =
@@ -87,7 +90,8 @@ let create_symbol_table numOfBuckets =
 (** [enter_entry i e] takes an identifier [i] and an entry kind [e] and creates
     and adds a new entry in the symbolTable. *)
 let enter_entry ident eKind =
-  let e = { id = ident; scope = !current_scope; kind = eKind } in
+  let isUsed = List.mem ident lib_function_names || !current_scope.depth = 0 in
+  let e = { id = ident; scope = !current_scope; kind = eKind; isUsed } in
   Hashtbl.add !symbolTable ident e;
   if Types.debugMode then
     Printf.printf "entering entry %s in current scope\n" e.id
@@ -238,3 +242,11 @@ let get_undefined_functions () =
       | ENTRY_variable _ | ENTRY_parameter _ -> ())
     !symbolTable;
   !undefinedFunctionsList
+
+let get_unused_entries () =
+  let unusedEntriesList = ref [] in
+  Hashtbl.iter
+    (fun id e ->
+      if not e.isUsed then unusedEntriesList := id :: !unusedEntriesList)
+    !symbolTable;
+  !unusedEntriesList

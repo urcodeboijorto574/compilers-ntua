@@ -108,10 +108,17 @@ let rec sem_funcDef fd : unit =
       (Types.string_of_t_type expectedReturnType)
       (Types.string_of_t_type typeReturnedInBlock);
     failwith "Return statement doesn't return the expected type");
+
+  let isMainProgram = !current_scope.depth = 1 in
+  if isMainProgram then
+    List.iter
+      (fun id -> Printf.printf "Warning: Unsused name '%s'.\n" id)
+      (Symbol.get_unused_entries ());
+
   if Types.debugMode then
     Printf.printf "Closing scope for '%s' function's declarations.\n"
       fd.header.id;
-  Symbol.close_scope () (* TODO: raise warning for unused variables. *)
+  Symbol.close_scope ()
 
 (** [sem_header (isPartOfAFuncDef : bool) (h : Ast.header)] takes
     [isPartOfAFuncDef] ([true] when the header is part of a function definition
@@ -160,6 +167,7 @@ and sem_header isPartOfAFuncDef header : unit =
       Symbol.(if isPartOfAFuncDef then DEFINED else DECLARED)
   else
     try
+      set_entry_isUsed (Option.get resultLookUpOption);
       let functionEntry =
         match (Option.get resultLookUpOption).kind with
         | ENTRY_function ef -> ef
@@ -476,6 +484,7 @@ and sem_lvalue lv : Types.t_type =
             Symbol.(!current_scope.name);
           failwith "Undefined variable");
         let entryFound = Option.get entryFoundOption in
+        set_entry_isUsed entryFound;
         if Types.debugMode then (
           Printf.printf "Entry for '%s' found. Information:\n" id;
           Printf.printf "\tid: %s, scope: %s" id entryFound.scope.name);
@@ -642,6 +651,7 @@ and sem_funcCall fc : Types.t_type =
       | ENTRY_function ef -> ef
       | ENTRY_variable _ | ENTRY_parameter _ -> raise Shared_name_func_var
     in
+    set_entry_isUsed (Option.get resultLookUpOption);
     if fc.ret_type = None then
       fc.ret_type <- Some (Types.t_type_of_t_func functionEntry.return_type);
 

@@ -16,6 +16,7 @@ and entry = {
   id : string;
   scope : scope;
   mutable kind : entry_kind;
+  mutable isUsed : bool;
 }
 
 and entry_kind =
@@ -44,6 +45,9 @@ and entry_function = {
 (** [set_func_defined entryFunc] sets the state of in an entry_function
     [entryFunc] to [DEFINED]. *)
 val set_func_defined : entry_function -> unit
+
+(** [set_entry_isUsed e] sets the field 'isUsed' of an entry to [true]. *)
+val set_entry_isUsed : entry -> unit
 
 (** [current_scope] is a variable that stores the current scope during the
     semantic analysis of the AST. *)
@@ -104,3 +108,6 @@ val look_up_entry : string -> entry option
 (** [get_undefined_functions] returns a list of the names of the functions that
     are not defined. *)
 val get_undefined_functions : unit -> string list
+
+(** [get_unused_entries] returns a list of the unused names. *)
+val get_unused_entries : unit -> string list
