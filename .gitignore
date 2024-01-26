@@ -3,6 +3,7 @@
 
 # ...except the files below
 !.gitignore
+!grace2023.pdf
 !README.md
 !Makefile
 !.ocamlformat
