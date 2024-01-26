@@ -20,11 +20,12 @@ For more information about the technicalities of the Grace programming language,
 
 The packages needed to build the compiler are the ones below:
 
-- ocaml/4.13.1
+- opam/2.1.4
 - ocamlfind/1.9.5
 - menhir/20220210
-- ocamllex
 - llvm/14.0.6
+- clang
+- gcc
 
 ### Installation
 
@@ -32,6 +33,11 @@ The packages needed to build the compiler are the ones below:
 # Build compiler
 make depend
 make
+
+# Build standard Grace library
+cd lib
+./buildlib.sh
+cd ..
 
 # Remove object/unnecessary files
 make clean
@@ -51,12 +57,20 @@ make distclean
     --help Display this list of options
 ```
 
+Note: If neither of _-i_ and _-f_ flags are set, the compiler creates in the directory of the _.grc_ file a _.imm_ and a _.asm_ file, which contain the intermediate and the final code, respectively.
+
 ## Examples
 
 To compile a simple hello-world program, run:
 
 ```bash
 ./grace examples/helloworld.grc
+```
+
+To run your program execute:
+
+```bash
+./a.out
 ```
 
 ## Acknowledgments
