@@ -17,7 +17,7 @@
   let char_list_in_string = ref []
   let add_in_list c = char_list_in_string := c :: !char_list_in_string
   let multi_line_string_error_msg () =
-    Printf.eprintf "String must close in the same line it starts. Line %d.\n" !num_lines;
+    Printf.eprintf "\027[31mError\027[0m: String must close in the same line it starts. Line %d.\n" !num_lines;
     incr num_lines
 }
 
@@ -95,12 +95,12 @@ rule lexer = parse
     }
 
   | eof { T_eof }
-  | _ as chr { Printf.eprintf "Unknown character '%c' at line %d.\n" chr !num_lines; lexer lexbuf }
+  | _ as chr { Printf.eprintf "\027[31mError\027[0m: Unknown character '%c' at line %d.\n" chr !num_lines; lexer lexbuf }
 
 and strings = parse
   | "'" {
       Printf.eprintf
-        "Error: line %d: single quotes are not permitted in strings (maybe you forgot a \'\\\'?).\n"
+        "\027[31mError\027[0m: line %d: single quotes are not permitted in strings (maybe you forgot a \'\\\'?).\n"
         !num_lines;
       T_eof
     }
@@ -144,18 +144,18 @@ and characters = parse
     }
   | (char_not_escape as c) '\'' { T_chr (String.get c 1) }
   | '\'' {
-      Printf.eprintf "Error: Single quotes contain no character on the inside. Line %d.\n" !num_lines;
+      Printf.eprintf "\027[31mError\027[0m: Single quotes contain no character on the inside. Line %d.\n" !num_lines;
       lexer lexbuf
     }
   | _ {
-      Printf.eprintf "Error: Single quotes opened and didn't close. Line %d.\n" !num_lines;
+      Printf.eprintf "\027[31mError\027[0m: Single quotes opened and didn't close. Line %d.\n" !num_lines;
       lexer lexbuf
     }
 
 and multi_comments = parse
   | '\n' { incr num_lines; multi_comments lexbuf }
   | "$$" { lexer lexbuf }
-  | eof  { Printf.eprintf "Error! Unclosed comment at line: %d.\n" !num_lines; T_eof }
+  | eof  { Printf.eprintf "\027[31mError\027[0m: Unclosed comment at line: %d.\n" !num_lines; T_eof }
   | _    { multi_comments lexbuf }
 
 and comment = parse
