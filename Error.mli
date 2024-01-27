@@ -16,3 +16,6 @@ val handle_error : string -> unit
 
 (** [handle_warning msg] prints the [msg] to the standard output. *)
 val handle_warning : string -> unit
+
+(** [handle_success msg] prints the [msg] to the standard output in green. *)
+val handle_success : string -> unit

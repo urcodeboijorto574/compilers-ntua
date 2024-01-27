@@ -10,5 +10,6 @@ exception Type_error
 exception Passing_error
 
 let type_error_msg = "Type error"
-let handle_error msg = Printf.eprintf "\027[31mError\027[0m: %s\n" msg
-let handle_warning msg = Printf.printf "\027[35mWarning\027[0m: %s\n" msg
+let handle_error = Printf.eprintf "\027[31mError\027[0m: %s\n"
+let handle_warning = Printf.printf "\027[35mWarning\027[0m: %s\n"
+let handle_success = Printf.printf "\027[32m%s\027[0m\n"
