@@ -22,7 +22,7 @@ let main =
   Arg.parse speclist (fun s -> filename := s) usage_msg;
 
   try
-    let input_from =
+    let in_channel =
       if !has_i_flag && !has_f_flag then begin
         Printf.eprintf "%s\n" usage_msg;
         exit 1
@@ -32,26 +32,26 @@ let main =
       else
         Stdlib.open_in !filename
     in
-    let lexbuf = Lexing.from_channel input_from in
-    (try
-       let asts = Parser.program Lexer.lexer lexbuf in
-       if Types.debugMode then (
-         Printf.printf "Syntactic analysis:\n";
-         PrintAst.print_on asts;
-         Printf.printf "\n");
-       Error.handle_success "Successful parsing.";
-       if Types.debugMode then (
-         Printf.printf "\n";
-         Printf.printf "Semantic analysis:\n");
-       SemAst.sem_on asts;
-       if Types.debugMode then Printf.printf "\n";
-       Error.handle_success "Semantically correct.";
-       GenAst.gen_on asts !has_o_flag
-     with
-    | Parsing.Parse_error ->
+    let lexbuf = Lexing.from_channel in_channel in
+    if Types.debugMode then Printf.printf "Syntactic analysis:\n";
+    let asts =
+      try Parser.program Lexer.lexer lexbuf
+      with Parsing.Parse_error ->
         Error.handle_error "Syntax error";
         exit 1
-    | _ -> exit 1);
+    in
+    if Types.debugMode then (
+      PrintAst.print_on asts;
+      Printf.printf "\n");
+    Error.handle_success "Successful parsing.";
+    if Types.debugMode then (
+      Printf.printf "\n";
+      Printf.printf "Semantic analysis:\n");
+    SemAst.sem_on asts;
+    if Types.debugMode then Printf.printf "\n";
+    Error.handle_success "Semantically correct.";
+    GenAst.gen_on asts !has_o_flag;
+
     print_module "a.ll" GenAst.the_module;
     let llc_command = "llc -o a.s a.ll" in
     ignore (Sys.command llc_command);
@@ -75,6 +75,7 @@ let main =
     exit 0
   with
   | Failure _ -> exit 1
-  | _ ->
-      Error.handle_error "Internal error!";
+  | Assert_failure _ ->
+      Error.handle_error "Internal error";
       exit 1
+  | _ -> exit 1

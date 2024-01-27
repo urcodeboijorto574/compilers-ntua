@@ -183,21 +183,21 @@ and gen_lvalue funcDef lv =
     let rec search_address i stackFrameAlloca stackFrame =
       let isIndexOutOfBounds = i >= stackFrame.stack_frame_length in
       if isIndexOutOfBounds then
-        let parentStackFrameOpt =
-          Option.map (fun fd -> Option.get fd.stack_frame) funcDef.parent_func
+        let parentStackFrame =
+          let parentStackFrameOpt =
+            Option.map (fun fd -> Option.get fd.stack_frame) funcDef.parent_func
+          in
+          Option.get parentStackFrameOpt
         in
-        match parentStackFrameOpt with
-        | Some parentStackFrame ->
-            let access_link_ptr =
-              build_struct_gep
-                (Option.get stackFrame.stack_frame_addr)
-                0 "access_link_ptr" builder
-            in
-            let parentStackFrameAlloca =
-              build_load access_link_ptr "access_link_val" builder
-            in
-            search_address 0 parentStackFrameAlloca parentStackFrame
-        | None -> failwith "variable not found"
+        let parentStackFrameAlloca =
+          let access_link_ptr =
+            build_struct_gep
+              (Option.get stackFrame.stack_frame_addr)
+              0 "access_link_ptr" builder
+          in
+          build_load access_link_ptr "access_link_val" builder
+        in
+        search_address 0 parentStackFrameAlloca parentStackFrame
       else
         let var_name, elem_pos, is_ref, is_array =
           List.nth stackFrame.var_records i
@@ -681,7 +681,7 @@ let define_lib_funcs () =
     let f =
       match lookup_function name the_module with
       | None -> declare_function name ft the_module
-      | Some x -> failwith "semantic analysis error: function already defined"
+      | Some _ (* Semantic analysis error state *) -> assert false
     in
     (* Set names for all arguments. *)
     Array.iteri
