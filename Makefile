@@ -24,7 +24,7 @@ PACKAGES=-package llvm -package llvm.analysis -package llvm.target \
 %.cmx %.cmi: %.ml
 	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -c $<
 
-grace$(EXE): Types.cmx Symbol.cmx PrintAst.cmx Ast.cmx SemAst.cmx Lexer.cmx Parser.cmx GenAst.cmx Main.cmx
+grace$(EXE): Types.cmx Error.cmx Symbol.cmx PrintAst.cmx Ast.cmx SemAst.cmx Lexer.cmx Parser.cmx GenAst.cmx Main.cmx
 	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -linkpkg -o $@ $^
 
 Lexer.ml: Lexer.mll
@@ -37,15 +37,15 @@ Parser.ml Parser.mli: Parser.mly
 
 -include .depend
 
-depend: Types.ml Types.mli Symbol.ml Symbol.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli Ast.ml Ast.mli Lexer.ml Lexer.mli Parser.ml Parser.mli GenAst.ml GenAst.mli Main.ml
+depend: Types.ml Types.mli Error.ml Error.mli Symbol.ml Symbol.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli Ast.ml Ast.mli Lexer.ml Lexer.mli Parser.ml Parser.mli GenAst.ml GenAst.mli Main.ml
 	$(OCAMLDEP) $^ > .depend
 
 clean:
-	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer.cmx Lexer Lexer.o Parser.automaton Parser.conflicts *.cmx *.cmi *~ *.o a.ll a.s a.out lib/lib.o
+	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer Lexer.o Parser.automaton Parser.conflicts *.cmx *.cmi *~ *.o a.ll a.s a.out lib/lib.o
 
 distclean: clean
 	$(RM) grace$(EXE) .depend
 
 # To format the OCaml code, first install the ocamlformat tool with "opam install ocamlformat"
-format: Ast.ml Lexer.mli Main.ml Symbol.ml Symbol.mli Types.ml Types.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli GenAst.ml GenAst.mli
+format: Ast.ml Error.ml Error.mli GenAst.ml GenAst.mli Lexer.mli Main.ml PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli Symbol.ml Symbol.mli Types.ml Types.mli
 	ocamlformat -i $^

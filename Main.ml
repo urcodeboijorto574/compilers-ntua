@@ -49,7 +49,7 @@ let main =
        GenAst.gen_on asts !has_o_flag
      with
     | Parsing.Parse_error ->
-        Printf.printf "\027[31mError\027[0m: Syntax error\n";
+        Error.handle_error "Syntax error";
         exit 1
     | _ -> exit 1);
     print_module "a.ll" GenAst.the_module;
@@ -76,5 +76,5 @@ let main =
   with
   | Failure _ -> exit 1
   | _ ->
-      Printf.printf "\027[31mError\027[0m: Internal error!\n";
+      Error.handle_error "Internal error!";
       exit 1

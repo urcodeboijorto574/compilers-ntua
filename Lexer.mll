@@ -17,7 +17,7 @@
   let char_list_in_string = ref []
   let add_in_list c = char_list_in_string := c :: !char_list_in_string
   let multi_line_string_error_msg () =
-    Printf.eprintf "\027[31mError\027[0m: String must close in the same line it starts. Line %d.\n" !num_lines;
+    Error.handle_error ("String must close in the same line it starts. Line " ^ (string_of_int !num_lines) ^ ".");
     incr num_lines
 }
 
@@ -95,13 +95,15 @@ rule lexer = parse
     }
 
   | eof { T_eof }
-  | _ as chr { Printf.eprintf "\027[31mError\027[0m: Unknown character '%c' at line %d.\n" chr !num_lines; lexer lexbuf }
+  | _ as chr {
+      Error.handle_error ("Unknown character '" ^ (String.make 1 chr) ^ "' at line " ^ (string_of_int !num_lines) ^ ".\n");
+      lexer lexbuf
+    }
 
 and strings = parse
   | "'" {
-      Printf.eprintf
-        "\027[31mError\027[0m: line %d: single quotes are not permitted in strings (maybe you forgot a \'\\\'?).\n"
-        !num_lines;
+      Error.handle_error
+        ("line " ^ (string_of_int !num_lines) ^ ": single quotes are not permitted in strings (maybe you forgot a \'\\\'?).");
       T_eof
     }
   | "\\x" (digit_hex as d1) (digit_hex as d2) {
@@ -144,18 +146,18 @@ and characters = parse
     }
   | (char_not_escape as c) '\'' { T_chr (String.get c 1) }
   | '\'' {
-      Printf.eprintf "\027[31mError\027[0m: Single quotes contain no character on the inside. Line %d.\n" !num_lines;
+      Error.handle_error ("Single quotes contain no character on the inside. Line " ^ (string_of_int !num_lines) ^ ".");
       lexer lexbuf
     }
   | _ {
-      Printf.eprintf "\027[31mError\027[0m: Single quotes opened and didn't close. Line %d.\n" !num_lines;
+      Error.handle_error ("Single quotes opened and didn't close. Line " ^ (string_of_int !num_lines) ^ ".");
       lexer lexbuf
     }
 
 and multi_comments = parse
   | '\n' { incr num_lines; multi_comments lexbuf }
   | "$$" { lexer lexbuf }
-  | eof  { Printf.eprintf "\027[31mError\027[0m: Unclosed comment at line: %d.\n" !num_lines; T_eof }
+  | eof  { Error.handle_error ("Unclosed comment at line: " ^ (string_of_int !num_lines) ^ "."); T_eof }
   | _    { multi_comments lexbuf }
 
 and comment = parse

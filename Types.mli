@@ -42,7 +42,7 @@ val t_type_of_t_array : t_type -> t_type
 
 (** [final_t_type_of_t_array t] returns the type of data that an array stores.
     The only types that can be returned are [T_int] and [T_char]. Raises
-    [Invalid_argument] if the argument is not of [T_array] or [T_int] and
+    [Invalid_argument] if the argument is neither of [T_array], [T_int] and
     [T_char]. *)
 val final_t_type_of_t_array : t_type -> t_type
 
