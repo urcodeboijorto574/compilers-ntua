@@ -240,18 +240,6 @@ and sem_header isPartOfAFuncDef header : unit =
         in
         lists_are_equal functionEntry.parameters_list paramListFromHeader
       in
-      if Types.debugMode then
-        Printf.printf
-          "(Option.get resultLookUpOption).scope.depth = %d, \
-           !current_scope.depth = %d\n"
-          (Option.get resultLookUpOption).scope.depth !current_scope.depth;
-
-      if Types.debugMode then
-        Printf.printf
-          "(Option.get resultLookUpOption).scope.depth = %d, \
-           !current_scope.depth = %d\n"
-          (Option.get resultLookUpOption).scope.depth !current_scope.depth;
-
       if not matchingNumOfParams then
         raise Overloaded_functions
       else if functionEntry.return_type <> returnTypeFromHeader then
@@ -724,7 +712,7 @@ and sem_funcCall fc : Types.t_type =
       Printf.eprintf
         "\027[31mError\027[0m: Arguments' types of function '%s' don't match.\n"
         fc.id;
-      failwith "The arguments' types don't match"
+      failwith "Type error"
   | Passing_error ->
       Printf.eprintf
         "\027[31mError\027[0m: '%s' function call: Expression that is passed \
