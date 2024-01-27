@@ -39,13 +39,13 @@ let main =
          Printf.printf "Syntactic analysis:\n";
          PrintAst.print_on asts;
          Printf.printf "\n");
-       Printf.printf "\027[32mSuccessful parsing.\027[0m\n%!";
+       Error.handle_success "Successful parsing.";
        if Types.debugMode then (
          Printf.printf "\n";
          Printf.printf "Semantic analysis:\n");
        SemAst.sem_on asts;
        if Types.debugMode then Printf.printf "\n";
-       Printf.printf "\027[32mSemantically correct.\027[0m\n%!";
+       Error.handle_success "Semantically correct.";
        GenAst.gen_on asts !has_o_flag
      with
     | Parsing.Parse_error ->
@@ -71,7 +71,7 @@ let main =
       ignore (Sys.command ("mv a.ll " ^ path ^ "/" ^ ll_file));
       ignore (Sys.command ("mv a.s " ^ path ^ "/" ^ asm_file))
     end;
-    Printf.printf "\027[32mIR code generation completed.\027[0m\n%!";
+    Error.handle_success "IR code generation completed.";
     exit 0
   with
   | Failure _ -> exit 1
