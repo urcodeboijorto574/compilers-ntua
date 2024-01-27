@@ -1,5 +1,4 @@
 open Llvm
-open GenAst
 open Arg
 open Filename
 open Parser
@@ -30,9 +29,12 @@ let main =
       else if !has_i_flag || !has_f_flag then
         stdin
       else
-        Stdlib.open_in !filename
+        try Stdlib.open_in !filename
+        with _ -> Error.handle_error ("File '" ^ !filename ^ "' not found.")
     in
     let lexbuf = Lexing.from_channel in_channel in
+    Lexing.set_filename lexbuf
+      (if in_channel = stdin then "stdin" else basename !filename);
     if Types.debugMode then Printf.printf "Syntactic analysis:\n";
     let asts =
       try Parser.program Lexer.lexer lexbuf
