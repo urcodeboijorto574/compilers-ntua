@@ -16,9 +16,6 @@
 
   let char_list_in_string = ref []
   let add_in_list c = char_list_in_string := c :: !char_list_in_string
-  let multi_line_string_error_msg () =
-    Error.handle_error ("String must close in the same line it starts. Line " ^ (string_of_int !num_lines) ^ ".");
-    incr num_lines
 }
 
 let digit = ['0'-'9']
@@ -89,22 +86,21 @@ rule lexer = parse
   | white+ { lexer lexbuf }
   | '\'' { characters lexbuf }
   | '"' { char_list_in_string := []; strings lexbuf }
-  | '"' char_string* (('\n' | eof) as c) {
-      multi_line_string_error_msg ();
-      if c = "\n" then strings lexbuf else T_eof
+  | '"' char_string* ('\n' | eof) {
+      Error.handle_error Error.lexing_error_msg
+        ("String must close in the same line it starts. Line " ^ (string_of_int !num_lines) ^ ".")
     }
 
   | eof { T_eof }
   | _ as chr {
-      Error.handle_error ("Unknown character '" ^ (String.make 1 chr) ^ "' at line " ^ (string_of_int !num_lines) ^ ".\n");
-      lexer lexbuf
+      Error.handle_error Error.lexing_error_msg
+        ("Unknown character '" ^ (String.make 1 chr) ^ "' at line " ^ (string_of_int !num_lines) ^ ".\n")
     }
 
 and strings = parse
   | "'" {
-      Error.handle_error
-        ("line " ^ (string_of_int !num_lines) ^ ": single quotes are not permitted in strings (maybe you forgot a \'\\\'?).");
-      T_eof
+      Error.handle_error Error.lexing_error_msg
+        ("line " ^ (string_of_int !num_lines) ^ ": single quotes are not permitted in strings (maybe you forgot a \'\\\'?).")
     }
   | "\\x" (digit_hex as d1) (digit_hex as d2) {
       add_in_list (Char.chr (int_of_hex d1 d2));
@@ -146,18 +142,21 @@ and characters = parse
     }
   | (char_not_escape as c) '\'' { T_chr (String.get c 1) }
   | '\'' {
-      Error.handle_error ("Single quotes contain no character on the inside. Line " ^ (string_of_int !num_lines) ^ ".");
-      lexer lexbuf
+      Error.handle_error Error.lexing_error_msg
+        ("Single quotes contain no character on the inside. Line " ^ (string_of_int !num_lines) ^ ".")
     }
   | _ {
-      Error.handle_error ("Single quotes opened and didn't close. Line " ^ (string_of_int !num_lines) ^ ".");
-      lexer lexbuf
+      Error.handle_error Error.lexing_error_msg
+        ("Single quotes opened and didn't close. Line " ^ (string_of_int !num_lines) ^ ".")
     }
 
 and multi_comments = parse
   | '\n' { incr num_lines; multi_comments lexbuf }
   | "$$" { lexer lexbuf }
-  | eof  { Error.handle_error ("Unclosed comment at line: " ^ (string_of_int !num_lines) ^ "."); T_eof }
+  | eof  {
+      Error.handle_error Error.lexing_error_msg
+        ("Unclosed comment at line: " ^ (string_of_int !num_lines) ^ ".")
+    }
   | _    { multi_comments lexbuf }
 
 and comment = parse

@@ -42,12 +42,11 @@ let rec sem_funcDef fd : unit =
       in
       let resultList = get_par_names fd.header.fpar_def_list in
       let overloadedParNameOption = duplicate_element resultList in
-      if overloadedParNameOption <> None then (
-        Error.handle_error
+      if overloadedParNameOption <> None then
+        Error.handle_error "Two parameters share identifier"
           ("Parameter name '"
           ^ Option.get overloadedParNameOption
           ^ "' in function '" ^ fd.header.id ^ "' is used twice.");
-        failwith "Two parameters share identifier");
       resultList
     in
     let varNames : string list =
@@ -58,12 +57,11 @@ let rec sem_funcDef fd : unit =
       in
       let resultList = get_var_names fd.local_def_list in
       let overloadedVarNameOption = duplicate_element resultList in
-      if overloadedVarNameOption <> None then (
-        Error.handle_error
+      if overloadedVarNameOption <> None then
+        Error.handle_error "Two variables share identifier"
           ("Variable '"
           ^ Option.get overloadedVarNameOption
           ^ "' is declared twice in the function '" ^ fd.header.id ^ "'.");
-        failwith "Two variables share identifier");
       resultList
     in
     let rec share_common_elem l1 l2 : 'a option =
@@ -74,13 +72,12 @@ let rec sem_funcDef fd : unit =
     in
     share_common_elem parNames varNames
   in
-  if overloadedParVarNameOption <> None then (
-    Error.handle_error
+  if overloadedParVarNameOption <> None then
+    Error.handle_error "Parameter and variable share identifier"
       ("The name '"
       ^ Option.get overloadedParVarNameOption
       ^ "' is shared between a variable and a parameter in function '"
       ^ fd.header.id ^ "'.");
-    failwith "Parameter and variable share identifier");
 
   let isMainProgram = !current_scope.depth = 1 in
   ignore isMainProgram;
@@ -88,14 +85,13 @@ let rec sem_funcDef fd : unit =
   let typeReturnedInBlock =
     Types.T_func (match sem_block fd.block with None -> T_none | Some t -> t)
   in
-  if expectedReturnType <> typeReturnedInBlock then (
-    Error.handle_error
+  if expectedReturnType <> typeReturnedInBlock then
+    Error.handle_error Error.type_error_msg
       ("Function '" ^ fd.header.id ^ "' returns "
       ^ Types.string_of_t_type expectedReturnType
       ^ " type, but in its block "
       ^ Types.string_of_t_type typeReturnedInBlock
       ^ " type is returned.");
-    failwith Error.type_error_msg);
 
   let isMainProgram = !current_scope.depth = 1 in
   if isMainProgram then
@@ -133,12 +129,12 @@ and sem_header isPartOfAFuncDef header : unit =
   end;
   let isMainProgram = !current_scope.depth = 0 in
   if isMainProgram then
-    if header.ret_type <> Nothing then (
-      Error.handle_error "Main function must return 'nothing' type.";
-      failwith Error.type_error_msg)
-    else if header.fpar_def_list <> [] then (
-      Error.handle_error "Main function shouldn't have parameters.";
-      failwith "Main function shouldn't have parameters");
+    if header.ret_type <> Nothing then
+      Error.handle_error Error.type_error_msg
+        "Main function must return 'nothing' type."
+    else if header.fpar_def_list <> [] then
+      Error.handle_error "Main function shouldn't have parameters"
+        "Main function shouldn't have parameters.";
 
   let resultLookUpOption = look_up_entry header.id in
   if
@@ -238,25 +234,22 @@ and sem_header isPartOfAFuncDef header : unit =
         Symbol.set_func_defined functionEntry
     with
     | Error.Shared_name_func_var ->
-        Error.handle_error
-          ("Name '" ^ header.id ^ "' is shared with a function and a variable.");
-        failwith "Function and variable share the same name"
+        Error.handle_error "Function and variable share the same name"
+          ("Name '" ^ header.id ^ "' is shared with a function and a variable.")
     | Error.Overloaded_functions ->
-        Error.handle_error ("Function '" ^ header.id ^ "' is overloaded.");
-        failwith "Function overload"
+        Error.handle_error "Function overload"
+          ("Function '" ^ header.id ^ "' is overloaded.")
     | Error.Redefined_function ->
-        Error.handle_error ("Function '" ^ header.id ^ "' is defined twice.");
-        failwith "Redefinition of function"
+        Error.handle_error "Redefinition of function"
+          ("Function '" ^ header.id ^ "' is defined twice.")
     | Error.Expected_type_not_returned ->
-        Error.handle_error
+        Error.handle_error Error.type_error_msg
           ("Return type of function '" ^ header.id
-         ^ "' differs between declarations");
-        failwith Error.type_error_msg
+         ^ "' differs between declarations")
     | Error.Non_matching_parameter_types ->
-        Error.handle_error
+        Error.handle_error Error.type_error_msg
           ("Parameter types of function '" ^ header.id
-         ^ "' differ between declarations.");
-        failwith Error.type_error_msg
+         ^ "' differ between declarations.")
 
 (** [sem_fparDefList (fpdl : Ast.fparDef list)] semantically analyses the
     function's parameter definitions [fpdl]. *)
@@ -266,16 +259,14 @@ and sem_fparDefList fpdl : (int * Types.t_type * Symbol.param_passing) list =
 (** [sem_fparDef (fpd : Ast.fparDef)] semantically analyses the function's
     parameter definition [fpd]. *)
 and sem_fparDef fpd : int * Types.t_type * Symbol.param_passing =
-  if List.exists (fun n -> n = 0) fpd.fpar_type.array_dimensions then (
-    Error.handle_error
+  if List.exists (fun n -> n = 0) fpd.fpar_type.array_dimensions then
+    Error.handle_error "Array of zero size"
       "Parameter array declared to have size a non-positive number.";
-    failwith "Array of zero size");
   let paramIsArray = fpd.fpar_type.array_dimensions <> [] in
   let passedByValue = not fpd.ref in
-  if paramIsArray && passedByValue then (
-    Error.handle_error
+  if paramIsArray && passedByValue then
+    Error.handle_error "Array passed as a parameter by value"
       "Arrays should always be passed as parameters by reference.";
-    failwith "Array passed as a parameter by value");
   ( List.length fpd.id_list,
     Ast.t_type_of_fparType fpd.fpar_type,
     if fpd.ref then BY_REFERENCE else BY_VALUE )
@@ -301,8 +292,8 @@ and sem_localDefList : Ast.localDef list -> unit = function
         | Some (L_funcDef fd) -> fd
         | _ ->
             Error.handle_error
-              ("Function '" ^ fdecl.header.id ^ "' declared but never defined.");
-            failwith "Function declared but never defined"
+              ("Function '" ^ fdecl.header.id ^ "' declared but never defined.")
+              "Function declared but never defined"
       in
       fdecl.func_def <- correspondingFuncDef;
       sem_localDef (L_funcDecl fdecl);
@@ -330,10 +321,9 @@ and sem_funcDecl fd : unit =
 (** [sem_varDef (vd : Ast.varDef)] enters in the symbolTable every variable
     defined in the variable definition [vd]. *)
 and sem_varDef vd : unit =
-  if List.exists (Int.equal 0) vd.var_type.array_dimensions then (
-    Error.handle_error
+  if List.exists (Int.equal 0) vd.var_type.array_dimensions then
+    Error.handle_error "Array of zero size"
       "Variable array declared to have size a non-positive number.";
-    failwith "Array of zero size");
   let typ = Ast.t_type_of_varType vd.var_type in
   List.iter (fun i -> Symbol.enter_variable i typ) vd.id_list
 
@@ -360,31 +350,28 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
   | S_assignment (lv, e) -> (
       (match lv.lv_kind with
       | L_comp (L_string _, _) ->
-          Error.handle_error
-            "Assignment to a string literal's element is not possible.";
-          failwith "Assignment to const type"
+          Error.handle_error "Assignment to const type"
+            "Assignment to a string literal's element is not possible."
       | _ -> ());
       match sem_lvalue lv with
       | Types.T_array _ ->
-          Error.handle_error
-            "Assignment to an l-value of type array is not possible.";
-          failwith "Assignment to array"
+          Error.handle_error "Assignment to array"
+            "Assignment to an l-value of type array is not possible."
       | Types.T_func _ ->
-          Error.handle_error "Assignment to a function call is not possible.";
-          failwith "Assignment to function"
+          Error.handle_error "Assignment to function"
+            "Assignment to a function call is not possible."
       | t ->
           if Types.debugMode then
             Printf.printf
               "... checking the types of an lvalue and an expression \
                (assignment)\n";
           let typeExpr = sem_expr e in
-          if not (Types.equal_types t typeExpr) then (
-            Error.handle_error
+          if not (Types.equal_types t typeExpr) then
+            Error.handle_error Error.type_error_msg
               ("The value of an expression of type " ^ Types.string_of_t_type t
              ^ " is tried to be assigned to an l-value of type "
               ^ Types.string_of_t_type typeExpr
               ^ ".");
-            failwith Error.type_error_msg);
           None)
   | S_block b -> sem_block b
   | S_func_call fc -> (
@@ -414,8 +401,8 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
         | None, type_of_s | type_of_s, None -> type_of_s
         | _ ->
             Error.handle_error
-              "In an if-then-else statement two different types are returned.";
-            failwith "Multiple types returned in if-then-else statement")
+              "Multiple types returned in if-then-else statement"
+              "In an if-then-else statement two different types are returned.")
   | S_while (c, s) -> (
       sem_cond c;
       let constCondValue = Ast.get_const_cond_value c in
@@ -437,12 +424,11 @@ and sem_lvalue lv : Types.t_type =
   let rec sem_lvalue_kind = function
     | L_id id ->
         let entryFoundOption = look_up_entry id in
-        if entryFoundOption = None then (
-          Error.handle_error
+        if entryFoundOption = None then
+          Error.handle_error "Undefined variable"
             ("Undefined variable '" ^ id ^ "' is being used in function '"
             ^ Symbol.(!current_scope.name)
             ^ "'.");
-          failwith "Undefined variable");
         let entryFound = Option.get entryFoundOption in
         set_entry_isUsed entryFound;
         if Types.debugMode then (
@@ -469,12 +455,11 @@ and sem_lvalue lv : Types.t_type =
             "... checking the type of the content inside the brackets \
              (position in array must be an integer)\n";
         let typeExpr = sem_expr e in
-        if not Types.(equal_types T_int typeExpr) then (
-          Error.handle_error
+        if not Types.(equal_types T_int typeExpr) then
+          Error.handle_error Error.type_error_msg
             ("Expected type integer, but received "
             ^ Types.string_of_t_type typeExpr
             ^ ". Index of array elements must be of integer type.");
-          failwith Error.type_error_msg);
         let rec get_name_of_lv = function
           | L_id id -> id
           | L_string s -> s
@@ -486,19 +471,17 @@ and sem_lvalue lv : Types.t_type =
               match Ast.get_const_expr_value e with
               | None -> ()
               | Some index ->
-                  if index < 0 || index >= n then (
-                    Error.handle_error
+                  if index < 0 || index >= n then
+                    Error.handle_error "Segmentation fault"
                       ("Attempt to access an out of bounds element of the \
-                        array '" ^ get_name_of_lv lv ^ "'.");
-                    failwith "Segmentation fault")
+                        array '" ^ get_name_of_lv lv ^ "'.")
             end;
             t
         | _ ->
-            Error.handle_error
+            Error.handle_error "Iteration on non-array type of variable"
               ("Variable '" ^ get_name_of_lv lv
              ^ "' is either not an array or it is declared as an array with \
-                less dimensions than as used.");
-            failwith "Iteration on non-array type of variable")
+                less dimensions than as used."))
   in
   let resultType = sem_lvalue_kind lv.lv_kind in
   if lv.lv_type = None then
@@ -523,21 +506,19 @@ and sem_expr : Ast.expr -> Types.t_type = function
       let open Types in
       match sem_funcCall fc with
       | T_func T_none ->
-          Error.handle_error
+          Error.handle_error Error.type_error_msg
             ("Function '" ^ fc.id
-           ^ "' returns nothing and can't be used as an expression.");
-          failwith Error.type_error_msg
+           ^ "' returns nothing and can't be used as an expression.")
       | T_func t -> t
       | T_none | T_int | T_char | T_array _ -> assert false)
   | E_sgn_expr (s, e) ->
       if Types.debugMode then
         Printf.printf "... checking a signed expression (must be int)\n";
       let typeExpr = sem_expr e in
-      if not (Types.equal_types Types.T_int typeExpr) then (
-        Error.handle_error
+      if not (Types.equal_types Types.T_int typeExpr) then
+        Error.handle_error Error.type_error_msg
           "Operator `-` (minus sign) is applied to a non-integer type of \
            argument.";
-        failwith Error.type_error_msg);
       Types.T_int
   | E_op_expr_expr (e1, ao, e2) ->
       if Types.debugMode then
@@ -546,18 +527,16 @@ and sem_expr : Ast.expr -> Types.t_type = function
            int\n";
       let typeExpr1, typeExpr2 = (sem_expr e1, sem_expr e2) in
       let open Types in
-      if not (equal_types T_int typeExpr1) then (
-        Error.handle_error
+      if not (equal_types T_int typeExpr1) then
+        Error.handle_error Error.type_error_msg
           ("Left argument of an arithmetic operator is an argument of type "
           ^ Types.string_of_t_type typeExpr1
           ^ ".");
-        failwith Error.type_error_msg);
-      if not (equal_types Types.T_int typeExpr2) then (
-        Error.handle_error
+      if not (equal_types Types.T_int typeExpr2) then
+        Error.handle_error Error.type_error_msg
           ("Right argument of an arithmetic operator is an argument of type "
           ^ Types.string_of_t_type typeExpr2
           ^ ".");
-        failwith Error.type_error_msg);
       Types.T_int
   | E_expr_parenthesized e -> sem_expr e
 
@@ -573,12 +552,11 @@ and sem_cond : Ast.cond -> unit = function
           "... checking whether the arguments of a compOperator are of the \
            same type\n";
       let typeExpr1, typeExpr2 = (sem_expr e1, sem_expr e2) in
-      if not (Types.equal_types typeExpr1 typeExpr2) then (
-        Error.handle_error
+      if not (Types.equal_types typeExpr1 typeExpr2) then
+        Error.handle_error Error.type_error_msg
           "Arguments of a logical operator have different types. Only \
            expressions of the same type can be compared with a logical \
-           operator.";
-        failwith Error.type_error_msg)
+           operator."
   | C_cond_parenthesized c -> sem_cond c
 
 (** [sem_funcCall (fc : Ast.funcCall)] returns the return type of function call
@@ -650,36 +628,31 @@ and sem_funcCall fc : Types.t_type =
     functionEntry.return_type
   with
   | Not_found ->
-      Error.handle_error
-        ("Function '" ^ fc.id ^ "' is called, but never declared.");
-      failwith "Undeclared function called"
+      Error.handle_error "Undeclared function called"
+        ("Function '" ^ fc.id ^ "' is called, but never declared.")
   | Error.Shared_name_func_var ->
-      Error.handle_error
-        ("Name '" ^ fc.id ^ "' is shared with a function and a variable.");
-      failwith "Function and variable share the same name"
+      Error.handle_error "Function and variable share the same name"
+        ("Name '" ^ fc.id ^ "' is shared with a function and a variable.")
   | Error.Unexpected_number_of_parameters ->
       let functionEntry =
         match (Option.get resultLookUpOption).kind with
         | ENTRY_function ef -> ef
         | _ -> assert false
       in
-      Error.handle_error
+      Error.handle_error "Unexpected number of parameters in function call"
         ("Function '" ^ fc.id ^ "' expected "
         ^ string_of_int (List.length functionEntry.parameters_list)
         ^ " arguments, but instead got "
         ^ string_of_int (List.length fc.expr_list)
-        ^ ".");
-      failwith "Unexpected number of parameters in function call"
+        ^ ".")
   | Error.Type_error ->
-      Error.handle_error
-        ("Arguments' types of function '" ^ fc.id ^ "' don't match.");
-      failwith Error.type_error_msg
+      Error.handle_error Error.type_error_msg
+        ("Arguments' types of function '" ^ fc.id ^ "' don't match.")
   | Error.Passing_error ->
-      Error.handle_error
+      Error.handle_error "r-value passed by reference"
         ("'" ^ fc.id
        ^ "' function call: Expression that is passed by reference isn't an \
-          l-value.");
-      failwith "r-value passed by reference"
+          l-value.")
 
 (** [sem_on (ast : Ast.funcDef)] semantically analyses the root of the ast [ast]
     (produced by the parser). It also initializes the SymbolTable. *)

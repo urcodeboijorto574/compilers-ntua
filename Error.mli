@@ -9,10 +9,14 @@ exception Unexpected_number_of_parameters
 exception Type_error
 exception Passing_error
 
+val lexing_error_msg : string
+val syntax_error_msg : string
 val type_error_msg : string
 
-(** [handle_error msg] prints the [msg] to the standard error output. *)
-val handle_error : string -> unit
+(** [handle_error finalMsg infoMsg] prints the [infoMsg] to the standard error
+    output.
+    @raise (Failure finalMsg) (* always *) *)
+val handle_error : string -> string -> 'a
 
 (** [handle_warning msg] prints the [msg] to the standard output. *)
 val handle_warning : string -> unit

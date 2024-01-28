@@ -30,7 +30,9 @@ let main =
         stdin
       else
         try Stdlib.open_in !filename
-        with _ -> Error.handle_error ("File '" ^ !filename ^ "' not found.")
+        with _ ->
+          Error.handle_error "File not found"
+            ("File '" ^ !filename ^ "' not found.")
     in
     let lexbuf = Lexing.from_channel in_channel in
     Lexing.set_filename lexbuf
@@ -38,9 +40,8 @@ let main =
     if Types.debugMode then Printf.printf "Syntactic analysis:\n";
     let asts =
       try Parser.program Lexer.lexer lexbuf
-      with Parsing.Parse_error ->
-        Error.handle_error "Syntax error";
-        exit 1
+      with Parsing.Parse_error | Error ->
+        Error.handle_error Error.syntax_error_msg Error.syntax_error_msg
     in
     if Types.debugMode then (
       PrintAst.print_on asts;
@@ -76,8 +77,7 @@ let main =
     Error.handle_success "IR code generation completed.";
     exit 0
   with
-  | Failure _ -> exit 1
-  | Assert_failure _ ->
-      Error.handle_error "Internal error";
-      exit 1
-  | _ -> exit 1
+  | Assert_failure _ -> (
+      try Error.handle_error "Internal error" "Internal error"
+      with Failure _ -> exit 1)
+  | Failure _ | _ -> exit 1
