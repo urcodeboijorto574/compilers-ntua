@@ -9,6 +9,7 @@ exception Unexpected_number_of_parameters
 exception Type_error
 exception Passing_error
 
+val internal_error_msg : string
 val lexing_error_msg : string
 val syntax_error_msg : string
 val type_error_msg : string

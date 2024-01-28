@@ -78,6 +78,6 @@ let main =
     exit 0
   with
   | Assert_failure _ -> (
-      try Error.handle_error "Internal error" "Internal error"
+      try Error.(handle_error internal_error_msg internal_error_msg)
       with Failure _ -> exit 1)
   | Failure _ | _ -> exit 1

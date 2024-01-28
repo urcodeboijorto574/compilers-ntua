@@ -9,6 +9,7 @@ exception Unexpected_number_of_parameters
 exception Type_error
 exception Passing_error
 
+let internal_error_msg = "Internal error"
 let lexing_error_msg = "Lexing error"
 let syntax_error_msg = "Syntax error"
 let type_error_msg = "Type error"
