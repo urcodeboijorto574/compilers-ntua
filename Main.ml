@@ -41,7 +41,7 @@ let main =
     let asts =
       try Parser.program Lexer.lexer lexbuf
       with Parsing.Parse_error | Error ->
-        Error.handle_error Error.syntax_error_msg Error.syntax_error_msg
+        Error.(handle_error syntax_error_msg syntax_error_msg)
     in
     if Types.debugMode then (
       PrintAst.print_on asts;
