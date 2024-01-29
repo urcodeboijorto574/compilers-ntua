@@ -127,4 +127,9 @@ let main =
   | Assert_failure _ -> (
       try Error.(handle_error internal_error_msg internal_error_msg)
       with Failure _ -> exit 1)
-  | Failure _ | _ -> exit 1
+  | Failure _ -> exit 1
+  | e -> (
+      try Error.(handle_error internal_error_msg "Unexpected error caught")
+      with Failure _ ->
+        Printf.eprintf "Exception: %s\n" (Printexc.to_string e);
+        exit 1)
