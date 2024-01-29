@@ -19,7 +19,7 @@ let type_error_msg = "Type error"
 
 let handle_error finalMsg infoMsg =
   if not !isErrorsRaised then isErrorsRaised := true;
-  Printf.eprintf "\027[31mError\027[0m: %s:\n\t%s\n" finalMsg infoMsg
+  Printf.eprintf "\027[31mError\027[0m: %s:\n%s\n" finalMsg infoMsg
 
 let handle_error_fatal finalMsg infoMsg =
   handle_error finalMsg infoMsg;
