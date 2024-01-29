@@ -97,7 +97,7 @@ rule lexer = parse
   | white+ { lexer lexbuf }
   | '\'' { characters lexbuf }
   | '"' { char_list_in_string := []; strings lexbuf }
-  | '"' char_string* ('\n' | eof) {
+  | '"' char_string* eof {
       Error.handle_error Error.lexing_error_msg
         ("String must close in the same line it starts. Line " ^ (string_of_int !num_lines) ^ ".")
     }
@@ -109,6 +109,13 @@ rule lexer = parse
     }
 
 and strings = parse
+  | "\n" {
+      Error.handle_error Error.lexing_error_msg
+        (Printf.sprintf "String must close in the same line it starts. Line %d." !num_lines);
+      add_in_list '\n';
+      incrementNumLines lexbuf;
+      strings lexbuf
+    }
   | "'" {
       Error.handle_error Error.lexing_error_msg
         ("line " ^ (string_of_int !num_lines) ^ ": single quotes are not permitted in strings (maybe you forgot a \'\\\'?).")
