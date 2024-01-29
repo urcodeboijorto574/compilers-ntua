@@ -99,7 +99,7 @@ rule lexer = parse
   | '"' { char_list_in_string := []; strings lexbuf }
   | '"' char_string* eof {
       Error.handle_error Error.lexing_error_msg
-        ("String must close in the same line it starts. Line " ^ (string_of_int !num_lines) ^ ".")
+        (Printf.sprintf "Strings must close in the same line they start. Line %d." !num_lines)
     }
 
   | eof { T_eof }
@@ -171,8 +171,8 @@ and characters = parse
         (Printf.sprintf "Multiple characters found inside single quotes(\'\'). Line %d." !num_lines)
     }
   | _ {
-      Error.handle_error Error.lexing_error_msg
-        ("Single quotes opened and didn't close. Line " ^ (string_of_int !num_lines) ^ ".")
+      Error.handle_error_fatal Error.lexing_error_msg
+        (Printf.sprintf "Single quotes opened and didn't close. Line %d." !num_lines)
     }
 
 and multi_comments = parse
