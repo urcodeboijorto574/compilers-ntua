@@ -281,7 +281,7 @@ and sem_fparDef fpd : int * Types.t_type * Symbol.param_passing =
 and sem_localDefList : Ast.localDef list -> unit = function
   | [] -> ()
   | L_funcDecl fdecl :: tail ->
-      let correspondingFuncDef =
+      let correspondingFuncDef : Ast.funcDef option =
         match
           List.find_opt
             (fun ld ->
@@ -293,11 +293,12 @@ and sem_localDefList : Ast.localDef list -> unit = function
               | _ -> false)
             tail
         with
-        | Some (L_funcDef fd) -> fd
+        | Some (L_funcDef fd) -> Some fd
         | _ ->
             Error.handle_error "Function declared but never defined"
               (Printf.sprintf "Function '%s' declared but never defined."
-                 fdecl.header.id)
+                 fdecl.header.id);
+            None
       in
       fdecl.func_def <- correspondingFuncDef;
       sem_localDef (L_funcDecl fdecl);

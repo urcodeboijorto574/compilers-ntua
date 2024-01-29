@@ -145,7 +145,7 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
                 | L_varDef _ -> None
                 | L_funcDecl fdecl ->
                     if fc.comp_id = fdecl.header.comp_id then
-                      Some fdecl.func_def
+                      fdecl.func_def
                     else
                       None
                 | L_funcDef fd ->
@@ -643,7 +643,7 @@ let rec gen_funcDef funcDef =
         if not fdecl.is_redundant then
           ignore
             (gen_header fdecl.header
-               (Option.get fdecl.func_def.stack_frame).access_link)
+               (Option.get (Option.get fdecl.func_def).stack_frame).access_link)
   in
   List.iter iterate funcDef.local_def_list;
   ignore (build_br bodyBB builder);
