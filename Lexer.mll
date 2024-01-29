@@ -13,6 +13,17 @@
     (int_of_hex digit1) * 16 + (int_of_hex digit2)
 
   let num_lines = ref 1
+  let incrementNumLines lexbuf =
+    incr num_lines;
+    let open Lexing in
+    let pos = lexbuf.lex_curr_p in
+    lexbuf.lex_curr_p <-
+      {
+        pos_fname = pos.pos_fname;
+        pos_lnum = pos.pos_lnum + 1;
+        pos_bol = 0;
+        pos_cnum = 0;
+      }
 
   let char_list_in_string = ref []
   let add_in_list c = char_list_in_string := c :: !char_list_in_string
@@ -82,7 +93,7 @@ rule lexer = parse
   | identifier  { T_identifier (Lexing.lexeme lexbuf) }
   | integer     { T_integer (int_of_string (Lexing.lexeme lexbuf)) }
 
-  | '\n' { incr num_lines; lexer lexbuf }
+  | '\n' { incrementNumLines lexbuf; lexer lexbuf }
   | white+ { lexer lexbuf }
   | '\'' { characters lexbuf }
   | '"' { char_list_in_string := []; strings lexbuf }
@@ -137,7 +148,7 @@ and characters = parse
         | "\\\\" -> '\\'
         | "\\\'" -> '\''
         | "\\\"" -> '\"'
-        | _ -> failwith "this case will never happen"
+        | _ -> assert false
         (* hex case is caught in previous rule *))
     }
   | (char_not_escape as c) '\'' { T_chr (String.get c 1) }
@@ -151,7 +162,7 @@ and characters = parse
     }
 
 and multi_comments = parse
-  | '\n' { incr num_lines; multi_comments lexbuf }
+  | '\n' { incrementNumLines lexbuf; multi_comments lexbuf }
   | "$$" { lexer lexbuf }
   | eof  {
       Error.handle_error Error.lexing_error_msg
@@ -160,7 +171,7 @@ and multi_comments = parse
   | _    { multi_comments lexbuf }
 
 and comment = parse
-  | '\n' { incr num_lines; lexer lexbuf }
+  | '\n' { incrementNumLines lexbuf; lexer lexbuf }
   | eof  { T_eof }
   | _    { comment lexbuf }
 
