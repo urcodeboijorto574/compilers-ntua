@@ -100,7 +100,10 @@ let main =
     SemAst.sem_on asts;
     if Types.debugMode then Printf.printf "\n";
     Error.handle_success "Semantically correct.";
-    GenAst.gen_on asts !has_o_flag;
+    if not Error.isErrorsRaised then
+      GenAst.gen_on asts !has_o_flag
+    else
+      failwith Error.semantic_error_msg;
 
     print_module "a.ll" GenAst.the_module;
     let llc_command = "llc -o a.s a.ll" in
@@ -127,6 +130,9 @@ let main =
   | Assert_failure _ -> (
       try Error.(handle_error internal_error_msg internal_error_msg)
       with Failure _ -> exit 1)
+  | Failure msg when msg = Error.semantic_error_msg ->
+      Printf.eprintf "The final executable could not be created.\n";
+      exit 1
   | Failure _ -> exit 1
   | e -> (
       try Error.(handle_error internal_error_msg "Unexpected error caught")

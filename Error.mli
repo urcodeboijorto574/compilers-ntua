@@ -1,5 +1,7 @@
 open Types
 
+val isErrorsRaised : bool ref
+
 exception Shared_name_func_var
 exception Overloaded_functions
 exception Redefined_function
@@ -12,12 +14,17 @@ exception Passing_error
 val internal_error_msg : string
 val lexing_error_msg : string
 val syntax_error_msg : string
+val semantic_error_msg : string
 val type_error_msg : string
 
 (** [handle_error finalMsg infoMsg] prints the [infoMsg] to the standard error
-    output.
+    output. *)
+val handle_error : string -> string -> unit
+
+(** [handle_error_fatal finalMsg infoMsg] prints the [infoMsg] to the standard
+    error output.
     @raise (Failure finalMsg) (* always *) *)
-val handle_error : string -> string -> 'a
+val handle_error_fatal : string -> string -> 'a
 
 (** [handle_warning msg] prints the [msg] to the standard output. *)
 val handle_warning : string -> unit

@@ -1,5 +1,7 @@
 open Types
 
+let isErrorsRaised = ref false
+
 exception Shared_name_func_var
 exception Overloaded_functions
 exception Redefined_function
@@ -12,10 +14,15 @@ exception Passing_error
 let internal_error_msg = "Internal error"
 let lexing_error_msg = "Lexing error"
 let syntax_error_msg = "Syntax error"
+let semantic_error_msg = "Semantic error"
 let type_error_msg = "Type error"
 
 let handle_error finalMsg infoMsg =
-  Printf.eprintf "\027[31mError\027[0m: %s\n" infoMsg;
+  isErrorsRaised := true;
+  Printf.eprintf "\027[31mError\027[0m: %s:\n\t%s\n" finalMsg infoMsg
+
+let handle_error_fatal finalMsg infoMsg =
+  handle_error finalMsg infoMsg;
   failwith finalMsg
 
 let handle_warning = Printf.eprintf "\027[35mWarning\027[0m: %s\n"
