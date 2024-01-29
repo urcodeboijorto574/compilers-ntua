@@ -40,7 +40,7 @@ let main =
     if Types.debugMode then Printf.printf "Syntactic analysis:\n";
     let asts =
       try Parser.program Lexer.lexer lexbuf
-      with Parsing.Parse_error | Error ->
+      with Parser.Error ->
         Error.(handle_error syntax_error_msg syntax_error_msg)
     in
     if Types.debugMode then (
