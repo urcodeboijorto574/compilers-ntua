@@ -105,7 +105,8 @@ rule lexer = parse
   | eof { T_eof }
   | _ as chr {
       Error.handle_error Error.lexing_error_msg
-        ("Unknown character '" ^ (String.make 1 chr) ^ "' at line " ^ (string_of_int !num_lines) ^ ".\n")
+        (Printf.sprintf "Unknown character '%c'. Line %d.\n" chr !num_lines);
+      lexer lexbuf
     }
 
 and strings = parse
@@ -118,7 +119,8 @@ and strings = parse
     }
   | "'" {
       Error.handle_error Error.lexing_error_msg
-        ("line " ^ (string_of_int !num_lines) ^ ": single quotes are not permitted in strings (maybe you forgot a \'\\\'?).")
+        (Printf.sprintf "Single quotes are not permitted in strings (maybe you forgot a \'\\\'?). Line %d." !num_lines);
+      add_in_list '\''; strings lexbuf
     }
   | "\\x" (digit_hex as d1) (digit_hex as d2) {
       add_in_list (Char.chr (int_of_hex d1 d2));
@@ -161,7 +163,12 @@ and characters = parse
   | (char_not_escape as c) '\'' { T_chr (String.get c 1) }
   | '\'' {
       Error.handle_error Error.lexing_error_msg
-        ("Single quotes contain no character on the inside. Line " ^ (string_of_int !num_lines) ^ ".")
+        (Printf.sprintf "Single quotes contain no character on the insides. Line %d." !num_lines);
+      T_chr '\000'
+    }
+  | (( char_common* ) as chars) '\'' {
+      Error.handle_error_fatal Error.lexing_error_msg
+        (Printf.sprintf "Multiple characters found inside single quotes(\'\'). Line %d." !num_lines)
     }
   | _ {
       Error.handle_error Error.lexing_error_msg
@@ -173,7 +180,8 @@ and multi_comments = parse
   | "$$" { lexer lexbuf }
   | eof  {
       Error.handle_error Error.lexing_error_msg
-        ("Unclosed comment at line: " ^ (string_of_int !num_lines) ^ ".")
+        (Printf.sprintf "Unclosed multi-line comment. Line %d." !num_lines);
+      T_eof
     }
   | _    { multi_comments lexbuf }
 
