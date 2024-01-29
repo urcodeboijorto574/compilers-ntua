@@ -18,7 +18,7 @@ let semantic_error_msg = "Semantic error"
 let type_error_msg = "Type error"
 
 let handle_error finalMsg infoMsg =
-  isErrorsRaised := true;
+  if not !isErrorsRaised then isErrorsRaised := true;
   Printf.eprintf "\027[31mError\027[0m: %s:\n\t%s\n" finalMsg infoMsg
 
 let handle_error_fatal finalMsg infoMsg =
