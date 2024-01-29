@@ -128,8 +128,11 @@ let main =
     exit 0
   with
   | Assert_failure _ -> (
-      try Error.(handle_error internal_error_msg internal_error_msg)
-      with Failure _ -> exit 1)
+      if !Error.isErrorsRaised then
+        Printf.eprintf "Compilation failed.\n"
+      else
+        try Error.(handle_error internal_error_msg internal_error_msg)
+        with Failure _ -> exit 1)
   | Failure msg when msg = Error.semantic_error_msg ->
       Printf.eprintf "The final executable could not be created.\n";
       exit 1

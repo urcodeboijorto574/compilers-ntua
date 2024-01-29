@@ -225,35 +225,25 @@ and sem_header isPartOfAFuncDef header : unit =
         lists_are_equal functionEntry.parameters_list paramListFromHeader
       in
       if not matchingNumOfParams then
-        raise Error.Overloaded_functions
-      else if functionEntry.return_type <> returnTypeFromHeader then
-        raise Error.Expected_type_not_returned
-      else if not matchingParamTypes then
-        raise Error.Non_matching_parameter_types
-      else if functionEntry.state = Symbol.DEFINED then
-        raise Error.Redefined_function
-      else
-        Symbol.set_func_defined functionEntry
-    with
-    | Error.Shared_name_func_var ->
-        Error.handle_error "Function and variable share the same name"
-          ("Name '" ^ header.id ^ "' is shared with a function and a variable.")
-    | Error.Overloaded_functions ->
         Error.handle_error "Function overload"
-          ("Function '" ^ header.id ^ "' is overloaded.")
-    | Error.Redefined_function ->
-        Error.handle_error "Redefinition of function"
-          ("Function '" ^ header.id ^ "' is defined twice.")
-    | Error.Expected_type_not_returned ->
+          ("Function '" ^ header.id ^ "' is overloaded.");
+      if functionEntry.return_type <> returnTypeFromHeader then
         Error.handle_error Error.type_error_msg
           (Printf.sprintf
              "Return type of function '%s' differs between declarations."
-             header.id)
-    | Error.Non_matching_parameter_types ->
+             header.id);
+      if not matchingParamTypes then
         Error.handle_error Error.type_error_msg
           (Printf.sprintf
              "Parameter types of function '%s' differ between declarations."
-             header.id)
+             header.id);
+      if functionEntry.state = Symbol.DEFINED then
+        Error.handle_error "Redefinition of function"
+          ("Function '" ^ header.id ^ "' is defined twice.");
+      Symbol.set_func_defined functionEntry
+    with Error.Shared_name_func_var ->
+      Error.handle_error "Function and variable share the same name"
+        ("Name '" ^ header.id ^ "' is shared with a function and a variable.")
 
 (** [sem_fparDefList (fpdl : Ast.fparDef list)] semantically analyses the
     function's parameter definitions [fpdl]. *)
@@ -359,12 +349,14 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
             "Assignment to a string literal's element is not possible."
       | _ -> ());
       match sem_lvalue lv with
-      | Types.T_array _ ->
+      | Types.T_array (_, t) ->
           Error.handle_error "Assignment to array"
-            "Assignment to an l-value of type array is not possible."
-      | Types.T_func _ ->
+            "Assignment to an l-value of type array is not possible.";
+          Some (Types.final_t_type_of_t_array t)
+      | Types.T_func t ->
           Error.handle_error "Assignment to function"
-            "Assignment to a function call is not possible."
+            "Assignment to a function call is not possible.";
+          Some t
       | t ->
           if Types.debugMode then
             Printf.printf
@@ -408,7 +400,8 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
         | _ ->
             Error.handle_error
               "Multiple types returned in if-then-else statement"
-              "In an if-then-else statement two different types are returned.")
+              "In an if-then-else statement two different types are returned.";
+            None)
   | S_while (c, s) -> (
       sem_cond c;
       let constCondValue = Ast.get_const_cond_value c in
@@ -483,12 +476,13 @@ and sem_lvalue lv : Types.t_type =
                         array '" ^ get_name_of_lv lv ^ "'.")
             end;
             t
-        | _ ->
+        | t ->
             Error.handle_error "Iteration on non-array type of variable"
               (Printf.sprintf
                  "Variable '%s' is either not an array or it is declared as an \
                   array with less dimensions than as used."
-                 (get_name_of_lv lv)))
+                 (get_name_of_lv lv));
+            t)
   in
   let resultType = sem_lvalue_kind lv.lv_kind in
   if lv.lv_type = None then
@@ -517,7 +511,8 @@ and sem_expr : Ast.expr -> Types.t_type = function
             (Printf.sprintf
                "Function '%s' returns nothing and can't be used as an \
                 expression."
-               fc.id)
+               fc.id);
+          T_none
       | T_func t -> t
       | T_none | T_int | T_char | T_array _ -> assert false)
   | E_sgn_expr (s, e) ->
@@ -640,10 +635,12 @@ and sem_funcCall fc : Types.t_type =
   with
   | Not_found ->
       Error.handle_error "Undeclared function called"
-        ("Function '" ^ fc.id ^ "' is called, but never declared.")
+        ("Function '" ^ fc.id ^ "' is called, but never declared.");
+      T_none
   | Error.Shared_name_func_var ->
       Error.handle_error "Function and variable share the same name"
-        ("Name '" ^ fc.id ^ "' is shared with a function and a variable.")
+        ("Name '" ^ fc.id ^ "' is shared with a function and a variable.");
+      T_none
   | Error.Unexpected_number_of_parameters ->
       let functionEntry =
         match (Option.get resultLookUpOption).kind with
@@ -654,16 +651,19 @@ and sem_funcCall fc : Types.t_type =
         (Printf.sprintf
            "Function '%s' expected %d arguments, but instead got %d." fc.id
            (List.length functionEntry.parameters_list)
-           (List.length fc.expr_list))
+           (List.length fc.expr_list));
+      Option.get fc.ret_type
   | Error.Type_error ->
       Error.handle_error Error.type_error_msg
-        ("Arguments' types of function '" ^ fc.id ^ "' don't match.")
+        ("Arguments' types of function '" ^ fc.id ^ "' don't match.");
+      Option.get fc.ret_type
   | Error.Passing_error ->
       Error.handle_error "r-value passed by reference"
         (Printf.sprintf
            "'%s' function call: Expression that is passed by reference isn't \
             an l-value."
-           fc.id)
+           fc.id);
+      Option.get fc.ret_type
 
 (** [sem_on (ast : Ast.funcDef)] semantically analyses the root of the ast [ast]
     (produced by the parser). It also initializes the SymbolTable. *)
