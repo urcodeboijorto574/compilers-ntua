@@ -3,6 +3,53 @@ open Arg
 open Filename
 open Parser
 
+let print_lexbuf : Lexing.lexbuf -> unit = function
+  | {
+      refill_buff (* lexbuf -> unit *) = rb;
+      lex_buffer (* bytes *) = lb;
+      lex_buffer_len (* int *) = lbl;
+      lex_abs_pos (* int *) = lap;
+      lex_start_pos (* int *) = lsp;
+      lex_curr_pos (* int *) = lcp;
+      lex_last_pos (* int *) = llp;
+      lex_last_action (* int *) = lla;
+      lex_eof_reached (* bool *) = ler;
+      lex_mem (* int array *) = lm;
+      lex_start_p (* position *) = lspPos;
+      lex_curr_p (* position *) = lcpPos;
+    } ->
+      let string_of_int_array intArray =
+        let elements =
+          Array.fold_left
+            (fun acc integer ->
+              String.concat " " [ acc; string_of_int integer ])
+            "" intArray
+        in
+        Printf.sprintf "[|%s |]" elements
+      in
+      let string_of_position (pos : Lexing.position) =
+        Printf.sprintf
+          "{ pos_fname = %s; pos_lnum = %d; pos_bol = %d; pos_cnum = %d; }"
+          pos.pos_fname pos.pos_lnum pos.pos_bol pos.pos_cnum
+      in
+
+      Printf.printf " lexbuf = {\n";
+
+      Printf.printf "\tlex_buffer = \n>>>>>>>>\n%s\n<<<<<<<<\n"
+        (Bytes.to_string lb);
+      Printf.printf "\tlex_buffer_len = %d\n" lbl;
+      Printf.printf "\tlex_abs_pos = %d\n" lap;
+      Printf.printf "\tlex_start_pos = %d\n" lsp;
+      Printf.printf "\tlex_curr_pos = %d\n" lcp;
+      Printf.printf "\tlex_last_pos = %d\n" llp;
+      Printf.printf "\tlex_last_action = %d\n" lla;
+      Printf.printf "\tlex_eof_reached = %b\n" ler;
+      Printf.printf "\tlex_mem = %s\n" (string_of_int_array lm);
+      Printf.printf "\tlex_start_p = %s\n" (string_of_position lspPos);
+      Printf.printf "\tlex_curr_p = %s\n" (string_of_position lcpPos);
+
+      Printf.printf "}\n"
+
 let main =
   let has_o_flag = ref false in
   let has_f_flag = ref false in

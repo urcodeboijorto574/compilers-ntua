@@ -24,3 +24,6 @@ val handle_warning : string -> unit
 
 (** [handle_success msg] prints the [msg] to the standard output in green. *)
 val handle_success : string -> unit
+
+(** [print_position_info lexbuf] *)
+val print_position_info : Lexing.lexbuf -> unit
