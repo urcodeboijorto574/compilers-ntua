@@ -18,7 +18,7 @@ let handle_error finalMsg infoMsg =
   Printf.eprintf "\027[31mError\027[0m: %s\n" infoMsg;
   failwith finalMsg
 
-let handle_warning = Printf.printf "\027[35mWarning\027[0m: %s\n"
+let handle_warning = Printf.eprintf "\027[35mWarning\027[0m: %s\n"
 let handle_success = Printf.printf "\027[32m%s\027[0m\n"
 
 let print_position_info (lexbuf : Lexing.lexbuf) =
