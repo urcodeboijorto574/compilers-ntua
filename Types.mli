@@ -5,14 +5,6 @@ type t_type =
   | T_none
   | T_func of t_type
 
-(* DEBUG: delete when finished *)
-
-(** [debugMode] is [true] when debug messages will be printed out. *)
-val debugMode : bool
-
-val debugModeCodeGen : bool
-val debugModeI10 : bool
-
 (** [string_of_t_type t] takes a [t : t_type] and returns a string corresponding
     to the type given. *)
 val string_of_t_type : t_type -> string
@@ -45,6 +37,3 @@ val t_type_of_t_array : t_type -> t_type
     [Invalid_argument] if the argument is neither of [T_array], [T_int] and
     [T_char]. *)
 val final_t_type_of_t_array : t_type -> t_type
-
-(* Functions that convert types defined in Ast to t_type types are defined in
-   Ast. *)

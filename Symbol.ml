@@ -92,9 +92,7 @@ let create_symbol_table numOfBuckets =
 let enter_entry ident eKind =
   let isUsed = List.mem ident lib_function_names || !current_scope.depth = 0 in
   let e = { id = ident; scope = !current_scope; kind = eKind; isUsed } in
-  Hashtbl.add !symbolTable ident e;
-  if Types.debugMode then
-    Printf.printf "entering entry %s in current scope\n" e.id
+  Hashtbl.add !symbolTable ident e
 
 let enter_variable id typ =
   enter_entry id (ENTRY_variable { variable_type = typ })
@@ -163,31 +161,6 @@ let add_standard_library () =
   add_func_lib "strcat" [ (2, T_array (-1, T_char)) ] T_none
 
 let look_up_entry (id : string) =
-  if Types.debugMode then (
-    Printf.printf "Looking for name '%s':\n" id;
-    let print_hashtable () =
-      let printedSmth = ref false in
-      Printf.printf "\tSymbolTable contains the following:\n";
-      let string_of_entry_kind = function
-        | ENTRY_variable _ -> "ENTRY_variable"
-        | ENTRY_parameter _ -> "ENTRY_parameter"
-        | ENTRY_function _ -> "ENTRY_function"
-      in
-      Hashtbl.iter
-        (fun key entry ->
-          if not (List.mem key lib_function_names) then (
-            printedSmth := true;
-            Printf.printf
-              "\tKey: '%s', Value: { id = '%s'; scope = %s(%d); kind = %s }\n"
-              key entry.id
-              (match entry.scope.name with "" -> "(global)" | str -> str)
-              entry.scope.depth
-              (string_of_entry_kind entry.kind)))
-        !symbolTable;
-      if not !printedSmth then Printf.printf "\t(nothing)\n"
-    in
-    print_hashtable ());
-
   let resultEntryList =
     (* Entries of ancestor scopes in decreasing order. *)
     List.stable_sort
@@ -209,26 +182,6 @@ let look_up_entry (id : string) =
          ((* Entries with [id] as their name. *)
           Hashtbl.find_all !symbolTable id))
   in
-  if Types.debugMode then (
-    let print_entry_list () =
-      Printf.printf "resultEntryList contains the following\n\t[ ";
-      if resultEntryList <> [] then (
-        Printf.printf "\n\t";
-        List.iter
-          (fun e ->
-            Printf.printf "  { id: %s, scope: %s, depth: %d}\n\t" e.id
-              e.scope.name e.scope.depth)
-          resultEntryList);
-      Printf.printf "]\n"
-    in
-    print_entry_list ();
-    if resultEntryList <> [] then
-      Printf.printf
-        "Entry '%s' found in scope '%s'(depth: %d)!(Current depth: %d)\n" id
-        (List.hd resultEntryList).scope.name
-        (List.hd resultEntryList).scope.depth !current_scope.depth
-    else
-      Printf.printf "Entry '%s' not found in any scope.\n" id);
   try Some (List.hd resultEntryList) with _ -> None
 
 let get_unused_entries () =

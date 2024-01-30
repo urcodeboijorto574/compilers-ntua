@@ -15,8 +15,6 @@ let rec sem_funcDef fd : unit =
   if isMainProgram then Stack.push None funcDefAncestors;
   fd.parent_func <- Stack.top funcDefAncestors;
   sem_header true fd.header;
-  if Types.debugMode then
-    Printf.printf "Opening new scope for '%s' function\n" fd.header.id;
   Symbol.open_scope fd.header.id;
   let add_fparDef (fpd : fparDef) : unit =
     let typ = Ast.t_type_of_fparType fpd.fpar_type in
@@ -101,9 +99,6 @@ let rec sem_funcDef fd : unit =
       (fun id -> Error.handle_warning ("Unused name '" ^ id ^ "'."))
       (Symbol.get_unused_entries ());
 
-  if Types.debugMode then
-    Printf.printf "Closing scope for '%s' function's declarations.\n"
-      fd.header.id;
   Symbol.close_scope ()
 
 (** [sem_header (isPartOfAFuncDef : bool) (h : Ast.header)] takes
@@ -158,18 +153,6 @@ and sem_header isPartOfAFuncDef header : unit =
         | ENTRY_variable _ | ENTRY_parameter _ ->
             raise Error.Shared_name_func_var
       in
-      if Types.debugMode then (
-        Printf.printf "Parameter list from ST:\n\t[ ";
-        List.iter
-          (fun ep ->
-            Printf.printf "{ type('%s'), pass('%s') } "
-              (Types.string_of_t_type ep.parameter_type)
-              (if ep.passing = Symbol.BY_VALUE then
-                 "byVal"
-               else
-                 "byRef"))
-          functionEntry.parameters_list;
-        Printf.printf "]\n");
       let returnTypeFromHeader : Types.t_type =
         Ast.t_type_of_retType header.ret_type
       in
@@ -181,24 +164,7 @@ and sem_header isPartOfAFuncDef header : unit =
               let paramType = Ast.t_type_of_fparType fpt in
               (List.length il, paramType, r) :: helper tail
         in
-        let resultList = helper header.fpar_def_list in
-        if Types.debugMode then (
-          Printf.printf "Parameter list from this header:\n\t[ ";
-          List.iter
-            begin
-              let rec print_elem = function
-                | 0, t, r -> ()
-                | n, t, r ->
-                    Printf.printf "{ type('%s'), pass('%s') } "
-                      (Types.string_of_t_type t)
-                      (if r then "byRef" else "byVal");
-                    print_elem (n - 1, t, r)
-              in
-              print_elem
-            end
-            resultList;
-          Printf.printf "]\n");
-        resultList
+        helper header.fpar_def_list
       in
       let matchingNumOfParams : bool =
         let lengthOfParamListHeader =
@@ -358,10 +324,6 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
             "Assignment to a function call is not possible.";
           Some t
       | t ->
-          if Types.debugMode then
-            Printf.printf
-              "... checking the types of an lvalue and an expression \
-               (assignment)\n";
           let typeExpr = sem_expr e in
           if not (Types.equal_types t typeExpr) then
             Error.handle_error Error.type_error_msg
@@ -429,17 +391,12 @@ and sem_lvalue lv : Types.t_type =
                Symbol.(!current_scope.name));
         let entryFound = Option.get entryFoundOption in
         set_entry_isUsed entryFound;
-        if Types.debugMode then (
-          Printf.printf "Entry for '%s' found. Information:\n" id;
-          Printf.printf "\tid: %s, scope: %s" id entryFound.scope.name);
         let entryType =
           match entryFound.kind with
           | ENTRY_variable ev -> ev.variable_type
           | ENTRY_parameter ep -> ep.parameter_type
           | ENTRY_function ef -> ef.return_type
         in
-        if Types.debugMode then
-          Printf.printf ", type: %s\n" (Types.string_of_t_type entryType);
         resultArrayType := Some entryType;
         entryType
     | L_string s ->
@@ -448,10 +405,6 @@ and sem_lvalue lv : Types.t_type =
         resultType
         (* Note: the last character of a string literal is not the '\0' character. *)
     | L_comp (lv, e) -> (
-        if Types.debugMode then
-          Printf.printf
-            "... checking the type of the content inside the brackets \
-             (position in array must be an integer)\n";
         let typeExpr = sem_expr e in
         if not Types.(equal_types T_int typeExpr) then
           Error.handle_error Error.type_error_msg
@@ -493,16 +446,7 @@ and sem_lvalue lv : Types.t_type =
 and sem_expr : Ast.expr -> Types.t_type = function
   | E_const_int ci -> Types.T_int
   | E_const_char cc -> Types.T_char
-  | E_lvalue lv ->
-      let lvalue_type = sem_lvalue lv in
-      if Types.debugMode then begin
-        match lv.lv_kind with
-        | L_comp _ ->
-            Printf.printf "Composite l-value is of type '%s'\n"
-              (Types.string_of_t_type lvalue_type)
-        | _ -> ()
-      end;
-      lvalue_type
+  | E_lvalue lv -> sem_lvalue lv
   | E_func_call fc -> (
       let open Types in
       match sem_funcCall fc with
@@ -516,8 +460,6 @@ and sem_expr : Ast.expr -> Types.t_type = function
       | T_func t -> t
       | T_none | T_int | T_char | T_array _ -> assert false)
   | E_sgn_expr (s, e) ->
-      if Types.debugMode then
-        Printf.printf "... checking a signed expression (must be int)\n";
       let typeExpr = sem_expr e in
       if not (Types.equal_types Types.T_int typeExpr) then
         Error.handle_error Error.type_error_msg
@@ -525,10 +467,6 @@ and sem_expr : Ast.expr -> Types.t_type = function
            argument.";
       Types.T_int
   | E_op_expr_expr (e1, ao, e2) ->
-      if Types.debugMode then
-        Printf.printf
-          "... checking whether the arguments of an arithmOperator are of type \
-           int\n";
       let typeExpr1, typeExpr2 = (sem_expr e1, sem_expr e2) in
       let open Types in
       if not (equal_types T_int typeExpr1) then
@@ -553,10 +491,6 @@ and sem_cond : Ast.cond -> unit = function
       sem_cond c1;
       sem_cond c2
   | C_expr_expr (e1, co, e2) ->
-      if Types.debugMode then
-        Printf.printf
-          "... checking whether the arguments of a compOperator are of the \
-           same type\n";
       let typeExpr1, typeExpr2 = (sem_expr e1, sem_expr e2) in
       if not (Types.equal_types typeExpr1 typeExpr2) then
         Error.handle_error Error.type_error_msg

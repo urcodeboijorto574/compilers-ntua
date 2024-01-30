@@ -37,21 +37,13 @@ let main =
     let lexbuf = Lexing.from_channel in_channel in
     Lexing.set_filename lexbuf
       (if in_channel = stdin then "stdin" else basename !filename);
-    if Types.debugMode then Printf.printf "Syntactic analysis:\n";
     let asts =
       try Parser.program Lexer.lexer lexbuf
       with Parser.Error ->
         Error.(handle_error_fatal syntax_error_msg syntax_error_msg)
     in
-    if Types.debugMode then (
-      PrintAst.print_on asts;
-      Printf.printf "\n");
     Error.handle_success "Successful parsing.";
-    if Types.debugMode then (
-      Printf.printf "\n";
-      Printf.printf "Semantic analysis:\n");
     SemAst.sem_on asts;
-    if Types.debugMode then Printf.printf "\n";
     Error.handle_success "Semantically correct.";
     if not !Error.isErrorsRaised then
       GenAst.gen_on asts !has_o_flag
