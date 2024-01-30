@@ -24,12 +24,3 @@ let handle_error_fatal finalMsg infoMsg =
 
 let handle_warning = Printf.eprintf "\027[35mWarning\027[0m: %s\n"
 let handle_success = Printf.printf "\027[32m%s\027[0m\n"
-
-let print_position_info (lexbuf : Lexing.lexbuf) =
-  let open Lexing in
-  let position_info : string =
-    Printf.sprintf "File \"%s\", line %d, characters %d-%d: "
-      lexbuf.lex_curr_p.pos_fname lexbuf.lex_curr_p.pos_lnum lexbuf.lex_last_pos
-      lexbuf.lex_curr_p.pos_cnum
-  in
-  Printf.eprintf "%s\n" position_info
