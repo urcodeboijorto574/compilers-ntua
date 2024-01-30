@@ -3,14 +3,11 @@ open Types
 let isErrorsRaised = ref false
 
 exception Shared_name_func_var
-exception Overloaded_functions
-exception Redefined_function
-exception Expected_type_not_returned
-exception Non_matching_parameter_types
 exception Unexpected_number_of_parameters
 exception Type_error
 exception Passing_error
 
+let compilation_failed_msg = "Compilation failed"
 let internal_error_msg = "Internal error"
 let lexing_error_msg = "Lexing error"
 let syntax_error_msg = "Syntax error"
