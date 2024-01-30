@@ -130,13 +130,13 @@ and sem_header isPartOfAFuncDef header : unit =
     header.comp_id <- header.id ^ postfix
   end;
   let isMainProgram = !current_scope.depth = 0 in
-  if isMainProgram then
+  if isMainProgram then (
     if header.ret_type <> Nothing then
       Error.handle_error Error.type_error_msg
-        "Main function must return 'nothing' type."
-    else if header.fpar_def_list <> [] then
+        "Main function must return 'nothing' type.";
+    if header.fpar_def_list <> [] then
       Error.handle_error "Main function shouldn't have parameters"
-        "Main function shouldn't have parameters.";
+        "Main function shouldn't have parameters.");
 
   let resultLookUpOption = look_up_entry header.id in
   if
