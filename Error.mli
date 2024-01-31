@@ -15,6 +15,9 @@ val syntax_error_msg : string
 val semantic_error_msg : string
 val type_error_msg : string
 
+(** [print_error_header msg] prints "Error: " in red and then the [msg] given. *)
+val print_error_header : string -> unit
+
 (** [handle_error finalMsg infoMsg] prints the [infoMsg] to the standard error
     output. *)
 val handle_error : string -> string -> unit

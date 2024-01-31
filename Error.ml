@@ -14,10 +14,12 @@ let lexing_error_msg = "Lexing error"
 let syntax_error_msg = "Syntax error"
 let semantic_error_msg = "Semantic error"
 let type_error_msg = "Type error"
+let print_error_header msg = Printf.eprintf "\027[31mError\027[0m: %s\n%!" msg
 
 let handle_error finalMsg infoMsg =
   if not !isErrorsRaised then isErrorsRaised := true;
-  Printf.eprintf "\027[31mError\027[0m: %s\n%s\n%!" finalMsg infoMsg
+  print_error_header finalMsg;
+  Printf.eprintf "%s\n%!" infoMsg
 
 let handle_error_fatal finalMsg infoMsg =
   handle_error finalMsg infoMsg;

@@ -74,15 +74,18 @@ let main =
   | Sys_error _ ->
       Error.handle_error_fatal "File not found"
         (Printf.sprintf "File '%s' not found." !filename)
-  | Assert_failure _ -> (
-      if !Error.isErrorsRaised then
-        Printf.eprintf "%s.\n" Error.compilation_failed_msg
-      else
-        try Error.(handle_error internal_error_msg internal_error_msg)
-        with Failure _ -> exit 1)
-  | Error.Syntax_error _ -> (
+  | Assert_failure _ ->
+      (if !Error.isErrorsRaised then
+         Printf.eprintf "%s.\n" Error.compilation_failed_msg
+       else
+         Error.(print_error_header internal_error_msg));
+      exit 1
+  | Error.Syntax_error _ when isInChannelStdin -> (
       try Error.(handle_error_fatal syntax_error_msg syntax_error_msg)
       with Failure _ -> exit 1)
+  | Error.Syntax_error text ->
+      Error.(print_error_header syntax_error_msg);
+      exit 1
   | Failure msg when msg = Error.semantic_error_msg ->
       Printf.eprintf "%s.\n" Error.compilation_failed_msg;
       exit 1
