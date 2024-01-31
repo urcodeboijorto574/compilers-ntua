@@ -7,7 +7,6 @@
 !README.md
 !Makefile
 !.ocamlformat
-!*.messages
 
 !Error.ml
 !Error.mli
@@ -19,6 +18,7 @@
 
 !Parser.mly
 !ParserMessages.mli
+!ParserMessages.messages
 
 !Ast.ml
 !Ast.mli
