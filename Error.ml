@@ -17,11 +17,11 @@ let type_error_msg = "Type error"
 
 let handle_error finalMsg infoMsg =
   if not !isErrorsRaised then isErrorsRaised := true;
-  Printf.eprintf "\027[31mError\027[0m: %s\n%s\n" finalMsg infoMsg
+  Printf.eprintf "\027[31mError\027[0m: %s\n%s\n%!" finalMsg infoMsg
 
 let handle_error_fatal finalMsg infoMsg =
   handle_error finalMsg infoMsg;
   failwith finalMsg
 
-let handle_warning = Printf.eprintf "\027[35mWarning\027[0m: %s\n"
-let handle_success = Printf.printf "\027[32m%s\027[0m\n"
+let handle_warning = Printf.eprintf "\027[35mWarning\027[0m: %s\n%!"
+let handle_success = Printf.printf "\027[32m%s\027[0m\n%!"
