@@ -1,0 +1,11 @@
+program: T_while
+##
+## Ends in an error in state: 0.
+##
+## program' -> . program [ # ]
+##
+## The known suffix of the stack is as follows:
+##
+##
+
+A program must start with the T_fun token.

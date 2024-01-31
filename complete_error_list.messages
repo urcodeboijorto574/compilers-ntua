@@ -1,0 +1,1337 @@
+program: T_while
+##
+## Ends in an error in state: 0.
+##
+## program' -> . program [ # ]
+##
+## The known suffix of the stack is as follows:
+##
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_while
+##
+## Ends in an error in state: 1.
+##
+## header -> T_fun . T_identifier T_left_par T_right_par T_colon ret_type [ T_var T_semicolon T_left_br T_fun ]
+## header -> T_fun . T_identifier T_left_par fpar_def_list T_right_par T_colon ret_type [ T_var T_semicolon T_left_br T_fun ]
+##
+## The known suffix of the stack is as follows:
+## T_fun
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_while
+##
+## Ends in an error in state: 2.
+##
+## header -> T_fun T_identifier . T_left_par T_right_par T_colon ret_type [ T_var T_semicolon T_left_br T_fun ]
+## header -> T_fun T_identifier . T_left_par fpar_def_list T_right_par T_colon ret_type [ T_var T_semicolon T_left_br T_fun ]
+##
+## The known suffix of the stack is as follows:
+## T_fun T_identifier
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_while
+##
+## Ends in an error in state: 3.
+##
+## header -> T_fun T_identifier T_left_par . T_right_par T_colon ret_type [ T_var T_semicolon T_left_br T_fun ]
+## header -> T_fun T_identifier T_left_par . fpar_def_list T_right_par T_colon ret_type [ T_var T_semicolon T_left_br T_fun ]
+##
+## The known suffix of the stack is as follows:
+## T_fun T_identifier T_left_par
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_while
+##
+## Ends in an error in state: 4.
+##
+## header -> T_fun T_identifier T_left_par T_right_par . T_colon ret_type [ T_var T_semicolon T_left_br T_fun ]
+##
+## The known suffix of the stack is as follows:
+## T_fun T_identifier T_left_par T_right_par
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_while
+##
+## Ends in an error in state: 5.
+##
+## header -> T_fun T_identifier T_left_par T_right_par T_colon . ret_type [ T_var T_semicolon T_left_br T_fun ]
+##
+## The known suffix of the stack is as follows:
+## T_fun T_identifier T_left_par T_right_par T_colon
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_ref T_while
+##
+## Ends in an error in state: 11.
+##
+## fpar_def -> T_ref . T_identifier id_list T_colon fpar_type [ T_semicolon T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## T_ref
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_ref T_identifier T_while
+##
+## Ends in an error in state: 12.
+##
+## fpar_def -> T_ref T_identifier . id_list T_colon fpar_type [ T_semicolon T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## T_ref T_identifier
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_comma T_while
+##
+## Ends in an error in state: 13.
+##
+## id_list -> T_comma . T_identifier id_list [ T_colon ]
+##
+## The known suffix of the stack is as follows:
+## T_comma
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_comma T_identifier T_while
+##
+## Ends in an error in state: 14.
+##
+## id_list -> T_comma T_identifier . id_list [ T_colon ]
+##
+## The known suffix of the stack is as follows:
+## T_comma T_identifier
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_ref T_identifier T_colon T_while
+##
+## Ends in an error in state: 17.
+##
+## fpar_def -> T_ref T_identifier id_list T_colon . fpar_type [ T_semicolon T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## T_ref T_identifier id_list T_colon
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_while
+##
+## Ends in an error in state: 19.
+##
+## fpar_type -> data_type . array_dimensions [ T_semicolon T_right_par ]
+## fpar_type -> data_type . T_left_sqr T_right_sqr array_dimensions [ T_semicolon T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## data_type
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_while
+##
+## Ends in an error in state: 20.
+##
+## array_dimensions -> T_left_sqr . T_integer T_right_sqr array_dimensions [ T_semicolon T_right_par ]
+## fpar_type -> data_type T_left_sqr . T_right_sqr array_dimensions [ T_semicolon T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## data_type T_left_sqr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_right_sqr T_while
+##
+## Ends in an error in state: 21.
+##
+## fpar_type -> data_type T_left_sqr T_right_sqr . array_dimensions [ T_semicolon T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## data_type T_left_sqr T_right_sqr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_right_sqr T_left_sqr T_while
+##
+## Ends in an error in state: 22.
+##
+## array_dimensions -> T_left_sqr . T_integer T_right_sqr array_dimensions [ T_semicolon T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## T_left_sqr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_integer T_while
+##
+## Ends in an error in state: 23.
+##
+## array_dimensions -> T_left_sqr T_integer . T_right_sqr array_dimensions [ T_semicolon T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## T_left_sqr T_integer
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_integer T_right_sqr T_while
+##
+## Ends in an error in state: 24.
+##
+## array_dimensions -> T_left_sqr T_integer T_right_sqr . array_dimensions [ T_semicolon T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## T_left_sqr T_integer T_right_sqr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_while
+##
+## Ends in an error in state: 28.
+##
+## fpar_def -> T_identifier . id_list T_colon fpar_type [ T_semicolon T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## T_identifier
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_colon T_while
+##
+## Ends in an error in state: 30.
+##
+## fpar_def -> T_identifier id_list T_colon . fpar_type [ T_semicolon T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## T_identifier id_list T_colon
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_right_par T_while
+##
+## Ends in an error in state: 33.
+##
+## header -> T_fun T_identifier T_left_par fpar_def_list T_right_par . T_colon ret_type [ T_var T_semicolon T_left_br T_fun ]
+##
+## The known suffix of the stack is as follows:
+## T_fun T_identifier T_left_par fpar_def_list T_right_par
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_right_par T_colon T_while
+##
+## Ends in an error in state: 34.
+##
+## header -> T_fun T_identifier T_left_par fpar_def_list T_right_par T_colon . ret_type [ T_var T_semicolon T_left_br T_fun ]
+##
+## The known suffix of the stack is as follows:
+## T_fun T_identifier T_left_par fpar_def_list T_right_par T_colon
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_semicolon T_while
+##
+## Ends in an error in state: 37.
+##
+## fpar_def_list -> fpar_def T_semicolon . fpar_def_list [ T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## fpar_def T_semicolon
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_while
+##
+## Ends in an error in state: 40.
+##
+## func_def -> header . local_def_list block [ T_eof ]
+##
+## The known suffix of the stack is as follows:
+## header
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_while
+##
+## Ends in an error in state: 41.
+##
+## var_def -> T_var . T_identifier id_list T_colon var_type T_semicolon [ T_var T_left_br T_fun ]
+##
+## The known suffix of the stack is as follows:
+## T_var
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_identifier T_while
+##
+## Ends in an error in state: 42.
+##
+## var_def -> T_var T_identifier . id_list T_colon var_type T_semicolon [ T_var T_left_br T_fun ]
+##
+## The known suffix of the stack is as follows:
+## T_var T_identifier
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_identifier T_colon T_while
+##
+## Ends in an error in state: 44.
+##
+## var_def -> T_var T_identifier id_list T_colon . var_type T_semicolon [ T_var T_left_br T_fun ]
+##
+## The known suffix of the stack is as follows:
+## T_var T_identifier id_list T_colon
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_identifier T_colon T_char T_left_sqr T_integer T_right_sqr T_right_par
+##
+## Ends in an error in state: 45.
+##
+## var_def -> T_var T_identifier id_list T_colon var_type . T_semicolon [ T_var T_left_br T_fun ]
+##
+## The known suffix of the stack is as follows:
+## T_var T_identifier id_list T_colon var_type
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 24, spurious reduction of production array_dimensions ->
+## In state 25, spurious reduction of production array_dimensions -> T_left_sqr T_integer T_right_sqr array_dimensions
+## In state 48, spurious reduction of production var_type -> data_type array_dimensions
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_identifier T_colon T_char T_while
+##
+## Ends in an error in state: 47.
+##
+## var_type -> data_type . array_dimensions [ T_semicolon ]
+##
+## The known suffix of the stack is as follows:
+## data_type
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_var
+##
+## Ends in an error in state: 51.
+##
+## block -> T_left_br . stmt_list T_right_br [ T_while T_var T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_fun T_eof T_else ]
+##
+## The known suffix of the stack is as follows:
+## T_left_br
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_while T_while
+##
+## Ends in an error in state: 52.
+##
+## stmt -> T_while . cond T_do stmt [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## T_while
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_string T_while
+##
+## Ends in an error in state: 53.
+##
+## l_value -> T_string . [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_assignment T_and ]
+## l_value_comp -> T_string . [ T_left_sqr ]
+##
+## The known suffix of the stack is as follows:
+## T_string
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_plus T_while
+##
+## Ends in an error in state: 54.
+##
+## expr -> T_plus . expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## T_plus
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_minus T_while
+##
+## Ends in an error in state: 55.
+##
+## expr -> T_minus . expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## T_minus
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_return T_left_par T_while
+##
+## Ends in an error in state: 56.
+##
+## expr -> T_left_par . expr T_right_par [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## T_left_par
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_while
+##
+## Ends in an error in state: 58.
+##
+## func_call -> T_identifier . T_left_par T_right_par [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## func_call -> T_identifier . T_left_par expr_list T_right_par [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## l_value -> T_identifier . [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_assignment T_and ]
+## l_value_comp -> T_identifier . [ T_left_sqr ]
+##
+## The known suffix of the stack is as follows:
+## T_identifier
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_par T_while
+##
+## Ends in an error in state: 59.
+##
+## func_call -> T_identifier T_left_par . T_right_par [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## func_call -> T_identifier T_left_par . expr_list T_right_par [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## T_identifier T_left_par
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_sqr T_while
+##
+## Ends in an error in state: 63.
+##
+## l_value -> l_value_comp T_left_sqr . expr T_right_sqr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_assignment T_and ]
+## l_value_comp -> l_value_comp T_left_sqr . expr T_right_sqr [ T_left_sqr ]
+##
+## The known suffix of the stack is as follows:
+## l_value_comp T_left_sqr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_sqr T_identifier T_then
+##
+## Ends in an error in state: 66.
+##
+## expr -> expr . T_plus expr [ T_right_sqr T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_minus expr [ T_right_sqr T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_mul expr [ T_right_sqr T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_div expr [ T_right_sqr T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_mod expr [ T_right_sqr T_plus T_mul T_mod T_minus T_div ]
+## l_value -> l_value_comp T_left_sqr expr . T_right_sqr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_assignment T_and ]
+## l_value_comp -> l_value_comp T_left_sqr expr . T_right_sqr [ T_left_sqr ]
+##
+## The known suffix of the stack is as follows:
+## l_value_comp T_left_sqr expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_sqr T_identifier T_right_sqr T_while
+##
+## Ends in an error in state: 67.
+##
+## l_value -> l_value_comp T_left_sqr expr T_right_sqr . [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_assignment T_and ]
+## l_value_comp -> l_value_comp T_left_sqr expr T_right_sqr . [ T_left_sqr ]
+##
+## The known suffix of the stack is as follows:
+## l_value_comp T_left_sqr expr T_right_sqr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_plus T_while
+##
+## Ends in an error in state: 68.
+##
+## expr -> expr T_plus . expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_plus
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_plus T_identifier T_assignment
+##
+## Ends in an error in state: 69.
+##
+## expr -> expr . T_plus expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr T_plus expr . [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_minus expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_mul expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_div expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_mod expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_plus expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_mul T_while
+##
+## Ends in an error in state: 70.
+##
+## expr -> expr T_mul . expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_mul
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_mod T_while
+##
+## Ends in an error in state: 72.
+##
+## expr -> expr T_mod . expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_mod
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_div T_while
+##
+## Ends in an error in state: 74.
+##
+## expr -> expr T_div . expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_div
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_minus T_while
+##
+## Ends in an error in state: 76.
+##
+## expr -> expr T_minus . expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_minus
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_minus T_identifier T_assignment
+##
+## Ends in an error in state: 77.
+##
+## expr -> expr . T_plus expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_minus expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr T_minus expr . [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_mul expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_div expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_mod expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_minus expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_par T_identifier T_then
+##
+## Ends in an error in state: 80.
+##
+## expr -> expr . T_plus expr [ T_right_par T_plus T_mul T_mod T_minus T_div T_comma ]
+## expr -> expr . T_minus expr [ T_right_par T_plus T_mul T_mod T_minus T_div T_comma ]
+## expr -> expr . T_mul expr [ T_right_par T_plus T_mul T_mod T_minus T_div T_comma ]
+## expr -> expr . T_div expr [ T_right_par T_plus T_mul T_mod T_minus T_div T_comma ]
+## expr -> expr . T_mod expr [ T_right_par T_plus T_mul T_mod T_minus T_div T_comma ]
+## expr_list -> expr . [ T_right_par ]
+## expr_list -> expr . T_comma expr_list [ T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_par T_identifier T_comma T_while
+##
+## Ends in an error in state: 81.
+##
+## expr_list -> expr T_comma . expr_list [ T_right_par ]
+##
+## The known suffix of the stack is as follows:
+## expr T_comma
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_return T_left_par T_identifier T_then
+##
+## Ends in an error in state: 83.
+##
+## expr -> T_left_par expr . T_right_par [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_plus expr [ T_right_par T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_minus expr [ T_right_par T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_mul expr [ T_right_par T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_div expr [ T_right_par T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_mod expr [ T_right_par T_plus T_mul T_mod T_minus T_div ]
+##
+## The known suffix of the stack is as follows:
+## T_left_par expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_minus T_identifier T_assignment
+##
+## Ends in an error in state: 85.
+##
+## expr -> T_minus expr . [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_plus expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_minus expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_mul expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_div expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_mod expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## T_minus expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_plus T_identifier T_assignment
+##
+## Ends in an error in state: 86.
+##
+## expr -> T_plus expr . [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_plus expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_minus expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_mul expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_div expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+## expr -> expr . T_mod expr [ T_then T_semicolon T_right_sqr T_right_par T_plus T_or T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_do T_div T_comma T_and ]
+##
+## The known suffix of the stack is as follows:
+## T_plus expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_not T_while
+##
+## Ends in an error in state: 87.
+##
+## cond -> T_not . cond [ T_then T_right_par T_or T_do T_and ]
+##
+## The known suffix of the stack is as follows:
+## T_not
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_left_par T_while
+##
+## Ends in an error in state: 88.
+##
+## cond -> T_left_par . cond T_right_par [ T_then T_right_par T_or T_do T_and ]
+## expr -> T_left_par . expr T_right_par [ T_right_par T_plus T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_div ]
+##
+## The known suffix of the stack is as follows:
+## T_left_par
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_left_par T_identifier T_then
+##
+## Ends in an error in state: 89.
+##
+## cond -> expr . T_equal expr [ T_right_par T_or T_and ]
+## cond -> expr . T_not_equal expr [ T_right_par T_or T_and ]
+## cond -> expr . T_less expr [ T_right_par T_or T_and ]
+## cond -> expr . T_less_eq expr [ T_right_par T_or T_and ]
+## cond -> expr . T_greater expr [ T_right_par T_or T_and ]
+## cond -> expr . T_greater_eq expr [ T_right_par T_or T_and ]
+## expr -> T_left_par expr . T_right_par [ T_right_par T_plus T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_div ]
+## expr -> expr . T_plus expr [ T_right_par T_plus T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_div ]
+## expr -> expr . T_minus expr [ T_right_par T_plus T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_div ]
+## expr -> expr . T_mul expr [ T_right_par T_plus T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_div ]
+## expr -> expr . T_div expr [ T_right_par T_plus T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_div ]
+## expr -> expr . T_mod expr [ T_right_par T_plus T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_div ]
+##
+## The known suffix of the stack is as follows:
+## T_left_par expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_not_equal T_while
+##
+## Ends in an error in state: 90.
+##
+## cond -> expr T_not_equal . expr [ T_then T_right_par T_or T_do T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_not_equal
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_not_equal T_identifier T_semicolon
+##
+## Ends in an error in state: 91.
+##
+## cond -> expr T_not_equal expr . [ T_then T_right_par T_or T_do T_and ]
+## expr -> expr . T_plus expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_minus expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_mul expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_div expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_mod expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_not_equal expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_less_eq T_while
+##
+## Ends in an error in state: 92.
+##
+## cond -> expr T_less_eq . expr [ T_then T_right_par T_or T_do T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_less_eq
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_less_eq T_identifier T_semicolon
+##
+## Ends in an error in state: 93.
+##
+## cond -> expr T_less_eq expr . [ T_then T_right_par T_or T_do T_and ]
+## expr -> expr . T_plus expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_minus expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_mul expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_div expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_mod expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_less_eq expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_less T_while
+##
+## Ends in an error in state: 94.
+##
+## cond -> expr T_less . expr [ T_then T_right_par T_or T_do T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_less
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_less T_identifier T_semicolon
+##
+## Ends in an error in state: 95.
+##
+## cond -> expr T_less expr . [ T_then T_right_par T_or T_do T_and ]
+## expr -> expr . T_plus expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_minus expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_mul expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_div expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_mod expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_less expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_greater_eq T_while
+##
+## Ends in an error in state: 96.
+##
+## cond -> expr T_greater_eq . expr [ T_then T_right_par T_or T_do T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_greater_eq
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_greater_eq T_identifier T_semicolon
+##
+## Ends in an error in state: 97.
+##
+## cond -> expr T_greater_eq expr . [ T_then T_right_par T_or T_do T_and ]
+## expr -> expr . T_plus expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_minus expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_mul expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_div expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_mod expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_greater_eq expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_greater T_while
+##
+## Ends in an error in state: 98.
+##
+## cond -> expr T_greater . expr [ T_then T_right_par T_or T_do T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_greater
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_greater T_identifier T_semicolon
+##
+## Ends in an error in state: 99.
+##
+## cond -> expr T_greater expr . [ T_then T_right_par T_or T_do T_and ]
+## expr -> expr . T_plus expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_minus expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_mul expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_div expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_mod expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_greater expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_while
+##
+## Ends in an error in state: 100.
+##
+## cond -> expr T_equal . expr [ T_then T_right_par T_or T_do T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_equal
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_semicolon
+##
+## Ends in an error in state: 101.
+##
+## cond -> expr T_equal expr . [ T_then T_right_par T_or T_do T_and ]
+## expr -> expr . T_plus expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_minus expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_mul expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_div expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+## expr -> expr . T_mod expr [ T_then T_right_par T_plus T_or T_mul T_mod T_minus T_do T_div T_and ]
+##
+## The known suffix of the stack is as follows:
+## expr T_equal expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_left_par T_identifier T_equal T_identifier T_then
+##
+## Ends in an error in state: 102.
+##
+## cond -> T_left_par cond . T_right_par [ T_then T_right_par T_or T_do T_and ]
+## cond -> cond . T_and cond [ T_right_par T_or T_and ]
+## cond -> cond . T_or cond [ T_right_par T_or T_and ]
+##
+## The known suffix of the stack is as follows:
+## T_left_par cond
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+## In state 101, spurious reduction of production cond -> expr T_equal expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_or T_while
+##
+## Ends in an error in state: 104.
+##
+## cond -> cond T_or . cond [ T_then T_right_par T_or T_do T_and ]
+##
+## The known suffix of the stack is as follows:
+## cond T_or
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_then
+##
+## Ends in an error in state: 105.
+##
+## cond -> expr . T_equal expr [ T_then T_right_par T_or T_do T_and ]
+## cond -> expr . T_not_equal expr [ T_then T_right_par T_or T_do T_and ]
+## cond -> expr . T_less expr [ T_then T_right_par T_or T_do T_and ]
+## cond -> expr . T_less_eq expr [ T_then T_right_par T_or T_do T_and ]
+## cond -> expr . T_greater expr [ T_then T_right_par T_or T_do T_and ]
+## cond -> expr . T_greater_eq expr [ T_then T_right_par T_or T_do T_and ]
+## expr -> expr . T_plus expr [ T_plus T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_div ]
+## expr -> expr . T_minus expr [ T_plus T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_div ]
+## expr -> expr . T_mul expr [ T_plus T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_div ]
+## expr -> expr . T_div expr [ T_plus T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_div ]
+## expr -> expr . T_mod expr [ T_plus T_not_equal T_mul T_mod T_minus T_less_eq T_less T_greater_eq T_greater T_equal T_div ]
+##
+## The known suffix of the stack is as follows:
+## expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_or T_left_par T_identifier T_equal T_identifier T_right_par T_while
+##
+## Ends in an error in state: 106.
+##
+## cond -> cond . T_and cond [ T_then T_right_par T_or T_do T_and ]
+## cond -> cond . T_or cond [ T_then T_right_par T_or T_do T_and ]
+## cond -> cond T_or cond . [ T_then T_right_par T_or T_do T_and ]
+##
+## The known suffix of the stack is as follows:
+## cond T_or cond
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_and T_while
+##
+## Ends in an error in state: 107.
+##
+## cond -> cond T_and . cond [ T_then T_right_par T_or T_do T_and ]
+##
+## The known suffix of the stack is as follows:
+## cond T_and
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_while T_identifier T_equal T_identifier T_then
+##
+## Ends in an error in state: 110.
+##
+## cond -> cond . T_and cond [ T_or T_do T_and ]
+## cond -> cond . T_or cond [ T_or T_do T_and ]
+## stmt -> T_while cond . T_do stmt [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## T_while cond
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+## In state 101, spurious reduction of production cond -> expr T_equal expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_while T_identifier T_equal T_identifier T_do T_var
+##
+## Ends in an error in state: 111.
+##
+## stmt -> T_while cond T_do . stmt [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## T_while cond T_do
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_return T_while
+##
+## Ends in an error in state: 113.
+##
+## stmt -> T_return . T_semicolon [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+## stmt -> T_return . expr T_semicolon [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## T_return
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_return T_identifier T_then
+##
+## Ends in an error in state: 115.
+##
+## expr -> expr . T_plus expr [ T_semicolon T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_minus expr [ T_semicolon T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_mul expr [ T_semicolon T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_div expr [ T_semicolon T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_mod expr [ T_semicolon T_plus T_mul T_mod T_minus T_div ]
+## stmt -> T_return expr . T_semicolon [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## T_return expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_while
+##
+## Ends in an error in state: 117.
+##
+## stmt -> T_if . cond T_then stmt [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+## stmt -> T_if . cond T_then stmt T_else stmt [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## T_if
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_right_par
+##
+## Ends in an error in state: 118.
+##
+## cond -> cond . T_and cond [ T_then T_or T_and ]
+## cond -> cond . T_or cond [ T_then T_or T_and ]
+## stmt -> T_if cond . T_then stmt [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+## stmt -> T_if cond . T_then stmt T_else stmt [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## T_if cond
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+## In state 101, spurious reduction of production cond -> expr T_equal expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_then T_var
+##
+## Ends in an error in state: 119.
+##
+## stmt -> T_if cond T_then . stmt [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+## stmt -> T_if cond T_then . stmt T_else stmt [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## T_if cond T_then
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_then T_semicolon T_var
+##
+## Ends in an error in state: 120.
+##
+## stmt -> T_if cond T_then stmt . [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+## stmt -> T_if cond T_then stmt . T_else stmt [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## T_if cond T_then stmt
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_then T_semicolon T_else T_var
+##
+## Ends in an error in state: 121.
+##
+## stmt -> T_if cond T_then stmt T_else . stmt [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## T_if cond T_then stmt T_else
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_then
+##
+## Ends in an error in state: 123.
+##
+## stmt -> l_value . T_assignment expr T_semicolon [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## l_value
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_assignment T_while
+##
+## Ends in an error in state: 124.
+##
+## stmt -> l_value T_assignment . expr T_semicolon [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## l_value T_assignment
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_assignment T_identifier T_then
+##
+## Ends in an error in state: 125.
+##
+## expr -> expr . T_plus expr [ T_semicolon T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_minus expr [ T_semicolon T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_mul expr [ T_semicolon T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_div expr [ T_semicolon T_plus T_mul T_mod T_minus T_div ]
+## expr -> expr . T_mod expr [ T_semicolon T_plus T_mul T_mod T_minus T_div ]
+## stmt -> l_value T_assignment expr . T_semicolon [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## l_value T_assignment expr
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 58, spurious reduction of production l_value -> T_identifier
+## In state 64, spurious reduction of production expr -> l_value
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_par T_right_par T_while
+##
+## Ends in an error in state: 127.
+##
+## stmt -> func_call . T_semicolon [ T_while T_string T_semicolon T_right_br T_return T_left_br T_if T_identifier T_else ]
+##
+## The known suffix of the stack is as follows:
+## func_call
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_semicolon T_var
+##
+## Ends in an error in state: 133.
+##
+## stmt_list -> stmt . stmt_list [ T_right_br ]
+##
+## The known suffix of the stack is as follows:
+## stmt
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_identifier T_colon T_char T_semicolon T_while
+##
+## Ends in an error in state: 136.
+##
+## local_def_list -> local_def . local_def_list [ T_left_br ]
+##
+## The known suffix of the stack is as follows:
+## local_def
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_fun T_identifier T_left_par T_right_par T_colon T_char T_while
+##
+## Ends in an error in state: 138.
+##
+## func_decl -> header . T_semicolon [ T_var T_left_br T_fun ]
+## func_def -> header . local_def_list block [ T_var T_left_br T_fun ]
+##
+## The known suffix of the stack is as follows:
+## header
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_right_br T_while
+##
+## Ends in an error in state: 142.
+##
+## program -> func_def . T_eof [ # ]
+##
+## The known suffix of the stack is as follows:
+## func_def
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>

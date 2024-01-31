@@ -7,6 +7,7 @@
 !README.md
 !Makefile
 !.ocamlformat
+!*.messages
 
 !Error.ml
 !Error.mli
