@@ -6,6 +6,7 @@ exception Shared_name_func_var
 exception Unexpected_number_of_parameters
 exception Type_error
 exception Passing_error
+exception Syntax_error of string
 
 let compilation_failed_msg = "Compilation failed"
 let internal_error_msg = "Internal error"

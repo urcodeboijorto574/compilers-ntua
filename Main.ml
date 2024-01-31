@@ -2,7 +2,6 @@ open Llvm
 open Arg
 open Filename
 open Parser
-module ErrorReports = MenhirLib.ErrorReports
 module LexerUtil = MenhirLib.LexerUtil
 
 let main =
@@ -30,26 +29,17 @@ let main =
   let isInChannelStdin = !has_i_flag || !has_f_flag in
 
   try
-    let in_channel =
-      if !has_i_flag && !has_f_flag then begin
-        Printf.eprintf "%s\n" usage_msg;
-        exit 1
-      end
-      else if !has_i_flag || !has_f_flag then
-        stdin
+    let text, lexbuf =
+      if isInChannelStdin then
+        ("", Lexing.from_channel stdin)
       else
-        try Stdlib.open_in !filename
-        with _ ->
-          Error.handle_error_fatal "File not found"
-            (Printf.sprintf "File '%s' not found." !filename)
+        LexerUtil.read !filename
     in
-    let lexbuf = Lexing.from_channel in_channel in
     Lexing.set_filename lexbuf
       (if isInChannelStdin then "stdin" else basename !filename);
     let asts =
       try Parser.program Lexer.lexer lexbuf
-      with Parser.Error ->
-        Error.(handle_error_fatal syntax_error_msg syntax_error_msg)
+      with Parser.Error -> raise (Error.Syntax_error text)
     in
     Error.handle_success "Successful parsing.";
     SemAst.sem_on asts;
@@ -90,6 +80,9 @@ let main =
       else
         try Error.(handle_error internal_error_msg internal_error_msg)
         with Failure _ -> exit 1)
+  | Error.Syntax_error _ -> (
+      try Error.(handle_error_fatal syntax_error_msg syntax_error_msg)
+      with Failure _ -> exit 1)
   | Failure msg when msg = Error.semantic_error_msg ->
       Printf.eprintf "%s.\n" Error.compilation_failed_msg;
       exit 1
