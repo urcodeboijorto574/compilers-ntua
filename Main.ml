@@ -22,6 +22,13 @@ let main =
 
   Arg.parse speclist (fun s -> filename := s) usage_msg;
 
+  if !has_i_flag && !has_f_flag then begin
+    Printf.eprintf "%s\n" usage_msg;
+    exit 1
+  end;
+
+  let isInChannelStdin = !has_i_flag || !has_f_flag in
+
   try
     let in_channel =
       if !has_i_flag && !has_f_flag then begin
@@ -38,7 +45,7 @@ let main =
     in
     let lexbuf = Lexing.from_channel in_channel in
     Lexing.set_filename lexbuf
-      (if in_channel = stdin then "stdin" else basename !filename);
+      (if isInChannelStdin then "stdin" else basename !filename);
     let asts =
       try Parser.program Lexer.lexer lexbuf
       with Parser.Error ->
@@ -57,7 +64,7 @@ let main =
     ignore (Sys.command llc_command);
     let build_exec_command = "clang -o a.out a.s ./lib/lib.a" in
     ignore (Sys.command build_exec_command);
-    if !has_i_flag || !has_f_flag then begin
+    if isInChannelStdin then begin
       let fileToPrint = if !has_i_flag then "a.ll" else "a.s" in
       ignore (Sys.command ("cat " ^ fileToPrint));
       let deleteCommand = "rm a.ll a.s" in
@@ -74,6 +81,9 @@ let main =
     Error.handle_success "IR code generation completed.";
     exit 0
   with
+  | Sys_error _ ->
+      Error.handle_error_fatal "File not found"
+        (Printf.sprintf "File '%s' not found." !filename)
   | Assert_failure _ -> (
       if !Error.isErrorsRaised then
         Printf.eprintf "%s.\n" Error.compilation_failed_msg
