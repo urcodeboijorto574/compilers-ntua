@@ -12,7 +12,7 @@ OCAMLFIND=ocamlfind
 PACKAGES=-package llvm -package llvm.analysis -package llvm.target \
 		-package llvm.scalar_opts -package llvm.ipo \
 		-package llvm.vectorize -package llvm.all_backends \
-	   	-package unix
+		-package menhirLib -package unix
 
 
 %.cmx: %.ml %.mli
@@ -24,7 +24,7 @@ PACKAGES=-package llvm -package llvm.analysis -package llvm.target \
 %.cmx %.cmi: %.ml
 	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -c $<
 
-grace$(EXE): Types.cmx Error.cmx Symbol.cmx PrintAst.cmx Ast.cmx SemAst.cmx Lexer.cmx Parser.cmx GenAst.cmx Main.cmx
+grace$(EXE): Types.cmx Error.cmx Symbol.cmx PrintAst.cmx Ast.cmx SemAst.cmx Lexer.cmx ParserMessages.cmx Parser.cmx GenAst.cmx Main.cmx
 	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -linkpkg -o $@ $^
 
 Lexer.ml: Lexer.mll
