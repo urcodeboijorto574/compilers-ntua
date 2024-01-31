@@ -30,6 +30,9 @@ grace$(EXE): Types.cmx Error.cmx Symbol.cmx PrintAst.cmx Ast.cmx SemAst.cmx Lexe
 Lexer.ml: Lexer.mll
 	ocamllex -o $@ $<
 
+ParserMessages.ml: ParserMessages.messages Parser.mly
+	menhir --compile-errors $^ > $@
+
 Parser.ml Parser.mli: Parser.mly
 	menhir Parser.mly
 
@@ -47,5 +50,5 @@ distclean: clean
 	$(RM) grace$(EXE) .depend
 
 # To format the OCaml code, first install the ocamlformat tool with "opam install ocamlformat"
-format: Ast.ml* Error.ml* GenAst.ml* Lexer.mli Main.ml ParserMessages.ml* PrintAst.ml* SemAst.ml* Symbol.ml* Types.ml*
+format: Ast.ml* Error.ml* GenAst.ml* Lexer.mli Main.ml ParserMessages.mli PrintAst.ml* SemAst.ml* Symbol.ml* Types.ml*
 	ocamlformat -i $^
