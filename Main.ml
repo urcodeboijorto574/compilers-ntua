@@ -2,6 +2,8 @@ open Llvm
 open Arg
 open Filename
 open Parser
+module ErrorReports = MenhirLib.ErrorReports
+module LexerUtil = MenhirLib.LexerUtil
 
 let main =
   let has_o_flag = ref false in
@@ -32,7 +34,7 @@ let main =
         try Stdlib.open_in !filename
         with _ ->
           Error.handle_error_fatal "File not found"
-            ("File '" ^ !filename ^ "' not found.")
+            (Printf.sprintf "File '%s' not found." !filename)
     in
     let lexbuf = Lexing.from_channel in_channel in
     Lexing.set_filename lexbuf
@@ -83,7 +85,7 @@ let main =
       exit 1
   | Failure _ -> exit 1
   | e -> (
-      try Error.(handle_error internal_error_msg "Unexpected error caught")
+      try Error.(handle_error internal_error_msg "Unexpected error caught.")
       with Failure _ ->
         Printf.eprintf "Exception: %s\n" (Printexc.to_string e);
         exit 1)
