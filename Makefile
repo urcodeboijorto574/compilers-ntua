@@ -24,7 +24,7 @@ PACKAGES=-package llvm -package llvm.analysis -package llvm.target \
 %.cmx %.cmi: %.ml
 	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -c $<
 
-grace$(EXE): Types.cmx Error.cmx Symbol.cmx PrintAst.cmx Ast.cmx SemAst.cmx Lexer.cmx ParserMessages.cmx Parser.cmx GenAst.cmx Main.cmx
+grace$(EXE): Types.cmx Error.cmx Symbol.cmx PrintAst.cmx Ast.cmx SemAst.cmx Lexer.cmx ParserMessages.cmx Parser.cmx UnitActionsParser.cmx GenAst.cmx Main.cmx
 	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -linkpkg -o $@ $^
 
 Lexer.ml: Lexer.mll
@@ -33,6 +33,12 @@ Lexer.ml: Lexer.mll
 ParserMessages.ml: ParserMessages.messages Parser.mly
 	menhir --compile-errors $^ > $@
 
+UnitActionsParser.mly: Parser.mly
+	menhir --only-preprocess-u $< > $@
+
+UnitActionsParser.ml UnitActionsParser.mli: Parser.ml UnitActionsParser.mly
+	menhir --table --external-tokens Parser UnitActionsParser.mly
+
 Parser.ml Parser.mli: Parser.mly
 	menhir Parser.mly
 
@@ -40,11 +46,11 @@ Parser.ml Parser.mli: Parser.mly
 
 -include .depend
 
-depend: Types.ml Types.mli Error.ml Error.mli Symbol.ml Symbol.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli Ast.ml Ast.mli Lexer.ml Lexer.mli ParserMessages.ml ParserMessages.mli Parser.ml Parser.mli GenAst.ml GenAst.mli Main.ml
+depend: Types.ml Types.mli Error.ml Error.mli Symbol.ml Symbol.mli PrintAst.ml PrintAst.mli SemAst.ml SemAst.mli Ast.ml Ast.mli Lexer.ml Lexer.mli ParserMessages.ml ParserMessages.mli Parser.ml Parser.mli UnitActionsParser.ml UnitActionsParser.mli GenAst.ml GenAst.mli Main.ml
 	$(OCAMLDEP) $^ > .depend
 
 clean:
-	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer Lexer.o Parser.automaton Parser.conflicts *.cmx *.cmi *~ *.o a.ll a.s a.out lib/lib.o
+	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer Lexer.o Parser.automaton Parser.conflicts UnitActionsParser.ml* *.cmx *.cmi *~ *.o a.ll a.s a.out lib/lib.o
 
 distclean: clean
 	$(RM) grace$(EXE) .depend
