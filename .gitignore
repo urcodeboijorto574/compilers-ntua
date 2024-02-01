@@ -17,7 +17,6 @@
 !Lexer.mli
 
 !Parser.mly
-!ParserMessages.mli
 !ParserMessages.messages
 
 !Ast.ml

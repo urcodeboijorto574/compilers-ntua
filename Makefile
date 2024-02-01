@@ -33,6 +33,9 @@ Lexer.ml: Lexer.mll
 ParserMessages.ml: ParserMessages.messages Parser.mly
 	menhir --compile-errors $^ > $@
 
+ParserMessages.mli: ParserMessages.ml
+	ocamlc -i $< > $@
+
 UnitActionsParser.mly: Parser.mly
 	menhir --only-preprocess-u $< > $@
 
@@ -50,7 +53,7 @@ depend: Types.ml Types.mli Error.ml Error.mli Symbol.ml Symbol.mli PrintAst.ml P
 	$(OCAMLDEP) $^ > .depend
 
 clean:
-	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer Lexer.o Parser.automaton Parser.conflicts UnitActionsParser.ml* *.cmx *.cmi *~ *.o a.ll a.s a.out lib/lib.o
+	$(RM) Lexer.ml Parser.ml Parser.mli Parser.output Lexer Lexer.o Parser.automaton Parser.conflicts ParserMessages.ml* UnitActionsParser.ml* *.cmx *.cmi *~ *.o a.ll a.s a.out lib/lib.o
 
 distclean: clean
 	$(RM) grace$(EXE) .depend
