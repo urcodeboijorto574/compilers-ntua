@@ -46,11 +46,12 @@ let main =
       try Parser.program Lexer.lexer lexbuf
       with Parser.Error -> raise (Error.Syntax_error text)
     in
-    Error.handle_success "Successful parsing.";
-    SemAst.sem_on asts;
-    Error.handle_success "Semantically correct.";
     if not !Error.isErrorsRaised then
-      GenAst.gen_on asts !has_o_flag
+      Error.handle_success "Successful parsing.";
+    SemAst.sem_on asts;
+    if not !Error.isErrorsRaised then (
+      Error.handle_success "Semantically correct.";
+      GenAst.gen_on asts !has_o_flag)
     else
       failwith Error.semantic_error_msg;
 
