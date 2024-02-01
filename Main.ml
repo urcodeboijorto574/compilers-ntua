@@ -28,15 +28,25 @@ let main =
 
   let isInChannelStdin = !has_i_flag || !has_f_flag in
 
+  let set_name_of_lexbuf lexbuf =
+    Lexing.set_filename lexbuf
+      (if isInChannelStdin then "stdin" else basename !filename)
+  in
+
   try
     let text, lexbuf =
       if isInChannelStdin then
-        ("", Lexing.from_channel stdin)
+        let rec text_from_stdin acc =
+          try
+            let line = input_line stdin in
+            text_from_stdin (acc ^ line ^ "\n")
+          with End_of_file -> acc
+        in
+        (text_from_stdin "", Lexing.from_channel stdin)
       else
         LexerUtil.read !filename
     in
-    Lexing.set_filename lexbuf
-      (if isInChannelStdin then "stdin" else basename !filename);
+    set_name_of_lexbuf lexbuf;
     let asts =
       try Parser.program Lexer.lexer lexbuf
       with Parser.Error -> raise (Error.Syntax_error text)
@@ -80,9 +90,6 @@ let main =
        else
          Error.(print_error_header internal_error_msg));
       exit 1
-  | Error.Syntax_error _ when isInChannelStdin -> (
-      try Error.(handle_error_fatal syntax_error_msg syntax_error_msg)
-      with Failure _ -> exit 1)
   | Error.Syntax_error text ->
       Error.(print_error_header syntax_error_msg);
       exit 1
