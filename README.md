@@ -22,7 +22,8 @@ The packages needed to build the compiler are the ones below:
 
 - opam/2.1.4
 - ocamlfind/1.9.5
-- menhir/20220210
+- menhir/20231231
+- menhirLib/20231231
 - llvm/14.0.6
 - clang
 - gcc
