@@ -133,6 +133,12 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_minus T_while
 ## The known suffix of the stack is as follows:
 ## T_minus
+
+# An integer expression is expected after a unary operator.
+
+Expected integer expression.
+After the unary operator '$0' an integer expression is expected.
+
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_plus T_while
 ## The known suffix of the stack is as follows:
 ## expr T_plus
@@ -149,10 +155,10 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if
 ## The known suffix of the stack is as follows:
 ## expr T_minus
 
-# An integer expression is expected after an arithmetic or a unary operator.
+# An integer expression is expected after an arithmetic operator.
 
 Expected integer expression.
-After an arithmetic or a unary operator an integer expression is expected.
+After the arithmetic operator '$1' an integer expression is expected.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_not_equal T_while
 ## The known suffix of the stack is as follows:
