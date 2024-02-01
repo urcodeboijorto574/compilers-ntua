@@ -77,3 +77,8 @@ To run your program execute:
 
 - [llvm.org](https://llvm.org)
 - [llvm.moe](https://llvm.moe)
+
+## Authors
+
+- Dimitrios Vassiliou
+- Ioannis Giannoukos
