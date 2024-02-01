@@ -158,7 +158,7 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if
 # An integer expression is expected after an arithmetic operator.
 
 Expected integer expression.
-After the arithmetic operator '$1' an integer expression is expected.
+After the arithmetic operator '$0' an integer expression is expected.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_not_equal T_while
 ## The known suffix of the stack is as follows:
@@ -182,7 +182,7 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if
 # An expression is expected after a logical operator.
 
 Expected expression.
-After a comparison operator an expression is expected.
+After the comparison operator '$0' an expression is expected.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_not T_while
 ## The known suffix of the stack is as follows:
@@ -197,7 +197,7 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if
 # A condition is expected after a logical operator.
 
 Expected condition.
-After a logical operator a condition is expected.
+After the logical operator '$0' a condition is expected.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_then
 ## The known suffix of the stack is as follows:
@@ -206,7 +206,7 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if
 # An expression is used as a condition.
 
 Expected condition, but found expression.
-Expressions cannot replace conditions.
+The expression '$0' cannot replace a condition.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_plus T_identifier T_assignment
 ## The known suffix of the stack is as follows:
@@ -224,7 +224,7 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if
 # A comparison operator is expected.
 
 Expected comparison operator after expression.
-Expressions cannot replace conditions.
+The expression '$0' cannot replace a condition.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_not_equal T_identifier T_semicolon
 ## The known suffix of the stack is as follows:
@@ -247,13 +247,18 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_or T_left_par T_identifier T_equal T_identifier T_right_par T_while
 ## The known suffix of the stack is as follows:
 ## cond T_or cond
+
+# The then keyword is expected.
+
+Expected then keyword after the condition '$2 $1 $0' in the if statement.
+
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_right_par
 ## The known suffix of the stack is as follows:
 ## T_if cond
 
 # The then keyword is expected.
 
-Expected then keyword after condition of an if statement.
+Expected then keyword after the condition '$0' in the if statement.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_var
 ## The known suffix of the stack is as follows:
@@ -273,7 +278,7 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_wh
 
 # A statement is expected.
 
-Expected statement.
+Expected statement after '$0'.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_then T_semicolon T_var
 ## The known suffix of the stack is as follows:
@@ -289,7 +294,7 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_wh
 
 # After a logical expression in the condition of a while statement, a logical operator or a do keyword are expected.
 
-Expected logical operator or do keyword after the condition of a while statement.
+Expected logical operator or do keyword after the condition '$0' in the while statement.
 After the condition of a while statement a logical operator or the do keyword is expected.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_string T_while
@@ -348,13 +353,13 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_fun T_identi
 ## The known suffix of the stack is as follows:
 ## header
 
-Expected semicolon ';', local definitions or block after the function header.
+Expected semicolon ';', local definitions or block after the function header '$0'.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_identifier T_colon T_char T_semicolon T_while
 ## The known suffix of the stack is as follows:
 ## local_def
 
-Expected local definitions or block after variable definition.
+Expected local definitions or block after local definition '$0'.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_right_br T_while
 ## The known suffix of the stack is as follows:
@@ -372,7 +377,7 @@ program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_
 ## The known suffix of the stack is as follows:
 ## T_left_sqr T_integer T_right_sqr
 
-Expected semicolon ';', opening square bracket '[' or closing parenthesis ')' after a parameter definition.
+Expected semicolon ';', opening square bracket '[' or closing parenthesis ')' after a parameter type.
 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_while
 ## The known suffix of the stack is as follows:
@@ -383,8 +388,8 @@ program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_
 
 # An integer is expected inside the square brackets of a parameter type or a variable type.
 
-Expected integer expression (or closing square bracket ']' for parameter definitions) inside the
-square brackets of a parameter/variable type.
+Expected integer expression (or closing square bracket ']' for parameter type) inside the square
+brackets of a parameter/variable type.
 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_integer T_while
 ## The known suffix of the stack is as follows:
@@ -421,4 +426,4 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_id
 ## The known suffix of the stack is as follows:
 ## expr T_comma
 
-Expected closing parenthesis ')' or expression list inside the parentheses of a function call.
+Expected a closing parenthesis ')' or expression list inside the parentheses of a function call.
