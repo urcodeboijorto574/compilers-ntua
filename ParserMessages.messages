@@ -1,12 +1,22 @@
 program: T_while
+## The known suffix of the stack is as follows:
+## 
 
 Expected fun keyword.
 A program must start with the fun keyword.
 
 program: T_fun T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_ref T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_identifier T_comma T_while
+## The known suffix of the stack is as follows:
+## 
 
 # Identifier is missing after keywords fun, ref and var.
 
@@ -14,23 +24,39 @@ Expected identifier.
 After fun, ref, var keywords and comma ',' an identifier is expected.
 
 program: T_fun T_identifier T_while
+## The known suffix of the stack is as follows:
+## 
 
 # Parameter definitions enclosed in parentheses after the identifier of a function header.
 
 Expected opening parenthesis '(' after identifier in function header.
 
 program: T_fun T_identifier T_left_par T_while
+## The known suffix of the stack is as follows:
+## 
 
 # Parameter definitions are expected after opening parenthesis in function header.
 
 Expected ref keyword or identifier after opening parenthesis '(' in function header.
 
 program: T_fun T_identifier T_left_par T_right_par T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_right_par T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_identifier T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_ref T_identifier T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_identifier T_comma T_identifier T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_identifier T_while
+## The known suffix of the stack is as follows:
+## 
 
 # A colon ':' is missing.
 
@@ -39,10 +65,20 @@ After parameter definitions in function header, after parameter identifier list
 and after variable identifier list a colon ':' is expected.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_ref T_identifier T_colon T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_right_par T_colon T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_identifier T_colon T_while
+## The known suffix of the stack is as follows:
+## 
 
 # The data type is missing after a colon ':'.
 
@@ -51,7 +87,11 @@ A data type must be provided after a colon ':' in a function header, a parameter
 or a variable definition.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_identifier T_colon T_char T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_identifier T_colon T_char T_left_sqr T_integer T_right_sqr T_right_par
+## The known suffix of the stack is as follows:
+## 
 
 # The semicolon ';' is missing at the end of a variable definition.
 
@@ -59,6 +99,8 @@ Expected semicolon ';' after variable definition.
 After variable definitions a semicolon ';' is expected.
 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_semicolon T_while
+## The known suffix of the stack is as follows:
+## 
 
 # A parameter definition is missing or a stray semicolon was added.
 
@@ -66,22 +108,46 @@ Expected parameter definition after semicolon ';'.
 (Maybe you mistakenly entered a semicolon ';'?)
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_then
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_while T_do
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_left_par T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_left_par T_identifier T_then
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_left_par T_identifier T_equal T_identifier T_then
+## The known suffix of the stack is as follows:
+## 
 
 # A condition is missing from an if or a while statement.
 
 Expected condition after if and while keywords.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_plus T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_minus T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_plus T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_mul T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_mod T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_div T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_minus T_while
+## The known suffix of the stack is as follows:
+## 
 
 # An integer expression is expected after an arithmetic or a unary operator.
 
@@ -89,11 +155,23 @@ Expected integer expression.
 After an arithmetic or a unary operator an integer expression is expected.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_not_equal T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_less_eq T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_less T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_greater_eq T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_greater T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_while
+## The known suffix of the stack is as follows:
+## 
 
 # An expression is expected after a logical operator.
 
@@ -101,8 +179,14 @@ Expected expression.
 After a comparison operator an expression is expected.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_not T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_or T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_and T_while
+## The known suffix of the stack is as follows:
+## 
 
 # A condition is expected after a logical operator.
 
@@ -110,6 +194,8 @@ Expected condition.
 After a logical operator a condition is expected.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_then
+## The known suffix of the stack is as follows:
+## 
 
 # An expression is used as a condition.
 
@@ -117,9 +203,17 @@ Expected condition, but found expression.
 Expressions cannot replace conditions.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_plus T_identifier T_assignment
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_minus T_identifier T_assignment
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_minus T_identifier T_assignment
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_plus T_identifier T_assignment
+## The known suffix of the stack is as follows:
+## 
 
 # A comparison operator is expected.
 
@@ -127,35 +221,65 @@ Expected comparison operator after expression.
 Expressions cannot replace conditions.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_not_equal T_identifier T_semicolon
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_less_eq T_identifier T_semicolon
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_less T_identifier T_semicolon
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_greater_eq T_identifier T_semicolon
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_greater T_identifier T_semicolon
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_semicolon
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_or T_left_par T_identifier T_equal T_identifier T_right_par T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_right_par
+## The known suffix of the stack is as follows:
+## 
 
 # The then keyword is expected.
 
 Expected then keyword after condition of an if statement.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_var
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_then T_var
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_then T_semicolon T_else T_var
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_semicolon T_var
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_while T_identifier T_equal T_identifier T_do T_var
+## The known suffix of the stack is as follows:
+## 
 
 # A statement is expected.
 
 Expected statement.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_then T_semicolon T_var
+## The known suffix of the stack is as follows:
+## 
 
 # After the statement of the then branch of an if statement, another statement or the else keyword are expected.
 
 Expected else keyword or statement after the statement of the then branch of an if statement.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_while T_identifier T_equal T_identifier T_then
+## The known suffix of the stack is as follows:
+## 
 
 # After a logical expression in the condition of a while statement, a logical operator or a do keyword are expected.
 
@@ -163,9 +287,17 @@ Expected logical operator or do keyword after the condition of a while statement
 After the condition of a while statement a logical operator or the do keyword is expected.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_string T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_sqr T_identifier T_right_sqr T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_then
+## The known suffix of the stack is as follows:
+## 
 
 # An assignment statement is left incomplete.
 
@@ -173,20 +305,30 @@ Expected assignment operator '<-'.
 The assignment statement is left incomplete.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_assignment T_while
+## The known suffix of the stack is as follows:
+## 
 
 # The expression is missing from the assignment statement.
 
 Expected expression after assignment operator '<-'.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_return T_while
+## The known suffix of the stack is as follows:
+## 
 
 # After the return keyword an expression or a semicolon ';' is expected.
 
 Expected semicolon ';' or expression after the return keyword.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_return T_identifier T_then
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_assignment T_identifier T_then
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_par T_right_par T_while
+## The known suffix of the stack is as follows:
+## 
 
 # A semicolon ';' is missing from the end of a statement.
 
@@ -194,26 +336,44 @@ Expected semicolon ';' at the end of statement.
 (Maybe you forgot a semicolon ';'?)
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_fun T_identifier T_left_par T_right_par T_colon T_char T_while
+## The known suffix of the stack is as follows:
+## 
 
 Expected semicolon ';', local definitions or block after the function header.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_var T_identifier T_colon T_char T_semicolon T_while
+## The known suffix of the stack is as follows:
+## 
 
 Expected local definitions or block after variable definition.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_right_br T_while
+## The known suffix of the stack is as follows:
+## 
 
 Expected End-of-file (EOF) character at the end of the block of the base function.
 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_right_sqr T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_integer T_right_sqr T_while
+## The known suffix of the stack is as follows:
+## 
 
 Expected semicolon ';', opening square bracket '[' or closing parenthesis ')' after a parameter definition.
 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_right_sqr T_left_sqr T_while
+## The known suffix of the stack is as follows:
+## 
 
 # An integer is expected inside the square brackets of a parameter type or a variable type.
 
@@ -221,22 +381,38 @@ Expected integer expression (or closing square bracket ']' for parameter definit
 square brackets of a parameter/variable type.
 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_integer T_while
+## The known suffix of the stack is as follows:
+## 
 
 # Unclosed parenthesis/bracket/square bracket.
 
 Expected a closing square bracket ']'. The corresponding opening square bracket '[' is unclosed.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_return T_left_par T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_sqr T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_return T_left_par T_identifier T_then
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_sqr T_identifier T_then
+## The known suffix of the stack is as follows:
+## 
 
 # An expression is expected inside parentheses.
 
 Expected expression inside enclosing symbols (parentheses, brackets, square brackets).
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_par T_while
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_par T_identifier T_then
+## The known suffix of the stack is as follows:
+## 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_par T_identifier T_comma T_while
+## The known suffix of the stack is as follows:
+## 
 
 Expected closing parenthesis ')' or expression list inside the parentheses of a function call.
