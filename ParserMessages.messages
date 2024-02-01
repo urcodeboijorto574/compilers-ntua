@@ -1,13 +1,13 @@
 program: T_while
 ## The known suffix of the stack is as follows:
-## T_fun
+##
 
 Expected fun keyword.
 A program must start with the fun keyword.
 
 program: T_fun T_while
 ## The known suffix of the stack is as follows:
-## 
+## T_fun
 program: T_fun T_identifier T_left_par T_ref T_while
 ## The known suffix of the stack is as follows:
 ## T_ref
@@ -250,7 +250,7 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if
 
 # The then keyword is expected.
 
-Expected then keyword after the condition '$2 $1 $0' in the if statement.
+Expected 'then' or 'do' keyword after the condition '$2 $1 $0'.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_right_par
 ## The known suffix of the stack is as follows:
@@ -258,7 +258,7 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if
 
 # The then keyword is expected.
 
-Expected then keyword after the condition '$0' in the if statement.
+Expected 'then' or 'do' keyword after the condition '$0'.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_var
 ## The known suffix of the stack is as follows:
@@ -275,27 +275,14 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_se
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_while T_identifier T_equal T_identifier T_do T_var
 ## The known suffix of the stack is as follows:
 ## T_while cond T_do
-
-# A statement is expected.
-
-Expected statement after '$0'.
-
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_if T_identifier T_equal T_identifier T_then T_semicolon T_var
 ## The known suffix of the stack is as follows:
 ## T_if cond T_then stmt
 
-# After the statement of the then branch of an if statement, another statement or the else keyword are expected.
+# A local definition is inside a block.
 
-Expected else keyword or statement after the statement of the then branch of an if statement.
-
-program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_while T_identifier T_equal T_identifier T_then
-## The known suffix of the stack is as follows:
-## T_while cond
-
-# After a logical expression in the condition of a while statement, a logical operator or a do keyword are expected.
-
-Expected logical operator or do keyword after the condition '$0' in the while statement.
-After the condition of a while statement a logical operator or the do keyword is expected.
+Expected statement.
+Note: Local definitions must happen outside of a function's block.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_string T_while
 ## The known suffix of the stack is as follows:
