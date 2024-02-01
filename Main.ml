@@ -89,7 +89,6 @@ let main =
       Error.(print_error_header syntax_error_msg);
       let handle_syntax_error text =
         let lexbuf = LexerUtil.init !filename (Lexing.from_string text) in
-        set_name_of_lexbuf lexbuf;
         let supplier =
           MenhirInterpreter.lexer_lexbuf_to_supplier Lexer.lexer lexbuf
         in
