@@ -27,26 +27,19 @@ let main =
   end;
 
   let isInChannelStdin = !has_i_flag || !has_f_flag in
-
-  let set_name_of_lexbuf lexbuf =
-    Lexing.set_filename lexbuf
-      (if isInChannelStdin then "stdin" else basename !filename)
-  in
+  let inChannel = if isInChannelStdin then stdin else open_in !filename in
 
   try
-    let text, lexbuf =
-      if isInChannelStdin then
-        let rec text_from_stdin acc =
-          try
-            let line = input_line stdin in
-            text_from_stdin (acc ^ line ^ "\n")
-          with End_of_file -> acc
-        in
-        (text_from_stdin "", Lexing.from_channel stdin)
-      else
-        LexerUtil.read !filename
+    let text =
+      let rec get_text_from_in_channel acc =
+        try
+          let line = input_line inChannel in
+          get_text_from_in_channel (acc ^ line ^ "\n")
+        with End_of_file -> acc
+      in
+      get_text_from_in_channel ""
     in
-    set_name_of_lexbuf lexbuf;
+    let lexbuf = LexerUtil.init !filename (Lexing.from_string text) in
     let asts =
       try Parser.program Lexer.lexer lexbuf
       with Parser.Error -> raise (Error.Syntax_error text)
