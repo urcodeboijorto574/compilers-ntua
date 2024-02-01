@@ -104,8 +104,8 @@ let main =
             | MenhirInterpreter.HandlingError env -> env
             | _ -> assert false
           in
-          (* [state checkpoint] extracts the number of the current state out of a
-             checkpoint. *)
+          (* [state checkpoint] extracts the number of the current state out of
+             a checkpoint. *)
           let state checkpoint : int =
             match MenhirInterpreter.top (env checkpoint) with
             | Some (MenhirInterpreter.Element (s, _, _, _)) ->
@@ -117,8 +117,9 @@ let main =
                    and should be fixed in the future. *)
                 0
           in
-          (* [get text checkpoint i] extracts and shows the range of the input text that
-             corresponds to the [i]-th stack cell. The top stack cell is numbered zero. *)
+          (* [get text checkpoint i] extracts and shows the range of the input
+             text that corresponds to the [i]-th stack cell. The top stack cell
+             is numbered zero. *)
           let get text checkpoint i =
             (* [show text (pos1, pos2)] displays a range of the input text [text]
                delimited by the positions [pos1] and [pos2]. *)
