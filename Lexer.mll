@@ -27,6 +27,8 @@
 
   let char_list_in_string = ref []
   let add_in_list c = char_list_in_string := c :: !char_list_in_string
+  let multiline_string_msg () =
+    Printf.sprintf "Strings must close in the same line they start. Line %d." !num_lines
 }
 
 let digit = ['0'-'9']
@@ -97,10 +99,7 @@ rule lexer = parse
   | white+ { lexer lexbuf }
   | '\'' { characters lexbuf }
   | '"' { char_list_in_string := []; strings lexbuf }
-  | '"' char_string* eof {
-      Error.handle_error_fatal Error.lexing_error_msg
-        (Printf.sprintf "Strings must close in the same line they start. Line %d." !num_lines)
-    }
+  | '"' char_string* eof { Error.handle_error_fatal Error.lexing_error_msg (multiline_string_msg ()) }
 
   | eof { T_eof }
   | _ as chr {
@@ -111,8 +110,7 @@ rule lexer = parse
 
 and strings = parse
   | "\n" {
-      Error.handle_error Error.lexing_error_msg
-        (Printf.sprintf "String must close in the same line it starts. Line %d." !num_lines);
+      Error.handle_error Error.lexing_error_msg (multiline_string_msg ());
       add_in_list '\n';
       incrementNumLines lexbuf;
       strings lexbuf
