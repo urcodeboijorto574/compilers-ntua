@@ -12,5 +12,3 @@ This file includes details in the behavior of the compiler in certain situations
     A function declaration must always be followed by its corresponding function definition.
     The parameters of a function's declaration and definition must match types and can not match
     names.
-
-> 
