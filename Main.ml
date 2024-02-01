@@ -3,6 +3,8 @@ open Arg
 open Filename
 open Parser
 module LexerUtil = MenhirLib.LexerUtil
+module ErrorReports = MenhirLib.ErrorReports
+module MenhirInterpreter = UnitActionsParser.MenhirInterpreter
 
 let main =
   let has_o_flag = ref false in
@@ -85,7 +87,74 @@ let main =
       exit 1
   | Error.Syntax_error text ->
       Error.(print_error_header syntax_error_msg);
-      exit 1
+      let handle_syntax_error text =
+        let lexbuf = LexerUtil.init !filename (Lexing.from_string text) in
+        set_name_of_lexbuf lexbuf;
+        let supplier =
+          MenhirInterpreter.lexer_lexbuf_to_supplier Lexer.lexer lexbuf
+        in
+        let buffer, supplier = ErrorReports.wrap_supplier supplier in
+        let checkpoint =
+          UnitActionsParser.Incremental.program lexbuf.lex_curr_p
+        in
+        let fail text buffer (checkpoint : _ MenhirInterpreter.checkpoint) =
+          (* [env checkpoint] extracts a parser environment out of a checkpoint,
+             which must be of the form [HandlingError env]. *)
+          let env checkpoint =
+            match checkpoint with
+            | MenhirInterpreter.HandlingError env -> env
+            | _ -> assert false
+          in
+          (* [state checkpoint] extracts the number of the current state out of a
+             checkpoint. *)
+          let state checkpoint : int =
+            match MenhirInterpreter.top (env checkpoint) with
+            | Some (MenhirInterpreter.Element (s, _, _, _)) ->
+                MenhirInterpreter.number s
+            | None ->
+                (* Hmm... The parser is in its initial state. The incremental API
+                   currently lacks a way of finding out the number of the initial
+                   state. It is usually 0, so we return 0. This is unsatisfactory
+                   and should be fixed in the future. *)
+                0
+          in
+          (* [get text checkpoint i] extracts and shows the range of the input text that
+             corresponds to the [i]-th stack cell. The top stack cell is numbered zero. *)
+          let get text checkpoint i =
+            (* [show text (pos1, pos2)] displays a range of the input text [text]
+               delimited by the positions [pos1] and [pos2]. *)
+            let show text positions =
+              ErrorReports.extract text positions
+              |> ErrorReports.sanitize |> ErrorReports.compress
+              |> ErrorReports.shorten 20 (* max width 43 *)
+            in
+            match MenhirInterpreter.get i (env checkpoint) with
+            | Some (MenhirInterpreter.Element (_, _, pos1, pos2)) ->
+                show text (pos1, pos2)
+            | None ->
+                (* The index is out of range. This should not happen if [$i]
+                   keywords are correctly inside the syntax error message
+                   database. The integer [i] should always be a valid offset
+                   into the known suffix of the stack. *)
+                "???"
+          in
+
+          (* Indicate where in the input file the error occurred. *)
+          let location = LexerUtil.range (ErrorReports.last buffer) in
+          (* Show the tokens just before and just after the error. *)
+          (* Fetch an error message from the database. *)
+          let message = ParserMessages.message (state checkpoint) in
+          (* Expand away the $i keywords that might appear in the message. *)
+          let message = ErrorReports.expand (get text checkpoint) message in
+          (* Show these three components. *)
+          Printf.eprintf "%s%s%!" location message;
+          exit 1
+        in
+        MenhirInterpreter.loop_handle
+          (fun _ -> assert false)
+          (fail text buffer) supplier checkpoint
+      in
+      handle_syntax_error text
   | Failure msg when msg = Error.semantic_error_msg ->
       Printf.eprintf "%s.\n" Error.compilation_failed_msg;
       exit 1
