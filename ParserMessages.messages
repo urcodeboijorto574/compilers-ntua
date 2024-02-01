@@ -11,7 +11,7 @@ program: T_fun T_identifier T_left_par T_identifier T_comma T_while
 # Identifier is missing after keywords fun, ref and var.
 
 Expected identifier.
-After fun, ref and var keywords or comma ',' an identifier is expected.
+After fun, ref, var keywords and comma ',' an identifier is expected.
 
 program: T_fun T_identifier T_while
 
@@ -182,15 +182,15 @@ program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_re
 
 # After the return keyword an expression or a semicolon ';' is expected.
 
-Expected semicolon or expression after the return keyword.
+Expected semicolon ';' or expression after the return keyword.
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_return T_identifier T_then
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_assignment T_identifier T_then
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_left_br T_identifier T_left_par T_right_par T_while
 
-# A semicolon is missing from the end of a statement.
+# A semicolon ';' is missing from the end of a statement.
 
-Expected ';' at the end of statement.
+Expected semicolon ';' at the end of statement.
 (Maybe you forgot a semicolon ';'?)
 
 program: T_fun T_identifier T_left_par T_right_par T_colon T_char T_while
@@ -210,7 +210,7 @@ program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_while
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_right_sqr T_while
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_integer T_right_sqr T_while
 
-Expected semicolon, opening square bracket '[' or closing parenthesis ')' after a parameter definition.
+Expected semicolon ';', opening square bracket '[' or closing parenthesis ')' after a parameter definition.
 
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_while
 program: T_fun T_identifier T_left_par T_identifier T_colon T_char T_left_sqr T_right_sqr T_left_sqr T_while
