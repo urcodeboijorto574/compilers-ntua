@@ -1,0 +1,13 @@
+fun main() : nothing
+
+  fun sum(a, a : int) : nothing
+    var a, result : int;
+  {
+    result <- a + b;
+    return result;
+  }
+
+{
+  writeInteger(sum(1,2));
+  writeChar('\n');
+}

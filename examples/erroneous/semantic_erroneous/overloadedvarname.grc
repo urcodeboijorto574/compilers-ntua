@@ -1,0 +1,7 @@
+fun main() : nothing
+  var a,a,c : int;
+
+{
+  writeInteger(a+b+c);
+  writeChar('\n');
+}

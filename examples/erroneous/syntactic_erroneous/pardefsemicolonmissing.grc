@@ -1,0 +1,4 @@
+fun main() : nothing
+  fun function(ref arr : int[], size : int) : nothing
+  {}
+{}

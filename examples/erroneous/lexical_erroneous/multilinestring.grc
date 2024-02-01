@@ -1,0 +1,7 @@
+fun main() : nothing {
+  writeString(
+    "Hello,
+    I\'m Bob and
+    I\'m 23 years old.\n"
+  );
+}

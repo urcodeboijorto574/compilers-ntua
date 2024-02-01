@@ -1,0 +1,6 @@
+fun main() : nothing
+{
+  return (
+    fun add2(n : int) : int { return 2 + n; }
+  );
+}

@@ -1,0 +1,4 @@
+fun main() : nothing
+{
+  if 0 = 0 { return; }
+}

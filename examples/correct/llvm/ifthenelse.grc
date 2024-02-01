@@ -1,0 +1,26 @@
+fun main() : nothing
+  var a : int;
+  $ fun one() : int var x : int; { x <- 1; if 0 < x then return x; return x; }
+  fun incr (x : int) : int {
+    if x = 0 then return 1; $$ return one(); $$
+    else          return x + 1;
+  }
+{
+  a <- 0;
+  a <- incr(a);
+  writeInteger(a);
+  writeString(" = 1\n");
+$$   if a < 1 then
+    writeInteger(4);
+  else if a > 1 then {
+    if a > 3 then
+      while a > 2 do a <- a - 1;
+    if a = 2 then
+      writeInteger(a);
+    else
+      writeInteger(5);
+  }
+  else
+    writeInteger(6);
+  writeString(" = 4\n"); $$
+}

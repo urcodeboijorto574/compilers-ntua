@@ -1,0 +1,9 @@
+fun main() : nothing var a, b : int; {
+  a <- 0;
+  while a < 2 do {
+    b <- 0; while b < 1 do b <- b + 1;
+    writeChar('b'); writeInteger(b); writeChar(' ');
+    a <- a + 1;
+  } writeChar('a'); writeInteger(a); writeChar('\n');
+  writeString("b1 b1 a2 should be printed.\n");
+}

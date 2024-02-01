@@ -1,0 +1,8 @@
+fun main() : nothing
+  var result : int;
+
+{
+  result <- 'O';
+  writeInteger(result);
+  writeChar('\n');
+}

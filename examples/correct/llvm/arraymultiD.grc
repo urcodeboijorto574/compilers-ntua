@@ -1,0 +1,11 @@
+fun ain () : nothing
+  fun help (size : int; ref arr : int[][10]) : nothing {
+    writeString("Hello from function!\n");
+  }
+
+  var array : int [5][10];
+
+{ $ ain
+  help(42, array);
+  writeString("DONE!\n");
+}

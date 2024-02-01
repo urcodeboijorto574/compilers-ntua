@@ -1,0 +1,5 @@
+fun main() : nothing
+  var arr : int [42];
+{
+  arr[] <- 0;
+}

@@ -1,0 +1,16 @@
+fun main() : nothing
+  var arr : int[10];
+
+  fun printArray(ref a : int[0]) : nothing
+    var i : int;
+  {
+    i <- 0;
+    while i < 10 do {
+      writeInteger(a[i]);
+      if i # 9 then writeChar(' ');
+      else writeChar('\n');
+      i <- i + 1;
+    }
+  }
+
+{ printArray(arr); }

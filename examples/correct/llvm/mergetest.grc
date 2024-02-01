@@ -1,0 +1,37 @@
+fun main() : nothing
+  var a, b, d, e : int;
+  var c : char;
+  fun one() : int { return 1; }
+  fun two(x : int) : int {
+    if x = 2 then
+      return 2;
+    else
+      return -1; }
+
+{
+  a <- 0;
+  b <- one();
+  d <- two(2);
+  e <- two(-1);
+
+  c <- '\n';
+  if a # 0 then
+    writeInteger(a);
+  else if b # 1 then
+    writeInteger(b);
+  else if d # 2 then
+    writeInteger(d);
+  else if e # -1 then
+    writeInteger(e);
+  else
+    writeInteger(4);
+
+  writeString(" = 4\nBelow are written the integers from 0 to 9:\n");
+
+  while a < 10 do {
+    writeInteger(a);
+    writeChar(' ');
+    a <- a + 1;
+    if a >= 10 then writeChar('\n');
+  }
+}

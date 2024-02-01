@@ -1,0 +1,32 @@
+fun main() : nothing
+
+  fun f(n : int; ref m : int; ref a : int[]; ref b : int[20][3]) : nothing
+
+    var x,y : int;
+    var c : int[10];
+    var d : int[20][3];
+
+  { $ f
+    x <- n;
+    n <- 8;
+    y <- m;
+    m <- 9;
+    a[2] <- y;
+    b[5][1] <- n;
+  }
+
+  var w,z : int;
+  var e : int[10];
+  var r : int[20][3];
+
+{ $ main
+  w <- 1;
+  z <- 2;
+  f(w, z, e, r);
+
+  writeInteger(w); $ 1
+  writeInteger(z); $ 9
+  writeInteger(e[2]); $ 2
+  writeInteger(r[5][1]); $ 8
+  writeChar('\n');
+}

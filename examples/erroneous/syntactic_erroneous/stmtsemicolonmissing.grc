@@ -1,0 +1,4 @@
+fun main() : nothing
+{
+  writeInteger(0)
+}

@@ -1,0 +1,4 @@
+fun main() : nothing
+  fun printArray(ref arr : int[if 0 = 0 then 17 else 42]) : nothing
+  {}
+{}

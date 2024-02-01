@@ -1,0 +1,20 @@
+fun main() : nothing
+  fun one() : int { return 1; }
+  fun id(a : int) : int {
+    if 0 < 1 then
+      return a;
+  }
+  $ fun remainder (a, b : int) : int { return (a mod b); }
+  $ fun two() : int
+  $   fun mul(a, b : int) : int { return a * b; }
+  $   fun sum(a, b : int) : int
+  $     fun diff(a, b : int) : int { return a - b; }
+  $   { $$ sum $$
+  $     return remainder(a, b);
+  $   }
+  $ { return 2; }
+
+{ $ main
+  writeInteger(id(2));
+  writeString(" = 2\n");
+}

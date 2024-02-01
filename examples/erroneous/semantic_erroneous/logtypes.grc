@@ -1,0 +1,6 @@
+fun main() : nothing
+
+{
+  if 'O' = 0 then
+    writeString("Capital \'O\' and zero are the same.\n");
+}

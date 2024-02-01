@@ -1,0 +1,50 @@
+fun main() : nothing
+  fun compare1(a,b : int) : int {
+    writeString("1st comparison\n");
+    if a = b then return 1;
+    else          return 0;
+  }
+  fun compare2(a,b : int) : int {
+    writeString("2nd comparison\n");
+    if a = b then return 1;
+    else          return 0;
+  }
+  fun true() : int {
+    writeString("Called true() function\n"); return 1; }
+  fun false() : int {
+    writeString("Called false() function\n"); return 0; }
+  var good_msg, bad_msg : char[50];
+{ $ main
+
+  if true() = 1 or false() = 1 then
+    writeString("Only true() should be called\n");
+
+
+  strcpy(good_msg, "\tThe result was short-circuited.\n");
+  strcpy(bad_msg, "\tThe result was calculated entirely.\n");
+
+  if compare1(0, 1) = 1 and compare2(3, 3) = 1 then
+    $ short-circuited result
+    { writeString(bad_msg); }
+  else
+    { writeString(good_msg); }
+
+  if compare1(0, 0) = 1 or compare2(2, 3) = 1 then
+    $ short-circuited result
+    { writeString(good_msg); }
+  else
+    { writeString(bad_msg); }
+
+  if compare1(0, 1) = 1 or compare2(3, 3) = 1 then
+    $ not short-circuited result
+    { writeString(bad_msg); }
+
+  if compare1(1, 1) = 1 and compare2(2, 2) = 1 then
+    $ not short-circuited result
+    { writeString(bad_msg); }
+
+  if compare1(1, 1) = 1 and (compare1(2, 2) = 1 or compare2(3, 4) = 1) then
+    $ 'or' short-circuited result
+    { writeString("The result should calculated by two \'1st comparison\' \comparisons.\n"); }
+
+}

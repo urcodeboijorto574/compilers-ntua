@@ -1,0 +1,6 @@
+fun main() : nothing
+
+{
+  "Hello!"[0] <- 'Y';
+  writeString("Yello!\n");
+}

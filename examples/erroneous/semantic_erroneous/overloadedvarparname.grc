@@ -1,0 +1,12 @@
+fun main() : nothing
+
+  fun sum(a, b, c : int) : int
+    var a,y,z : int;
+  {
+    return a + b + c;
+  }
+
+{
+  writeInteger(sum(1,2,3));
+  writeChar('\n');
+}

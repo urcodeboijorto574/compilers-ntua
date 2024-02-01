@@ -1,0 +1,5 @@
+fun main() : nothing
+{
+  writeInteger(0 + 'l');
+  writeString(" = 1\n");
+}

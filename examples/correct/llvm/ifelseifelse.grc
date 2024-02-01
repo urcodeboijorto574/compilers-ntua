@@ -1,0 +1,15 @@
+fun main() : nothing
+  var a : int;
+
+{ $ main
+  a <- 0;
+  if a < 0 then
+    writeString("a is negative.\n");
+  else {
+    if a > 0 then
+      writeString("a is positive.\n");
+    else
+      writeString("a is zero.\n");
+  }
+  writeString("a should be zero.\n");
+}

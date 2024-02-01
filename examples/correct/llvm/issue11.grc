@@ -1,0 +1,17 @@
+fun main() : nothing
+
+  fun ghost() : nothing
+  { writeString("ghost in main\n"); }
+
+  fun foo() : nothing
+
+    fun foo() : nothing
+    { writeString("foo in foo in main\n"); }
+
+  { foo(); writeString("foo in main\n"); }
+ 
+
+{
+  foo();
+  writeString("1st msg from foo in foo\n2nd msg from foo in main\n");
+}

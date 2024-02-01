@@ -40,3 +40,4 @@
 !buildlib.sh
 
 !test_programs.sh
+!examples/erroneous/syntactic_erroneous/colonmissing.grc

@@ -1,0 +1,6 @@
+fun main() : nothing
+{
+  var n : int;
+  n <- 0;
+  if n = 0 then return;
+}
