@@ -87,43 +87,43 @@ let main =
       exit 1
   | Error.Syntax_error text ->
       Error.(print_error_header syntax_error_msg);
-      let handle_syntax_error text =
-        let lexbuf = LexerUtil.init !filename (Lexing.from_string text) in
-        let supplier =
-          MenhirInterpreter.lexer_lexbuf_to_supplier Lexer.lexer lexbuf
+      let lexbuf = LexerUtil.init !filename (Lexing.from_string text) in
+      let buffer, supplier =
+        MenhirInterpreter.lexer_lexbuf_to_supplier Lexer.lexer lexbuf
+        |> ErrorReports.wrap_supplier
+      in
+      let checkpoint =
+        UnitActionsParser.Incremental.program lexbuf.lex_curr_p
+      in
+      let fail text buffer (checkpoint : _ MenhirInterpreter.checkpoint) =
+        (* [env checkpoint] extracts a parser environment out of [checkpoint]
+            checkpoint, which must be of the form [HandlingError env]. *)
+        let env checkpoint : 'a MenhirInterpreter.env =
+          match checkpoint with
+          | MenhirInterpreter.HandlingError env -> env
+          | _ -> assert false
         in
-        let buffer, supplier = ErrorReports.wrap_supplier supplier in
-        let checkpoint =
-          UnitActionsParser.Incremental.program lexbuf.lex_curr_p
-        in
-        let fail text buffer (checkpoint : _ MenhirInterpreter.checkpoint) =
-          (* [env checkpoint] extracts a parser environment out of a checkpoint,
-             which must be of the form [HandlingError env]. *)
-          let env checkpoint =
-            match checkpoint with
-            | MenhirInterpreter.HandlingError env -> env
-            | _ -> assert false
-          in
+        (* Indicate where in the input file the error occurred. *)
+        let location = LexerUtil.range (ErrorReports.last buffer) in
+        (* Fetch an error message from the database and expand away the $i
+            keywords that might appear in the message. *)
+        let message =
           (* [state checkpoint] extracts the number of the current state out of
-             a checkpoint. *)
+              a checkpoint [checkpoint]. *)
           let state checkpoint : int =
             match MenhirInterpreter.top (env checkpoint) with
             | Some (MenhirInterpreter.Element (s, _, _, _)) ->
                 MenhirInterpreter.number s
-            | None ->
-                (* Hmm... The parser is in its initial state. The incremental API
-                   currently lacks a way of finding out the number of the initial
-                   state. It is usually 0, so we return 0. This is unsatisfactory
-                   and should be fixed in the future. *)
+            | None (* The parser is in its initial state, so we return 0. *) ->
                 0
           in
           (* [get text checkpoint i] extracts and shows the range of the input
              text that corresponds to the [i]-th stack cell. The top stack cell
              is numbered zero. *)
-          let get text checkpoint i =
+          let get text checkpoint i : string =
             (* [show text (pos1, pos2)] displays a range of the input text [text]
-               delimited by the positions [pos1] and [pos2]. *)
-            let show text positions =
+                delimited by the positions [pos1] and [pos2]. *)
+            let show text positions : string =
               ErrorReports.extract text positions
               |> ErrorReports.sanitize |> ErrorReports.compress
               |> ErrorReports.shorten 20 (* max width 43 *)
@@ -133,28 +133,21 @@ let main =
                 show text (pos1, pos2)
             | None ->
                 (* The index is out of range. This should not happen if [$i]
-                   keywords are correctly inside the syntax error message
-                   database. The integer [i] should always be a valid offset
-                   into the known suffix of the stack. *)
+                    keywords are correctly inside the syntax error message
+                    database. The integer [i] should always be a valid offset
+                    into the known suffix of the stack. Keep in mind that the
+                    numbering goes from right to left. *)
                 "???"
           in
-
-          (* Indicate where in the input file the error occurred. *)
-          let location = LexerUtil.range (ErrorReports.last buffer) in
-          (* Show the tokens just before and just after the error. *)
-          (* Fetch an error message from the database. *)
-          let message = ParserMessages.message (state checkpoint) in
-          (* Expand away the $i keywords that might appear in the message. *)
-          let message = ErrorReports.expand (get text checkpoint) message in
-          (* Show these three components. *)
-          Printf.eprintf "%s%s%!" location message;
-          exit 1
+          ParserMessages.message (state checkpoint)
+          |> ErrorReports.expand (get text checkpoint)
         in
-        MenhirInterpreter.loop_handle
-          (fun _ -> assert false)
-          (fail text buffer) supplier checkpoint
+        Printf.eprintf "%s%s%!" location message;
+        exit 1
       in
-      handle_syntax_error text
+      MenhirInterpreter.loop_handle
+        (fun _ -> assert false)
+        (fail text buffer) supplier checkpoint
   | Failure msg when msg = Error.semantic_error_msg ->
       Printf.eprintf "%s.\n" Error.compilation_failed_msg;
       exit 1
