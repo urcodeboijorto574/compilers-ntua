@@ -36,11 +36,9 @@ make depend
 make
 
 # Build standard Grace library
-cd lib
-./buildlib.sh
-cd ..
+make lib
 
-# Remove object/unnecessary files
+# Remove object files (unnecessary files)
 make clean
 
 # Same as 'make clean', but also removes the executable program (./grace)
