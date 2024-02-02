@@ -6,6 +6,8 @@ Implementing a compiler for the programming language Grace, during the lesson "C
 
 ## Features
 
+### Grace Programming Language
+
 - Short-circuiting: When the result of a logical operation can be evaluated just by the first argument, the second argument is not evaluated.
 
 - Function overloading: Function overloading cannot happen in the range of one scope, but two functions can share the same name and/or signature if they are defined in different scopes.
@@ -13,6 +15,14 @@ Implementing a compiler for the programming language Grace, during the lesson "C
 - Function declarations and definitions: A function declaration must always be followed by its corresponding function definition. The parameters of a function's declaration and definition must match types and can not match names.
 
 For more information about the technicalities of the Grace programming language, see the grace2023.pdf file.
+
+### Grace compiler
+
+- Take grace program from standard input and print the intermediate or the final code to standard output.
+
+- Perform optimizations on the intermediate and the final code.
+
+- Provide informative error messages due to lexical, syntactic or semantic errors.
 
 ## Getting started
 
