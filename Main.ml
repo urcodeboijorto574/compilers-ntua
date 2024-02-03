@@ -29,7 +29,13 @@ let main =
   end;
 
   let isInChannelStdin = !has_i_flag || !has_f_flag in
-  let inChannel = if isInChannelStdin then stdin else open_in !filename in
+  let inChannel =
+    if isInChannelStdin then
+      stdin
+    else
+      try open_in !filename
+      with Sys_error _ -> raise (Error.File_not_found !filename)
+  in
 
   try
     let text =
@@ -59,7 +65,7 @@ let main =
     let llc_command = "llc -o a.s a.ll" in
     ignore (Sys.command llc_command);
     let build_exec_command = "clang -o a.out a.s ./lib/lib.a" in
-    ignore (Sys.command build_exec_command);
+    let clangExitCode = Sys.command build_exec_command in
     if isInChannelStdin then begin
       let fileToPrint = if !has_i_flag then "a.ll" else "a.s" in
       ignore (Sys.command ("cat " ^ fileToPrint));
@@ -75,11 +81,19 @@ let main =
       ignore (Sys.command ("mv a.s " ^ path ^ "/" ^ asm_file))
     end;
     Error.handle_success "IR code generation completed.";
+    if clangExitCode <> 0 then raise (Error.File_not_found "./lib/lib.a");
     exit 0
   with
-  | Sys_error _ ->
-      Error.handle_error_fatal "File not found"
-        (Printf.sprintf "File '%s' not found." !filename)
+  | Error.File_not_found filename ->
+      Error.handle_error "File not found"
+        (Printf.sprintf "File \"%s\" not found.%s" filename
+           (if filename = "./lib/lib.a" then
+              "\n\
+               Make sure the standard library is built before using the \
+               compiler.\n\
+               The final executable could not be created."
+            else
+              ""))
   | Assert_failure _ ->
       (if !Error.isErrorsRaised then
          Printf.eprintf "%s.\n" Error.compilation_failed_msg

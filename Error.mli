@@ -2,6 +2,7 @@ open Types
 
 val isErrorsRaised : bool ref
 
+exception File_not_found of string
 exception Shared_name_func_var
 exception Unexpected_number_of_parameters
 exception Type_error
