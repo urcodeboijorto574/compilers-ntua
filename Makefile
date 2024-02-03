@@ -24,16 +24,14 @@ PACKAGES=-package llvm -package llvm.analysis -package llvm.target \
 %.cmx %.cmi: %.ml
 	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -c $<
 
-grace$(EXE): Types.cmx Error.cmx Symbol.cmx PrintAst.cmx Ast.cmx SemAst.cmx Lexer.cmx ParserMessages.cmx Parser.cmx UnitActionsParser.cmx GenAst.cmx Main.cmx
+grace$(EXE): Types.cmx Error.cmx Symbol.cmx PrintAst.cmx Ast.cmx SemAst.cmx Lexer.cmx ParserMessages.cmx Parser.cmx UnitActionsParser.cmx GenAst.cmx Main.cmx lib/lib.a
 	$(OCAMLFIND) $(OCAMLOPT) $(OCAMLOPT_FLAGS) $(PACKAGES) -linkpkg -o $@ $^
-
-lib: lib/lib.a
-
-lib/lib.o: lib/lib.c
-	gcc -c lib/lib.c -o lib/lib.o
 
 lib/lib.a: lib/lib.o
 	ar rcs lib/lib.a lib/lib.o
+
+lib/lib.o: lib/lib.c
+	gcc -c lib/lib.c -o lib/lib.o
 
 Lexer.ml: Lexer.mll
 	ocamllex -o $@ $<

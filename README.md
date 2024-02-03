@@ -35,9 +35,6 @@ The packages needed to build the compiler are the ones below:
 make depend
 make
 
-# Build standard Grace library
-make lib
-
 # Remove object files (unnecessary files)
 make clean
 
