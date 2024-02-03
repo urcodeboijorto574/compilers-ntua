@@ -40,4 +40,5 @@
 !buildlib.sh
 
 !test_programs.sh
+!clean_imm_asm_files.sh
 !examples/erroneous/syntactic_erroneous/colonmissing.grc

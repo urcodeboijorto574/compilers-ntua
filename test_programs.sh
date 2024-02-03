@@ -35,18 +35,6 @@ do
       ((++errorCounter))
     fi
 
-    # Create the names of the files with the intermediate and the finale code
-    immfile=${file::-3}imm
-    asmfile=${file::-3}asm
-
-    # Remove files containing the intermediate and the finale code
-    if [ -f $immfile ]; then
-      rm $immfile
-    fi
-    if [ -f $asmfile ]; then
-      rm $asmfile
-    fi
-
     # Add a newline for better output separation
     echo
   fi
