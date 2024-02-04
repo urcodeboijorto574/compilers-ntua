@@ -1,0 +1,23 @@
+fun printColoredText() : nothing
+  var redMessage, greenMessage, purpleMessage : char[64];
+
+  fun setColorMessage(ref targetMessage, color : char[]) : nothing
+    var prefix, postfix : char[32];
+  {
+    strcpy(prefix, "I am a ");
+    strcpy(postfix, " colored message.\n");
+
+    strcpy(targetMessage, prefix);
+    strcat(targetMessage, color);
+    strcat(targetMessage, postfix);
+  }
+
+{
+  setColorMessage(redMessage, "\x1b[31mred\x1b[0m");
+  setColorMessage(greenMessage, "\x1b[32mgreen\x1b[0m");
+  setColorMessage(purpleMessage, "\x1b[35mpurple\x1b[0m");
+
+  writeString(redMessage);
+  writeString(greenMessage);
+  writeString(purpleMessage);
+}
