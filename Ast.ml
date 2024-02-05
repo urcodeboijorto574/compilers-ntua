@@ -212,20 +212,16 @@ let rec get_const_expr_value = function
 
 let get_const_cond_value c =
   let rec get_const_cond_value_helper = function
-    | C_not_cond (lo, c) -> (
-        match get_const_cond_value_helper c with
-        | None -> None
-        | Some v -> Some (not v))
+    | C_not_cond (lo, c) ->
+        Option.bind (get_const_cond_value_helper c) (fun v -> Some (not v))
     | C_cond_cond (c1, lo, c2) -> begin
-        match get_const_cond_value_helper c1 with
-        | None -> None
-        | Some v1 ->
+        Option.bind (get_const_cond_value_helper c1) (fun v1 ->
             if lo = O_or && v1 then
               Some true
             else if lo = O_and && not v1 then
               Some false
             else
-              get_const_cond_value_helper c2
+              get_const_cond_value_helper c2)
       end
     | C_expr_expr (e1, co, e2) -> (
         match (get_const_expr_value e1, get_const_expr_value e2) with

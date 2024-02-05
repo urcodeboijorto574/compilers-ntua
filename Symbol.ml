@@ -79,6 +79,14 @@ let rec equal_scopes s1 s2 : bool =
   | Some s1', Some s2' -> equal_scopes s1' s2'
   | _ -> false
 
+let rec different_scopes s1 s2 : bool =
+  s1.name <> s2.name || s1.depth <> s2.depth
+  ||
+  match (s1.parent, s2.parent) with
+  | None, None -> false
+  | Some s1', Some s2' -> different_scopes s1' s2'
+  | _ -> true
+
 (** [symbolTable] is a Hashtbl ref that stores the current image of the
     SymbolTable. *)
 let symbolTable = ref (Hashtbl.create 0)
@@ -108,28 +116,17 @@ let enter_parameter id typ isRef =
   enter_entry id kind
 
 let enter_function (id : string)
-    (paramList : (int * Types.t_type * param_passing) list) retTyp stat =
-  let paramL : entry_parameter list =
-    let rec convert_list paramList =
-      match paramList with
-      | [] -> []
-      | (0, t, pp) :: tail -> convert_list tail
-      | (n, t, pp) :: tail ->
-          { parameter_type = t; passing = pp }
-          :: convert_list ((n - 1, t, pp) :: tail)
-    in
-    convert_list paramList
+    (paramList : (int * Types.t_type * param_passing) list) return_type state =
+  let parameters_list : entry_parameter list =
+    List.map
+      (fun (n, t, pp) ->
+        List.init n (fun _ -> { parameter_type = t; passing = pp }))
+      paramList
+    |> List.flatten
   in
-  let kind =
-    ENTRY_function
-      {
-        parameters_list = paramL;
-        return_type = retTyp;
-        scope_depth = !current_scope.depth;
-        state = stat;
-      }
-  in
-  enter_entry id kind
+  ENTRY_function
+    { parameters_list; return_type; scope_depth = !current_scope.depth; state }
+  |> enter_entry id
 
 let add_standard_library () =
   let open Types in

@@ -8,7 +8,7 @@ type t_type =
 let rec string_of_t_type = function
   | T_int -> "integer"
   | T_char -> "character"
-  | T_array (n, t) -> "array(" ^ string_of_int n ^ ") of " ^ string_of_t_type t
+  | T_array (n, t) -> Printf.sprintf "array(%d) of %s" n (string_of_t_type t)
   | T_none -> "nothing"
   | T_func t -> string_of_t_type t ^ " (function)"
 

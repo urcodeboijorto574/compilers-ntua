@@ -67,6 +67,9 @@ val close_scope : unit -> unit
     or not, [true] if they are, [false] if they are not. *)
 val equal_scopes : scope -> scope -> bool
 
+(** [different_scopes] produces the opposite result of [Symbol.equal_scopes]. *)
+val different_scopes : scope -> scope -> bool
+
 (** [create_symbol_table n] initializes the symbolTable as a Hashtbl with [n]
     number of buckets. It also initializes the [current_scope]. *)
 val create_symbol_table : int -> unit

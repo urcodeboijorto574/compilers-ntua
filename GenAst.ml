@@ -136,20 +136,17 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
       Array.of_list args
     else
       let result_access_link : Llvm.llvalue =
-        let rec get_parent_calle_stack_frame sourceStackFrameAddr funcDef :
+        let rec get_parent_calle_stack_frame funcDef sourceStackFrameAddr :
             Llvm.llvalue =
           let resultOpt =
             List.find_map
               (fun ld ->
                 match ld with
-                | L_varDef _ -> None
-                | L_funcDecl fdecl ->
-                    if fc.comp_id = fdecl.header.comp_id then
-                      fdecl.func_def
-                    else
-                      None
-                | L_funcDef fd ->
-                    if fc.comp_id = fd.header.comp_id then Some fd else None)
+                | L_funcDecl fdecl when fc.comp_id = fdecl.header.comp_id ->
+                    fdecl.func_def
+                | L_funcDef fdef when fc.comp_id = fdef.header.comp_id ->
+                    Some fdef
+                | _ -> None)
               funcDef.local_def_list
           in
           if resultOpt <> None then
@@ -164,13 +161,12 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
                 ("stack_frame_parent" ^ "")
                 builder
             in
-            get_parent_calle_stack_frame parent_stack_frame
+            get_parent_calle_stack_frame
               (Option.get funcDef.parent_func)
+              parent_stack_frame
         in
-        let stackFrameAddr =
-          Option.get (Option.get funcDef.stack_frame).stack_frame_addr
-        in
-        get_parent_calle_stack_frame stackFrameAddr funcDef
+        Option.get (Option.get funcDef.stack_frame).stack_frame_addr
+        |> get_parent_calle_stack_frame funcDef
       in
       Array.of_list (result_access_link :: args)
   in
@@ -183,12 +179,6 @@ and gen_lvalue funcDef lv =
     let rec search_address i stackFrameAlloca stackFrame =
       let isIndexOutOfBounds = i >= stackFrame.stack_frame_length in
       if isIndexOutOfBounds then
-        let parentStackFrame =
-          let parentStackFrameOpt =
-            Option.map (fun fd -> Option.get fd.stack_frame) funcDef.parent_func
-          in
-          Option.get parentStackFrameOpt
-        in
         let parentStackFrameAlloca =
           let access_link_ptr =
             build_struct_gep
@@ -196,6 +186,9 @@ and gen_lvalue funcDef lv =
               0 "access_link_ptr" builder
           in
           build_load access_link_ptr "access_link_val" builder
+        in
+        let parentStackFrame =
+          Option.(map (fun fd -> get fd.stack_frame) funcDef.parent_func |> get)
         in
         search_address 0 parentStackFrameAlloca parentStackFrame
       else
@@ -257,14 +250,12 @@ and gen_lvalue funcDef lv =
             get_final_index function. [dimProducts] is the altered dimensions'
             list and [indicesFinal] is the altered indices' list. *)
         let dimProducts =
-          let dimensions : Llvm.llvalue list =
-            let dimensionsList : int list =
+          let dimensionsFinal =
+            let dimensions : Llvm.llvalue list =
               let arrayType = Option.get (Option.get lv.lv_type).array_type in
               Types.dimensions_list_of_t_array arrayType
+              |> List.map (const_int int_type)
             in
-            List.map (const_int int_type) dimensionsList
-          in
-          let dimensionsFinal =
             const_int int_type 1 :: List.rev (List.tl dimensions)
           in
           snd
@@ -275,15 +266,13 @@ and gen_lvalue funcDef lv =
                (const_int int_type 1) dimensionsFinal)
         in
         let indices : Llvm.llvalue list =
-          let indicesList : Ast.expr list =
-            let rec get_indices_reversed : Ast.lvalue_kind -> Ast.expr list =
-              function
-              | L_id _ | L_string _ -> []
-              | L_comp (lvk, i) -> i :: get_indices_reversed lvk
-            in
-            List.rev (get_indices_reversed lv.lv_kind)
+          let rec get_indices_reversed : Ast.lvalue_kind -> Ast.expr list =
+            function
+            | L_id _ | L_string _ -> []
+            | L_comp (lvk, i) -> i :: get_indices_reversed lvk
           in
-          List.map (gen_expr funcDef) indicesList
+          List.(
+            get_indices_reversed lv.lv_kind |> rev |> map (gen_expr funcDef))
         in
         let indicesFinal =
           let indicesRev = List.rev indices in
@@ -337,12 +326,15 @@ and gen_expr ?(is_param_ref = false) funcDef expr =
   | E_op_expr_expr (lhs, oper, rhs) -> (
       let lhs_val = gen_expr funcDef lhs in
       let rhs_val = gen_expr funcDef rhs in
+      let resultInstr (build_instr, var_name) =
+        build_instr lhs_val rhs_val var_name builder
+      in
       match oper with
-      | O_plus -> build_add lhs_val rhs_val "addtmp" builder
-      | O_minus -> build_sub lhs_val rhs_val "subtmp" builder
-      | O_mul -> build_mul lhs_val rhs_val "multmp" builder
-      | O_div -> build_sdiv lhs_val rhs_val "divtmp" builder
-      | O_mod -> build_srem lhs_val rhs_val "modtmp" builder)
+      | O_plus -> resultInstr (build_add, "addtmp")
+      | O_minus -> resultInstr (build_sub, "subtmp")
+      | O_mul -> resultInstr (build_mul, "multmp")
+      | O_div -> resultInstr (build_sdiv, "divtmp")
+      | O_mod -> resultInstr (build_srem, "modtmp"))
   | E_expr_parenthesized expr -> gen_expr funcDef expr
 
 and gen_cond funcDef returnCondValueAddr = function
@@ -787,12 +779,10 @@ let rec set_stack_frames funcDef =
       expand_fpar_def_list funcDef.header.fpar_def_list
     in
     let vars_list : Ast.varDef list =
-      let rec extract_var_defs = function
-        | [] -> []
-        | L_varDef vd :: tail -> vd :: extract_var_defs tail
-        | L_funcDef _ :: tail | L_funcDecl _ :: tail -> extract_var_defs tail
-      in
-      expand_var_def_list (extract_var_defs funcDef.local_def_list)
+      List.filter_map
+        (fun ld -> match ld with L_varDef vd -> Some vd | _ -> None)
+        funcDef.local_def_list
+      |> expand_var_def_list
     in
     let stack_frame_type : Llvm.lltype =
       named_struct_type context ("frame_" ^ funcDef.header.comp_id)

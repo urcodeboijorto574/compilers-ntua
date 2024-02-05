@@ -34,11 +34,12 @@ let rec sem_funcDef fd : unit =
       helper [] lst
     in
     let parNames : string list =
-      let rec get_par_names = function
-        | [] -> []
-        | { id_list = il; ref; fpar_type } :: tail -> il @ get_par_names tail
+      let resultList =
+        List.map
+          (fun (fpd : Ast.fparDef) -> fpd.id_list)
+          fd.header.fpar_def_list
+        |> List.flatten
       in
-      let resultList = get_par_names fd.header.fpar_def_list in
       let overloadedParNameOption = duplicate_element resultList in
       if overloadedParNameOption <> None then
         Error.handle_error "Two parameters share identifier"
@@ -48,12 +49,12 @@ let rec sem_funcDef fd : unit =
       resultList
     in
     let varNames : string list =
-      let rec get_var_names = function
-        | [] -> []
-        | L_funcDef _ :: tail | L_funcDecl _ :: tail -> get_var_names tail
-        | L_varDef vd :: tail -> vd.id_list @ get_var_names tail
+      let resultList =
+        List.map
+          (fun ld -> match ld with L_varDef vd -> vd.id_list | _ -> [])
+          fd.local_def_list
+        |> List.flatten
       in
-      let resultList = get_var_names fd.local_def_list in
       let overloadedVarNameOption = duplicate_element resultList in
       if overloadedVarNameOption <> None then
         Error.handle_error "Two variables share identifier"
@@ -79,8 +80,6 @@ let rec sem_funcDef fd : unit =
          (Option.get overloadedParVarNameOption)
          fd.header.id);
 
-  let isMainProgram = !current_scope.depth = 1 in
-  ignore isMainProgram;
   let expectedReturnType = Ast.t_type_of_retType fd.header.ret_type in
   let typeReturnedInBlock =
     Types.T_func (match sem_block fd.block with None -> T_none | Some t -> t)
@@ -120,7 +119,7 @@ and sem_header isPartOfAFuncDef header : unit =
                  acc)
              [] funcDefAncestors)
       in
-      "(" ^ string_of_int (Hashtbl.hash (String.concat "" ancestorsNames)) ^ ")"
+      Printf.sprintf "(%d)" (Hashtbl.hash (String.concat "" ancestorsNames))
     in
     header.comp_id <- header.id ^ postfix
   end;
@@ -136,9 +135,8 @@ and sem_header isPartOfAFuncDef header : unit =
   let resultLookUpOption = look_up_entry header.id in
   if
     resultLookUpOption = None
-    || not
-         (Symbol.equal_scopes (Option.get resultLookUpOption).scope
-            !current_scope)
+    || Symbol.different_scopes (Option.get resultLookUpOption).scope
+         !current_scope
   then
     Symbol.enter_function header.id
       (sem_fparDefList header.fpar_def_list)
@@ -157,22 +155,16 @@ and sem_header isPartOfAFuncDef header : unit =
         Ast.t_type_of_retType header.ret_type
       in
       let paramListFromHeader : (int * Types.t_type * bool) list =
-        let rec helper : fparDef list -> (int * Types.t_type * bool) list =
-          function
-          | [] -> []
-          | { ref = r; id_list = il; fpar_type = fpt } :: tail ->
-              let paramType = Ast.t_type_of_fparType fpt in
-              (List.length il, paramType, r) :: helper tail
-        in
-        helper header.fpar_def_list
+        List.map
+          (fun (fpd : Ast.fparDef) ->
+            ( List.length fpd.id_list,
+              Ast.t_type_of_fparType fpd.fpar_type,
+              fpd.ref ))
+          header.fpar_def_list
       in
       let matchingNumOfParams : bool =
         let lengthOfParamListHeader =
-          let rec f accum = function
-            | [] -> accum
-            | (n, _, _) :: tail -> f (accum + n) tail
-          in
-          f 0 paramListFromHeader
+          List.fold_left (fun len (n, _, _) -> len + n) 0 paramListFromHeader
         in
         List.length functionEntry.parameters_list = lengthOfParamListHeader
       in
@@ -516,9 +508,7 @@ and sem_funcCall fc : Types.t_type =
           in
           get_ancestorsNames (Some (Option.get resultLookUpOption).scope)
         in
-        "("
-        ^ string_of_int (Hashtbl.hash (String.concat "" ancestorsNames))
-        ^ ")"
+        Printf.sprintf "(%d)" (Hashtbl.hash (String.concat "" ancestorsNames))
       in
       fc.comp_id <- fc.id ^ postfix
     end;
@@ -536,11 +526,9 @@ and sem_funcCall fc : Types.t_type =
 
     let exprTypesListInFuncCall = List.map sem_expr fc.expr_list in
     let paramTypesListFromST =
-      let rec get_entry_types_list = function
-        | [] -> []
-        | { parameter_type = pt; _ } :: tl -> pt :: get_entry_types_list tl
-      in
-      get_entry_types_list functionEntry.parameters_list
+      List.map
+        (fun { parameter_type = pt; _ } -> pt)
+        functionEntry.parameters_list
     in
     let typeListsAreEqual =
       List.for_all2 Types.equal_types exprTypesListInFuncCall
