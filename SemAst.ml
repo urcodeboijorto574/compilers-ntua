@@ -85,12 +85,10 @@ let rec sem_funcDef fd : unit =
     Types.T_func (match sem_block fd.block with None -> T_none | Some t -> t)
   in
   if expectedReturnType <> typeReturnedInBlock then
-    Error.handle_error Error.type_error_msg
+    Error.handle_type_error expectedReturnType typeReturnedInBlock
       (Printf.sprintf
-         "Function '%s' returns %s type, but in its block %s type is returned."
-         fd.header.id
-         (Types.string_of_t_type expectedReturnType)
-         (Types.string_of_t_type typeReturnedInBlock));
+         "Function '%s' doesn't return the expected type in its block."
+         fd.header.id);
 
   let isMainProgram = !current_scope.depth = 1 in
   if isMainProgram then
@@ -126,7 +124,8 @@ and sem_header isPartOfAFuncDef header : unit =
   let isMainProgram = !current_scope.depth = 0 in
   if isMainProgram then (
     if header.ret_type <> Nothing then
-      Error.handle_error Error.type_error_msg
+      Error.handle_type_error (T_func T_none)
+        (Ast.t_type_of_retType header.ret_type)
         "Main function must return 'nothing' type.";
     if header.fpar_def_list <> [] then
       Error.handle_error "Main function shouldn't have parameters"
@@ -186,12 +185,12 @@ and sem_header isPartOfAFuncDef header : unit =
         Error.handle_error "Function overload"
           ("Function '" ^ header.id ^ "' is overloaded.");
       if functionEntry.return_type <> returnTypeFromHeader then
-        Error.handle_error Error.type_error_msg
+        Error.handle_type_error functionEntry.return_type returnTypeFromHeader
           (Printf.sprintf
              "Return type of function '%s' differs between declarations."
              header.id);
       if not matchingParamTypes then
-        Error.handle_error Error.type_error_msg
+        Error.handle_type_error (failwith "TODO") (failwith "TODO")
           (Printf.sprintf
              "Parameter types of function '%s' differ between declarations."
              header.id);
@@ -318,12 +317,12 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
       | t ->
           let typeExpr = sem_expr e in
           if not (Types.equal_types t typeExpr) then
-            Error.handle_error Error.type_error_msg
+            Error.handle_type_error t typeExpr
               (Printf.sprintf
                  "The value of an expression of type %s is tried to be \
                   assigned to an l-value of type %s."
-                 (Types.string_of_t_type t)
-                 (Types.string_of_t_type typeExpr));
+                 (Types.string_of_t_type typeExpr)
+                 (Types.string_of_t_type t));
           None)
   | S_block b -> sem_block b
   | S_func_call fc -> (
@@ -399,11 +398,8 @@ and sem_lvalue lv : Types.t_type =
     | L_comp (lv, e) -> (
         let typeExpr = sem_expr e in
         if not Types.(equal_types T_int typeExpr) then
-          Error.handle_error Error.type_error_msg
-            (Printf.sprintf
-               "Expected type integer, but received %s. Index of array \
-                elements must be of integer type."
-               (Types.string_of_t_type typeExpr));
+          Error.handle_type_error Types.T_int typeExpr
+            (Printf.sprintf "Index of arrays must be of integer type.");
         let rec get_name_of_lv = function
           | L_id id -> id
           | L_string s -> s
@@ -454,26 +450,22 @@ and sem_expr : Ast.expr -> Types.t_type = function
   | E_sgn_expr (s, e) ->
       let typeExpr = sem_expr e in
       if not (Types.equal_types Types.T_int typeExpr) then
-        Error.handle_error Error.type_error_msg
-          "Operator `-` (minus sign) is applied to a non-integer type of \
-           argument.";
+        Error.handle_type_error Types.T_int typeExpr
+          "Operator `-` (minus sign) must be applied to an integer expression.";
       Types.T_int
   | E_op_expr_expr (e1, ao, e2) ->
       let typeExpr1, typeExpr2 = (sem_expr e1, sem_expr e2) in
       let open Types in
-      if not (equal_types T_int typeExpr1) then
-        Error.handle_error Error.type_error_msg
-          (Printf.sprintf
-             "Left argument of an arithmetic operator is an argument of type \
-              %s."
-             (Types.string_of_t_type typeExpr1));
-      if not (equal_types Types.T_int typeExpr2) then
-        Error.handle_error Error.type_error_msg
-          (Printf.sprintf
-             "Right argument of an arithmetic operator is an argument of type \
-              %s."
-             (Types.string_of_t_type typeExpr2));
-      Types.T_int
+      (match (equal_types T_int typeExpr1, equal_types T_int typeExpr2) with
+      | true, true -> ()
+      | _ ->
+          Error.handle_type_error T_int
+            (if typeExpr1 <> T_int then typeExpr1 else typeExpr2)
+            (Printf.sprintf
+               "Arithmetic operators must be applied to integer expressions. \
+                %s argument is of non-integer type."
+               (if typeExpr1 <> T_int then "Left" else "Right")));
+      T_int
   | E_expr_parenthesized e -> sem_expr e
 
 (** [sem_cond (c : Ast.cond)] semantically analyses condition [c]. *)
@@ -485,7 +477,7 @@ and sem_cond : Ast.cond -> unit = function
   | C_expr_expr (e1, co, e2) ->
       let typeExpr1, typeExpr2 = (sem_expr e1, sem_expr e2) in
       if not (Types.equal_types typeExpr1 typeExpr2) then
-        Error.handle_error Error.type_error_msg
+        Error.handle_type_error typeExpr1 typeExpr2
           "Arguments of a logical operator have different types. Only \
            expressions of the same type can be compared with a logical \
            operator."
@@ -534,7 +526,8 @@ and sem_funcCall fc : Types.t_type =
       List.for_all2 Types.equal_types exprTypesListInFuncCall
         paramTypesListFromST
     in
-    if not typeListsAreEqual then raise Error.Type_error;
+    if not typeListsAreEqual then
+      raise (Error.Type_error (failwith "TODO", failwith "TODO"));
 
     let exprIsLValueList =
       let rec is_lvalue_of_expr = function
@@ -575,9 +568,9 @@ and sem_funcCall fc : Types.t_type =
            (List.length functionEntry.parameters_list)
            (List.length fc.expr_list));
       Option.get fc.ret_type
-  | Error.Type_error ->
-      Error.handle_error Error.type_error_msg
-        ("Arguments' types of function '" ^ fc.id ^ "' don't match.");
+  | Error.Type_error (expectedType, foundType) ->
+      Error.handle_type_error expectedType foundType
+        (Printf.sprintf "Arguments' types of function '%s' don't match." fc.id);
       Option.get fc.ret_type
   | Error.Passing_error ->
       Error.handle_error "r-value passed by reference"

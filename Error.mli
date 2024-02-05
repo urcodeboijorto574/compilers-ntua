@@ -5,7 +5,7 @@ val isErrorsRaised : bool ref
 exception File_not_found of string
 exception Shared_name_func_var
 exception Unexpected_number_of_parameters
-exception Type_error
+exception Type_error of Types.t_type * Types.t_type
 exception Passing_error
 exception Syntax_error of string
 
@@ -33,3 +33,8 @@ val handle_warning : string -> unit
 
 (** [handle_success msg] prints the [msg] to the standard output in green. *)
 val handle_success : string -> unit
+
+(** [handle_type_error expT foundT infoMsg] prints the expected type [expT] and
+    the encountered type [foundT] and then the info message [infoMsg] to the
+    stderr. *)
+val handle_type_error : Types.t_type -> Types.t_type -> string -> unit

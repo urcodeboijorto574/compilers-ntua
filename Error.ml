@@ -5,7 +5,7 @@ let isErrorsRaised = ref false
 exception File_not_found of string
 exception Shared_name_func_var
 exception Unexpected_number_of_parameters
-exception Type_error
+exception Type_error of Types.t_type * Types.t_type
 exception Passing_error
 exception Syntax_error of string
 
@@ -28,3 +28,12 @@ let handle_error_fatal finalMsg infoMsg =
 
 let handle_warning = Printf.eprintf "\027[35mWarning\027[0m: %s\n%!"
 let handle_success = Printf.printf "\027[32m%s\027[0m\n%!"
+
+let handle_type_error expT foundT infoMsg =
+  if not !isErrorsRaised then isErrorsRaised := true;
+  print_error_header type_error_msg;
+  Printf.eprintf "%s\n%s\n%!"
+    (Printf.sprintf "Expected type: %s, Encountered type: %s."
+       (Types.string_of_t_type expT)
+       (Types.string_of_t_type foundT))
+    infoMsg
