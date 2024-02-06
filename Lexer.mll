@@ -3,9 +3,10 @@
 
   let int_of_hex digit1 digit2 =
     let int_of_hex digit =
-      if digit >= '0' && digit <= '9' then
+      let isDigitInRange (l, h) = digit >= l && digit <= h in
+      if isDigitInRange ('0', '9') then
         (Char.code digit) - (Char.code '0')
-      else if digit >= 'a' && digit <= 'f' then
+      else if isDigitInRange ('a', 'f') then
         (Char.code digit) - (Char.code 'a') + 10
       else
         (Char.code digit) - (Char.code 'A') + 10
@@ -13,9 +14,8 @@
     (int_of_hex digit1) * 16 + (int_of_hex digit2)
 
   let num_lines = ref 1
-  let incrementNumLines lexbuf =
+  let incrementNumLines (lexbuf : Lexing.lexbuf) =
     incr num_lines;
-    let open Lexing in
     let pos = lexbuf.lex_curr_p in
     lexbuf.lex_curr_p <-
       {
@@ -24,14 +24,19 @@
         pos_bol = 0;
         pos_cnum = 0;
       }
+  let get_location_msg (lexbuf : Lexing.lexbuf) =
+    Printf.sprintf "File \"%s\", line %d:\n" lexbuf.lex_curr_p.pos_fname !num_lines
 
   let char_list_in_string = ref []
   let add_in_list c = char_list_in_string := c :: !char_list_in_string
   let string_of_rev_char_list revCharList =
     revCharList |> List.rev_map (String.make 1) |> String.concat ""
 
-  let multiline_string_msg () =
-    Printf.sprintf "Strings must close in the same line they start. Line %d." !num_lines
+  let multiline_string_msg = "Strings must close in the same line they start."
+  let handle_error lexbuf infoMsg =
+    Error.(handle_error lexing_error_msg (get_location_msg lexbuf ^ infoMsg))
+  let handle_error_fatal lexbuf infoMsg =
+    Error.(handle_error_fatal lexing_error_msg (get_location_msg lexbuf ^ infoMsg))
 }
 
 let digit = ['0'-'9']
@@ -102,26 +107,26 @@ rule lexer = parse
   | white+ { lexer lexbuf }
   | '\'' { characters lexbuf }
   | '"' { char_list_in_string := []; strings lexbuf }
-  | '"' char_string* eof { Error.handle_error_fatal Error.lexing_error_msg (multiline_string_msg ()) }
+  | '"' char_string* eof { handle_error_fatal lexbuf multiline_string_msg }
 
   | eof { T_eof }
   | _ as chr {
-      Error.handle_error Error.lexing_error_msg
-        (Printf.sprintf "Unknown character '%c'. Line %d.\n" chr !num_lines);
+      handle_error lexbuf (Printf.sprintf "Unknown character '%c'.\n" chr);
       lexer lexbuf
     }
 
 and strings = parse
   | "\n" {
-      Error.handle_error Error.lexing_error_msg (multiline_string_msg ());
+      handle_error lexbuf multiline_string_msg;
       add_in_list '\n';
       incrementNumLines lexbuf;
       strings lexbuf
     }
   | "'" {
-      Error.handle_error Error.lexing_error_msg
-        (Printf.sprintf "Single quotes are not permitted in strings (maybe you forgot a \'\\\'?). Line %d." !num_lines);
-      add_in_list '\''; strings lexbuf
+      handle_error lexbuf
+        "Single quotes are not permitted in strings (maybe you forgot a \'\\\'?).";
+      add_in_list '\'';
+      strings lexbuf
     }
   | "\\x" (digit_hex as d1) (digit_hex as d2) {
       add_in_list (Char.chr (int_of_hex d1 d2));
@@ -163,27 +168,19 @@ and characters = parse
     }
   | (char_not_escape as c) '\'' { T_chr (String.get c 1) }
   | '\'' {
-      Error.handle_error Error.lexing_error_msg
-        (Printf.sprintf "Single quotes contain no character on the insides. Line %d." !num_lines);
+      handle_error lexbuf "Single quotes contain no character on the insides.";
       T_chr '\000'
     }
   | char_common* '\'' {
-      Error.handle_error_fatal Error.lexing_error_msg
-        (Printf.sprintf "Multiple characters found inside single quotes(\'\'). Line %d." !num_lines)
+      handle_error_fatal lexbuf
+        "Multiple characters found inside single quotes(\'\')."
     }
-  | _ {
-      Error.handle_error_fatal Error.lexing_error_msg
-        (Printf.sprintf "Single quotes opened and didn't close. Line %d." !num_lines)
-    }
+  | _ { handle_error_fatal lexbuf "Single quotes opened and didn't close." }
 
 and multi_comments = parse
   | '\n' { incrementNumLines lexbuf; multi_comments lexbuf }
   | "$$" { lexer lexbuf }
-  | eof  {
-      Error.handle_error Error.lexing_error_msg
-        (Printf.sprintf "Unclosed multi-line comment. Line %d." !num_lines);
-      T_eof
-    }
+  | eof  { handle_error lexbuf "Unclosed multi-line comment."; T_eof }
   | _    { multi_comments lexbuf }
 
 and comment = parse
