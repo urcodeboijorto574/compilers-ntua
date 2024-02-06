@@ -27,6 +27,9 @@
 
   let char_list_in_string = ref []
   let add_in_list c = char_list_in_string := c :: !char_list_in_string
+  let string_of_rev_char_list revCharList =
+    revCharList |> List.rev_map (String.make 1) |> String.concat ""
+
   let multiline_string_msg () =
     Printf.sprintf "Strings must close in the same line they start. Line %d." !num_lines
 }
@@ -140,7 +143,7 @@ and strings = parse
     }
   | char_not_escape as c { add_in_list (String.get c 1); strings lexbuf }
   | char_common as c { add_in_list c; strings lexbuf }
-  | '"' { T_string (List.rev !char_list_in_string) }
+  | '"' { T_string (string_of_rev_char_list !char_list_in_string) }
 
 and characters = parse
   | (char_common as c) '\'' { T_chr c }

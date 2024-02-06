@@ -1,8 +1,6 @@
 %{
   open Ast
   open Types
-
-  let rec string_list_of_char_list chrList = List.map (String.make 1) chrList
 %}
 
 (* Token declarations *)
@@ -23,7 +21,7 @@
 %token <string> T_identifier
 %token <int> T_integer
 %token <char> T_chr
-%token <char list> T_string
+%token <string> T_string
 
 %token T_eof
 
@@ -142,12 +140,12 @@ stmt:
 
 l_value:
     T_identifier { newLValue (L_id $1) }
-  | T_string { newLValue (L_string (String.concat "" (string_list_of_char_list $1))) }
+  | T_string { newLValue (L_string $1) }
   | l_value_comp T_left_sqr expr T_right_sqr { newLValue (L_comp ($1, $3)) }
 
 l_value_comp:
     T_identifier { L_id $1 }
-  | T_string { L_string (String.concat "" (string_list_of_char_list $1)) }
+  | T_string { L_string $1 }
   | l_value_comp T_left_sqr expr T_right_sqr { L_comp ($1, $3) }
 
 expr:
