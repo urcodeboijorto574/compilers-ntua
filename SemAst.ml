@@ -18,8 +18,8 @@ let iteri2 f l1 l2 =
   in
   helper 0 (l1, l2)
 
-(** [position_string_of_int n] creates the position of the [n]th number.
-    For example*)
+(** [position_string_of_int n] creates the position of the [n]th number. For
+    example*)
 let position_string_of_int num : string =
   let lastDigit = num mod 10 in
   let postfix =
@@ -538,39 +538,47 @@ and sem_funcCall fc : Types.t_type =
     if fc.ret_type = None then
       fc.ret_type <- Some (Types.t_type_of_t_func functionEntry.return_type);
 
-    if List.compare_lengths fc.expr_list functionEntry.parameters_list <> 0 then
-      raise Error.Unexpected_number_of_parameters;
-
-    let exprTypesListInFuncCall = List.map sem_expr fc.expr_list in
-    let paramTypesListFromST =
-      List.map
-        (fun { parameter_type = pt; _ } -> pt)
-        functionEntry.parameters_list
+    let isNumOfParamsOK =
+      List.compare_lengths fc.expr_list functionEntry.parameters_list = 0
     in
-    let typeListsAreEqual =
-      List.for_all2 Types.equal_types exprTypesListInFuncCall
-        paramTypesListFromST
-    in
-    if not typeListsAreEqual then
-      raise (Error.Type_error (failwith "TODO", failwith "TODO"));
-
-    let exprIsLValueList =
+    if not isNumOfParamsOK then
+      Error.handle_error "Unexpected number of arguments in function call"
+        (Printf.sprintf
+           "Function '%s' expected %d arguments, but instead got %d." fc.id
+           (List.length functionEntry.parameters_list)
+           (List.length fc.expr_list));
+    let checkArgs () : unit =
+      let t_type_of_param_entry par = par.parameter_type in
+      let is_by_ref_of_param_entry par = par.passing = Symbol.BY_REFERENCE in
       let rec is_lvalue_of_expr = function
         | E_lvalue _ -> true
-        | E_expr_parenthesized expr -> is_lvalue_of_expr expr
+        | E_expr_parenthesized e -> is_lvalue_of_expr e
         | _ -> false
       in
-      List.map is_lvalue_of_expr fc.expr_list
+      iteri2
+        (fun i param arg ->
+          let typeOfParam, typeOfArg =
+            (t_type_of_param_entry param, sem_expr arg)
+          in
+          if not (Types.equal_types typeOfParam typeOfArg) then
+            Error.handle_type_error typeOfParam typeOfArg
+              (Printf.sprintf
+                 "The type of the argument at the %s position of the '%s' \
+                  function call differs from the one declared at the function \
+                  definition."
+                 (position_string_of_int i) fc.id);
+          let isParamByRef, isExprLValue =
+            (is_by_ref_of_param_entry param, is_lvalue_of_expr arg)
+          in
+          if isParamByRef && not isExprLValue then
+            Error.handle_error "r-value passed by reference"
+              (Printf.sprintf
+                 "'%s' function call: Argument at the %s position that is \
+                  passed by reference isn't an l-value."
+                 fc.id (position_string_of_int i)))
+        functionEntry.parameters_list fc.expr_list
     in
-    let paramIsByRefListFromST =
-      let get_is_ref_of_param_entry pe = pe.passing = Symbol.BY_REFERENCE in
-      List.map get_is_ref_of_param_entry functionEntry.parameters_list
-    in
-    let byRefListsAreEqual =
-      let helper eLV pBR = eLV || not pBR in
-      List.equal helper exprIsLValueList paramIsByRefListFromST
-    in
-    if not byRefListsAreEqual then raise Error.Passing_error;
+    if isNumOfParamsOK then checkArgs ();
     functionEntry.return_type
   with
   | Not_found ->
@@ -581,29 +589,6 @@ and sem_funcCall fc : Types.t_type =
       Error.handle_error "Function and variable share the same name"
         ("Name '" ^ fc.id ^ "' is shared with a function and a variable.");
       T_none
-  | Error.Unexpected_number_of_parameters ->
-      let functionEntry =
-        match (Option.get resultLookUpOption).kind with
-        | ENTRY_function ef -> ef
-        | _ -> assert false
-      in
-      Error.handle_error "Unexpected number of parameters in function call"
-        (Printf.sprintf
-           "Function '%s' expected %d arguments, but instead got %d." fc.id
-           (List.length functionEntry.parameters_list)
-           (List.length fc.expr_list));
-      Option.get fc.ret_type
-  | Error.Type_error (expectedType, foundType) ->
-      Error.handle_type_error expectedType foundType
-        (Printf.sprintf "Arguments' types of function '%s' don't match." fc.id);
-      Option.get fc.ret_type
-  | Error.Passing_error ->
-      Error.handle_error "r-value passed by reference"
-        (Printf.sprintf
-           "'%s' function call: Expression that is passed by reference isn't \
-            an l-value."
-           fc.id);
-      Option.get fc.ret_type
 
 (** [sem_on (ast : Ast.funcDef)] semantically analyses the root of the ast [ast]
     (produced by the parser). It also initializes the SymbolTable. *)
