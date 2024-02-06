@@ -9,7 +9,7 @@ exception Syntax_error of string
 
 let compilation_failed_msg = "Compilation failed"
 let internal_error_msg = "Internal error"
-let lexing_error_msg = "Lexing error"
+let lexing_error_msg = "Lexical error"
 let syntax_error_msg = "Syntax error"
 let semantic_error_msg = "Semantic error"
 let type_error_msg = "Type error"
