@@ -13,19 +13,17 @@
     in
     (int_of_hex digit1) * 16 + (int_of_hex digit2)
 
-  let num_lines = ref 1
   let incrementNumLines (lexbuf : Lexing.lexbuf) =
-    incr num_lines;
-    let pos = lexbuf.lex_curr_p in
+    let lcp : Lexing.position = lexbuf.lex_curr_p in
     lexbuf.lex_curr_p <-
       {
-        pos_fname = pos.pos_fname;
-        pos_lnum = pos.pos_lnum + 1;
-        pos_bol = 0;
-        pos_cnum = 0;
+        pos_fname = lcp.pos_fname;
+        pos_lnum = lcp.pos_lnum + 1;
+        pos_bol = lcp.pos_bol;
+        pos_cnum = lcp.pos_cnum
       }
   let get_location_msg (lexbuf : Lexing.lexbuf) =
-    Printf.sprintf "File \"%s\", line %d:\n" lexbuf.lex_curr_p.pos_fname !num_lines
+    Printf.sprintf "File \"%s\", line %d:\n" lexbuf.lex_curr_p.pos_fname lexbuf.lex_curr_p.pos_lnum
 
   let char_list_in_string = ref []
   let add_in_list c = char_list_in_string := c :: !char_list_in_string
