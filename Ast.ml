@@ -31,12 +31,12 @@ and stackFrame = {
   access_link : Llvm.lltype option;
   (* [stack_frame_addr] is the allocated memory for the stack frame *)
   mutable stack_frame_addr : Llvm.llvalue option;
-  (* [var_records] is a list of tuples with 4 fields each:
+  (* [al_par_var_records] is a list of tuples with 4 fields each:
       1st field: the name of the variable
       2nd field: the position of the record in the stack frame
       3rd field: the variable is reference (only for parameters)
       4th field: the variable is an array *)
-  var_records : (string * int * bool * bool) list;
+  al_par_var_records : (string * int * bool * bool) list;
   (* [stack_frame_length] is the numbers of fields that the struct has *)
   stack_frame_length : int;
 }

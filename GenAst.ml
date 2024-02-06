@@ -193,7 +193,7 @@ and gen_lvalue funcDef lv =
         search_address 0 parentStackFrameAlloca parentStackFrame
       else
         let var_name, elem_pos, is_ref, is_array =
-          List.nth stackFrame.var_records i
+          List.nth stackFrame.al_par_var_records i
         in
         if var_name = id then
           let paramAddr =
@@ -271,8 +271,7 @@ and gen_lvalue funcDef lv =
             | L_id _ | L_string _ -> []
             | L_comp (lvk, i) -> i :: get_indices_reversed lvk
           in
-          List.(
-            get_indices_reversed lv.lv_kind |> rev |> map (gen_expr funcDef))
+          get_indices_reversed lv.lv_kind |> List.rev_map (gen_expr funcDef)
         in
         let indicesFinal =
           let indicesRev = List.rev indices in
@@ -320,9 +319,10 @@ and gen_expr ?(is_param_ref = false) funcDef expr =
     end
   | E_func_call fc -> gen_funcCall funcDef fc
   | E_sgn_expr (sign, expr) -> (
+      let exprLlval = gen_expr funcDef expr in
       match sign with
-      | O_plus -> gen_expr funcDef expr
-      | O_minus -> build_neg (gen_expr funcDef expr) "minus" builder)
+      | O_plus -> exprLlval
+      | O_minus -> build_neg exprLlval "minus" builder)
   | E_op_expr_expr (lhs, oper, rhs) -> (
       let lhs_val = gen_expr funcDef lhs in
       let rhs_val = gen_expr funcDef rhs in
@@ -584,10 +584,8 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
           lltype_of_t_type (Ast.t_type_of_retType header.ret_type)
         in
         let param_types_array =
-          let param_types_list =
-            Option.to_list access_link @ List.map lltype_of_fparDef args
-          in
-          Array.of_list param_types_list
+          Option.to_list access_link @ List.map lltype_of_fparDef args
+          |> Array.of_list
         in
         function_type return_type param_types_array
       in
@@ -635,7 +633,7 @@ let rec gen_funcDef funcDef =
         if not fdecl.is_redundant then
           ignore
             (gen_header fdecl.header
-               (Option.get (Option.get fdecl.func_def).stack_frame).access_link)
+               Option.(((fdecl.func_def |> get).stack_frame |> get).access_link))
   in
   List.iter iterate funcDef.local_def_list;
   ignore (build_br bodyBB builder);
@@ -666,8 +664,7 @@ let define_lib_funcs () =
     let args = expand_fpar_def_list args in
     let args_array = Array.of_list args in
     Hashtbl.add named_functions name args;
-    let param_types_list = List.map lltype_of_fparDef args in
-    let param_types_array = Array.of_list param_types_list in
+    let param_types_array = List.map lltype_of_fparDef args |> Array.of_list in
     let return_type = lltype_of_t_type (Ast.t_type_of_retType ret_type) in
     let ft = function_type return_type param_types_array in
     let f =
@@ -788,12 +785,10 @@ let rec set_stack_frames funcDef =
       named_struct_type context ("frame_" ^ funcDef.header.comp_id)
     in
     let stack_frame_records_arr : Llvm.lltype array =
-      let stack_frame_records =
-        let param_types_list = List.map lltype_of_fparDef params_list in
-        let var_types_list = List.map lltype_of_varDef vars_list in
-        Option.to_list access_link_opt @ param_types_list @ var_types_list
-      in
-      Array.of_list stack_frame_records
+      let param_types_list = List.map lltype_of_fparDef params_list in
+      let var_types_list = List.map lltype_of_varDef vars_list in
+      Option.to_list access_link_opt @ param_types_list @ var_types_list
+      |> Array.of_list
     in
     struct_set_body stack_frame_type stack_frame_records_arr false;
     let stack_frame_length =
@@ -838,7 +833,7 @@ let rec set_stack_frames funcDef =
           stack_frame_type;
           access_link = access_link_opt;
           stack_frame_addr = None;
-          var_records = al_par_var_records;
+          al_par_var_records;
           stack_frame_length;
         }
   in

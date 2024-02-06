@@ -49,7 +49,6 @@ let rec sem_funcDef fd : unit =
   Stack.push (Some fd) funcDefAncestors;
   sem_localDefList fd.local_def_list;
   ignore (Stack.pop funcDefAncestors);
-
   let overloadedParVarNameOption : string option =
     let duplicate_element lst =
       let rec helper seen = function
@@ -114,13 +113,11 @@ let rec sem_funcDef fd : unit =
       (Printf.sprintf
          "Function '%s' doesn't return the expected type in its block."
          fd.header.id);
-
   let isMainProgram = !current_scope.depth = 1 in
   if isMainProgram then
     List.iter
       (fun id -> Error.handle_warning ("Unused name '" ^ id ^ "'."))
       (Symbol.get_unused_entries ());
-
   Symbol.close_scope ()
 
 (** [sem_header (isPartOfAFuncDef : bool) (h : Ast.header)] takes
@@ -155,7 +152,6 @@ and sem_header isPartOfAFuncDef header : unit =
     if header.fpar_def_list <> [] then
       Error.handle_error "Main function shouldn't have parameters"
         "Main function shouldn't have parameters.");
-
   let resultLookUpOption = look_up_entry header.id in
   if
     resultLookUpOption = None
@@ -218,7 +214,6 @@ and sem_header isPartOfAFuncDef header : unit =
           functionEntry.parameters_list paramListFromHeaderExtended
       in
       if matchingNumOfParams then checkParams ();
-
       if functionEntry.state = Symbol.DEFINED then
         Error.handle_error "Redefinition of function"
           ("Function '" ^ header.id ^ "' is defined twice.");
@@ -537,7 +532,6 @@ and sem_funcCall fc : Types.t_type =
     set_entry_isUsed (Option.get resultLookUpOption);
     if fc.ret_type = None then
       fc.ret_type <- Some (Types.t_type_of_t_func functionEntry.return_type);
-
     let isNumOfParamsOK =
       List.compare_lengths fc.expr_list functionEntry.parameters_list = 0
     in
