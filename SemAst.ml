@@ -18,18 +18,6 @@ let iteri2 f l1 l2 =
   in
   helper 0 (l1, l2)
 
-(** [position_string_of_int n] creates the position of the [n]th number. For
-    example*)
-let position_string_of_int num : string =
-  let lastDigit = num mod 10 in
-  let postfix =
-    if List.(mem lastDigit [ 1; 2; 3 ] && not (mem num [ 11; 12; 13 ])) then
-      match lastDigit with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> ""
-    else
-      "th"
-  in
-  Printf.sprintf "%d%s" num postfix
-
 (** [sem_funcDef (fd : Ast.funcDef)] semantically analyses the function
     definition [fd]. The field 'parent_func' of [fd] is set. After semantically
     analysing the header, local definitions list and the block, it is checked if
@@ -200,17 +188,17 @@ and sem_header isPartOfAFuncDef header : unit =
             if pEntry.parameter_type <> fst pHeader then
               Error.handle_type_error pEntry.parameter_type (fst pHeader)
                 (Printf.sprintf
-                   "The type of the parameter at the %s position of the '%s' \
+                   "The type of the parameter at position %d of the '%s' \
                     function's header differs from the one declared at its \
                     previous function header."
-                   (position_string_of_int i) header.id);
+                   i header.id);
             if pEntry.passing = BY_REFERENCE <> snd pHeader then
               Error.handle_error Error.semantic_error_msg
                 (Printf.sprintf
-                   "The type of passing of the parameter at the %s position of \
+                   "The type of passing of the parameter at position %d of \
                     '%s' function's header differs from the one declared at \
                     its previous function header."
-                   (position_string_of_int i) header.id))
+                   i header.id))
           functionEntry.parameters_list paramListFromHeaderExtended
       in
       if matchingNumOfParams then checkParams ();
@@ -557,19 +545,19 @@ and sem_funcCall fc : Types.t_type =
           if not (Types.equal_types typeOfParam typeOfArg) then
             Error.handle_type_error typeOfParam typeOfArg
               (Printf.sprintf
-                 "The type of the argument at the %s position of the '%s' \
-                  function call differs from the one declared at the function \
+                 "The type of the argument at position %d of the '%s' function \
+                  call differs from the one declared at the function \
                   definition."
-                 (position_string_of_int i) fc.id);
+                 i fc.id);
           let isParamByRef, isExprLValue =
             (is_by_ref_of_param_entry param, is_lvalue_of_expr arg)
           in
           if isParamByRef && not isExprLValue then
             Error.handle_error "r-value passed by reference"
               (Printf.sprintf
-                 "'%s' function call: Argument at the %s position that is \
-                  passed by reference isn't an l-value."
-                 fc.id (position_string_of_int i)))
+                 "'%s' function call: Argument at position %d that is passed \
+                  by reference isn't an l-value."
+                 fc.id i))
         functionEntry.parameters_list fc.expr_list
     in
     if isNumOfParamsOK then checkArgs ();
