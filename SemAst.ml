@@ -5,6 +5,31 @@ open Symbol
     runtime. *)
 let funcDefAncestors : funcDef option Stack.t = Stack.create ()
 
+(** [iteri2 f l1 l2] Same as [List.iter2], but the function is applied to the
+    index of the elements as first argument (counting from 0), and the two
+    elements themselves as second and third arguments. *)
+let iteri2 f l1 l2 =
+  let rec helper index = function
+    | [], [] -> ()
+    | [], _ | _, [] -> raise (Invalid_argument "iteri2")
+    | h1 :: t1, h2 :: t2 ->
+        f index h1 h2;
+        helper (index + 1) (t1, t2)
+  in
+  helper 0 (l1, l2)
+
+(** [position_string_of_int n] creates the position of the [n]th number.
+    For example*)
+let position_string_of_int num : string =
+  let lastDigit = num mod 10 in
+  let postfix =
+    if List.(mem lastDigit [ 1; 2; 3 ] && not (mem num [ 11; 12; 13 ])) then
+      match lastDigit with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> ""
+    else
+      "th"
+  in
+  Printf.sprintf "%d%s" num postfix
+
 (** [sem_funcDef (fd : Ast.funcDef)] semantically analyses the function
     definition [fd]. The field 'parent_func' of [fd] is set. After semantically
     analysing the header, local definitions list and the block, it is checked if
@@ -150,50 +175,50 @@ and sem_header isPartOfAFuncDef header : unit =
         | ENTRY_variable _ | ENTRY_parameter _ ->
             raise Error.Shared_name_func_var
       in
-      let returnTypeFromHeader : Types.t_type =
-        Ast.t_type_of_retType header.ret_type
-      in
-      let paramListFromHeader : (int * Types.t_type * bool) list =
-        List.map
+      if functionEntry.return_type <> Ast.t_type_of_retType header.ret_type then
+        Error.handle_type_error functionEntry.return_type
+          (Ast.t_type_of_retType header.ret_type)
+          (Printf.sprintf
+             "Return type of function '%s' differs between declarations."
+             header.id);
+      let paramListFromHeaderExtended : (Types.t_type * bool) list =
+        let open List in
+        map
           (fun (fpd : Ast.fparDef) ->
-            ( List.length fpd.id_list,
-              Ast.t_type_of_fparType fpd.fpar_type,
-              fpd.ref ))
+            List.init (List.length fpd.id_list) (fun _ ->
+                (Ast.t_type_of_fparType fpd.fpar_type, fpd.ref)))
           header.fpar_def_list
+        |> flatten
       in
       let matchingNumOfParams : bool =
-        let lengthOfParamListHeader =
-          List.fold_left (fun len (n, _, _) -> len + n) 0 paramListFromHeader
-        in
-        List.length functionEntry.parameters_list = lengthOfParamListHeader
-      in
-      let matchingParamTypes : bool =
-        let lists_are_equal paramListEntry paramListHeader =
-          let elems_are_equal x y =
-            match y with
-            | _, t, r ->
-                x.parameter_type = t || x.passing = Symbol.BY_REFERENCE = r
-          in
-          if List.length paramListEntry <> List.length paramListHeader then
-            false
-          else
-            List.for_all2 elems_are_equal paramListEntry paramListHeader
-        in
-        lists_are_equal functionEntry.parameters_list paramListFromHeader
+        List.compare_lengths functionEntry.parameters_list
+          paramListFromHeaderExtended
+        = 0
       in
       if not matchingNumOfParams then
         Error.handle_error "Function overload"
           ("Function '" ^ header.id ^ "' is overloaded.");
-      if functionEntry.return_type <> returnTypeFromHeader then
-        Error.handle_type_error functionEntry.return_type returnTypeFromHeader
-          (Printf.sprintf
-             "Return type of function '%s' differs between declarations."
-             header.id);
-      if not matchingParamTypes then
-        Error.handle_type_error (failwith "TODO") (failwith "TODO")
-          (Printf.sprintf
-             "Parameter types of function '%s' differ between declarations."
-             header.id);
+      let checkParams () : unit =
+        iteri2
+          (fun i pEntry pHeader ->
+            if pEntry.parameter_type <> fst pHeader then
+              Error.handle_type_error pEntry.parameter_type (fst pHeader)
+                (Printf.sprintf
+                   "The type of the parameter at the %s position of the '%s' \
+                    function's header differs from the one declared at its \
+                    previous function header."
+                   (position_string_of_int i) header.id);
+            if pEntry.passing = BY_REFERENCE <> snd pHeader then
+              Error.handle_error Error.semantic_error_msg
+                (Printf.sprintf
+                   "The type of passing of the parameter at the %s position of \
+                    '%s' function's header differs from the one declared at \
+                    its previous function header."
+                   (position_string_of_int i) header.id))
+          functionEntry.parameters_list paramListFromHeaderExtended
+      in
+      if matchingNumOfParams then checkParams ();
+
       if functionEntry.state = Symbol.DEFINED then
         Error.handle_error "Redefinition of function"
           ("Function '" ^ header.id ^ "' is defined twice.");
