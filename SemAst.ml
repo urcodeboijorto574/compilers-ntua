@@ -23,7 +23,7 @@ let iteri2 f l1 l2 =
     analysing the header, local definitions list and the block, it is checked if
     in the function's block a value of the expected type is returned. *)
 let rec sem_funcDef fd : unit =
-  let isMainProgram = !current_scope.depth = 0 in
+  let isMainProgram = !current_scope.depth = Symbol.initialScopeDepthValue in
   if isMainProgram then Symbol.add_standard_library ();
   if isMainProgram then Stack.push None funcDefAncestors;
   fd.parent_func <- Stack.top funcDefAncestors;
@@ -104,7 +104,6 @@ let rec sem_funcDef fd : unit =
       (Printf.sprintf
          "Function '%s' doesn't return the expected type in its block."
          fd.header.id);
-  let isMainProgram = !current_scope.depth = 1 in
   if isMainProgram then
     List.iter
       (fun id -> Error.handle_warning ("Unused name '" ^ id ^ "'."))
@@ -134,7 +133,7 @@ and sem_header isPartOfAFuncDef header : unit =
     in
     header.comp_id <- header.id ^ postfix
   end;
-  let isMainProgram = !current_scope.depth = 0 in
+  let isMainProgram = !current_scope.depth = Symbol.initialScopeDepthValue in
   if isMainProgram then (
     if header.ret_type <> Nothing then
       Error.handle_type_error (T_func T_none)

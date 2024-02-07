@@ -57,7 +57,10 @@ and entry_function = {
 let set_func_defined entryFunc = entryFunc.state <- DEFINED
 and set_entry_isUsed entry = entry.isUsed <- true
 
-let current_scope = ref { name = ""; parent = None; depth = 0 }
+let initialScopeDepthValue = 0
+
+let current_scope =
+  ref { name = ""; parent = None; depth = initialScopeDepthValue }
 
 let open_scope str =
   current_scope :=
@@ -93,12 +96,15 @@ let symbolTable = ref (Hashtbl.create 0)
 
 let create_symbol_table numOfBuckets =
   symbolTable := Hashtbl.create numOfBuckets;
-  current_scope := { name = ""; parent = None; depth = 0 }
+  current_scope := { name = ""; parent = None; depth = initialScopeDepthValue }
 
 (** [enter_entry i e] takes an identifier [i] and an entry kind [e] and creates
     and adds a new entry in the symbolTable. *)
 let enter_entry ident eKind =
-  let isUsed = List.mem ident lib_function_names || !current_scope.depth = 0 in
+  let isUsed =
+    List.mem ident lib_function_names
+    || !current_scope.depth = initialScopeDepthValue
+  in
   let e = { id = ident; scope = !current_scope; kind = eKind; isUsed } in
   Hashtbl.add !symbolTable ident e
 

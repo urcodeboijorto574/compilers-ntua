@@ -50,6 +50,10 @@ val set_func_defined : entry_function -> unit
 (** [set_entry_isUsed e] sets the field 'isUsed' of an entry to [true]. *)
 val set_entry_isUsed : entry -> unit
 
+(** [initialScopeDepthValue] is the depth of the scope in which the root
+    function exists. *)
+val initialScopeDepthValue : int
+
 (** [current_scope] is a variable that stores the current scope during the
     semantic analysis of the AST. *)
 val current_scope : scope ref
