@@ -34,7 +34,10 @@ let rec equal_types t1 t2 =
       if s1 = -1 || s2 = -1 then true else equal_types t1' t2'
   | _ -> t1 = t2
 
-let t_type_of_t_func = function T_func t -> t | _ -> assert false
+let t_type_of_t_func = function
+  | T_array _ | T_none -> assert false
+  | T_func t | t -> t
+
 let t_type_of_t_array = function T_array (_, t) -> t | _ -> assert false
 
 let rec final_t_type_of_t_array = function

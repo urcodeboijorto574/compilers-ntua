@@ -94,7 +94,10 @@ let rec sem_funcDef fd : unit =
 
   let expectedReturnType = Ast.t_type_of_retType fd.header.ret_type in
   let typeReturnedInBlock =
-    Types.T_func (match sem_block fd.block with None -> T_none | Some t -> t)
+    let open Types in
+    T_func
+      (try Option.get (sem_block (t_type_of_t_func expectedReturnType) fd.block)
+       with Invalid_argument _ -> T_none)
   in
   if expectedReturnType <> typeReturnedInBlock then
     Error.handle_type_error expectedReturnType typeReturnedInBlock
@@ -287,13 +290,15 @@ and sem_varDef vd : unit =
   let typ = Ast.t_type_of_varType vd.var_type in
   List.iter (fun i -> Symbol.enter_variable i typ) vd.id_list
 
-(** [sem_block (bl : Ast.stmt list)] semantically analyses every statement of
-    the block [bl]. *)
-and sem_block (bl : Ast.stmt list) : Types.t_type option =
+(** [sem_block (expT : Types.t_type) (bl : Ast.stmt list)] semantically analyses
+    every statement of the block [bl]. [expT] is the expected return type of the
+    block. *)
+and sem_block (expectedReturnType : Types.t_type) (bl : Ast.stmt list) :
+    Types.t_type option =
   let rec get_type_of_stmt_list result warningRaised = function
     | [] -> result
     | head :: tail -> (
-        match sem_stmt head with
+        match sem_stmt expectedReturnType head with
         | None -> get_type_of_stmt_list result warningRaised tail
         | Some typ ->
             if tail <> [] && not warningRaised then
@@ -304,9 +309,11 @@ and sem_block (bl : Ast.stmt list) : Types.t_type option =
   in
   get_type_of_stmt_list None false bl
 
-(** [sem_stmt (s : Ast.stmt)] semantically analyses the statement [s] and
-    returns [Some t] if [s] is a return statement or [None] if not. *)
-and sem_stmt : Ast.stmt -> Types.t_type option = function
+(** [sem_stmt (expT : Types.t_type) (s : Ast.stmt)] semantically analyses the
+    statement [s] and returns [Some t] if [s] is a return statement or [None] if
+    not. [expT] is the expected return type of the block of the statement. *)
+and sem_stmt (expectedReturnType : Types.t_type) :
+    Ast.stmt -> Types.t_type option = function
   | S_assignment (lv, e) -> (
       (match lv.lv_kind with
       | L_comp (L_string _, _) ->
@@ -332,7 +339,7 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
                  (Types.string_of_t_type typeExpr)
                  (Types.string_of_t_type t));
           None)
-  | S_block b -> sem_block b
+  | S_block b -> sem_block expectedReturnType b
   | S_func_call fc -> (
       let open Types in
       match sem_funcCall fc with
@@ -345,36 +352,40 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
   | S_if (c, s) -> (
       sem_cond c;
       let constCondValue = Ast.get_const_cond_value c in
-      let type_of_s = sem_stmt s in
+      let type_of_s = sem_stmt expectedReturnType s in
       match constCondValue with
       | None | Some false -> None
       | Some true -> type_of_s)
-  | S_if_else (c, s1, s2) -> (
+  | S_if_else (c, s1, s2) ->
       sem_cond c;
-      let type_of_s1 = sem_stmt s1 in
-      let type_of_s2 = sem_stmt s2 in
+      let type_of_s1 = sem_stmt expectedReturnType s1 in
+      let type_of_s2 = sem_stmt expectedReturnType s2 in
       if type_of_s1 = type_of_s2 then
         type_of_s1
-      else
-        match (type_of_s1, type_of_s2) with
-        | None, _ | _, None -> None
-        | _ ->
-            Error.handle_error
-              "Multiple types returned in if-then-else statement"
-              "In an if-then-else statement two different types are returned.";
-            None)
+      else if type_of_s1 = None || type_of_s2 = None then
+        None
+      else (
+        Error.handle_error "Multiple types returned in if-then-else statement"
+          "In an if-then-else statement two different types are returned.";
+        None)
   | S_while (c, s) -> (
       sem_cond c;
       let constCondValue = Ast.get_const_cond_value c in
-      let type_of_s = sem_stmt s in
+      let type_of_s = sem_stmt expectedReturnType s in
       match constCondValue with
       | Some false -> None
       | Some true ->
           if type_of_s = None then Error.handle_warning "Infinite loop.";
           type_of_s
       | None -> None)
-  | S_return x -> (
-      match x with None -> Some T_none | Some e -> Some (sem_expr e))
+  | S_return x ->
+      let returnedType =
+        match x with None -> Types.T_none | Some e -> sem_expr e
+      in
+      if expectedReturnType <> returnedType then
+        Error.handle_type_error expectedReturnType returnedType
+          "Return statement in block has unexpected return type.";
+      Some returnedType
   | S_semicolon -> None
 
 (** [sem_lvalue (lval : Ast.lvalue)] returns the type of the l-value [lval].
