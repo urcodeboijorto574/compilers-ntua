@@ -155,7 +155,6 @@ and sem_header isPartOfAFuncDef header : unit =
       Symbol.(if isPartOfAFuncDef then DEFINED else DECLARED)
   else
     try
-      set_entry_isUsed (Option.get resultLookUpOption);
       let functionEntry =
         match (Option.get resultLookUpOption).kind with
         | ENTRY_function ef -> ef
@@ -221,7 +220,7 @@ and sem_fparDefList fpdl : (int * Types.t_type * Symbol.param_passing) list =
 (** [sem_fparDef (fpd : Ast.fparDef)] semantically analyses the function's
     parameter definition [fpd]. *)
 and sem_fparDef fpd : int * Types.t_type * Symbol.param_passing =
-  if List.exists (fun n -> n = 0) fpd.fpar_type.array_dimensions then
+  if List.exists (Int.equal 0) fpd.fpar_type.array_dimensions then
     Error.handle_error "Array of zero size"
       "Parameter array declared to have size a non-positive number.";
   let paramIsArray = fpd.fpar_type.array_dimensions <> [] in

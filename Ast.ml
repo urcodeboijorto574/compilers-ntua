@@ -177,17 +177,17 @@ let t_type_of_retType = function
   | RetDataType dt -> Types.T_func (t_type_of_dataType dt)
   | Nothing -> Types.T_func Types.T_none
 
-let t_type_of_fparType : fparType -> Types.t_type = function
-  | { data_type = dt; array_dimensions = dimList } ->
-      Types.construct_array_type dimList (t_type_of_dataType dt)
+let t_type_of_fparType (fpt : fparType) : Types.t_type =
+  let open Types in
+  construct_array_type fpt.array_dimensions (t_type_of_dataType fpt.data_type)
 
-let t_type_of_varType : varType -> Types.t_type = function
-  | { data_type = dt; array_dimensions = dimList } ->
-      Types.construct_array_type dimList (t_type_of_dataType dt)
+let t_type_of_varType (vt : varType) : Types.t_type =
+  let open Types in
+  construct_array_type vt.array_dimensions (t_type_of_dataType vt.data_type)
 
 (* Helper functions for checks *)
 
-let rec get_const_expr_value = function
+let rec get_const_expr_value : expr -> int option = function
   | E_const_int ci -> Some ci
   | E_sgn_expr (sign, e) -> (
       match sign with
