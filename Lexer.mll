@@ -2,16 +2,7 @@
   open Parser
 
   let int_of_hex digit1 digit2 =
-    let int_of_hex digit =
-      let isDigitInRange (l, h) = digit >= l && digit <= h in
-      if isDigitInRange ('0', '9') then
-        (Char.code digit) - (Char.code '0')
-      else if isDigitInRange ('a', 'f') then
-        (Char.code digit) - (Char.code 'a') + 10
-      else
-        (Char.code digit) - (Char.code 'A') + 10
-    in
-    (int_of_hex digit1) * 16 + (int_of_hex digit2)
+    int_of_string (Printf.sprintf "0x%c%c" digit1 digit2)
 
   let incrementNumLines (lexbuf : Lexing.lexbuf) =
     let lcp : Lexing.position = lexbuf.lex_curr_p in
