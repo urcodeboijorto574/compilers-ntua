@@ -49,6 +49,7 @@ and entry_func_state =
 
 and entry_function = {
   parameters_list : entry_parameter list;
+  (* [return_type] is encapsulated in [Types.T_func]. *)
   return_type : Types.t_type;
   scope_depth : int;
   mutable state : entry_func_state;

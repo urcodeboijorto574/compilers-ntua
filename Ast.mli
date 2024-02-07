@@ -130,8 +130,8 @@ and funcCall = {
   id : string;
   mutable comp_id : string;
   expr_list : expr list;
+  (* [ret_type] is not encapsulated in [Types.T_func]. *)
   mutable ret_type : Types.t_type option;
-      (* 'ret_type' is not an encapsulation of T_func *)
 }
 
 and cond =

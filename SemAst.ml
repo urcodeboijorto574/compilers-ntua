@@ -290,7 +290,7 @@ and sem_varDef vd : unit =
 
 (** [sem_block (expT : Types.t_type) (bl : Ast.stmt list)] semantically analyses
     every statement of the block [bl]. [expT] is the expected return type of the
-    block. *)
+    block ([expT] is not encapsulated in [Types.T_func]). *)
 and sem_block (expectedReturnType : Types.t_type) (bl : Ast.stmt list) :
     Types.t_type option =
   let rec get_type_of_stmt_list result warningRaised = function
@@ -309,7 +309,8 @@ and sem_block (expectedReturnType : Types.t_type) (bl : Ast.stmt list) :
 
 (** [sem_stmt (expT : Types.t_type) (s : Ast.stmt)] semantically analyses the
     statement [s] and returns [Some t] if [s] is a return statement or [None] if
-    not. [expT] is the expected return type of the block of the statement. *)
+    not. [expT] is the expected return type of the block of the statement
+    ([expT] is not encapsulated in [Types.T_func]). *)
 and sem_stmt (expectedReturnType : Types.t_type) :
     Ast.stmt -> Types.t_type option = function
   | S_assignment (lv, e) -> (
@@ -502,9 +503,9 @@ and sem_cond : Ast.cond -> unit = function
   | C_cond_parenthesized c -> sem_cond c
 
 (** [sem_funcCall (fc : Ast.funcCall)] returns the return type of function call
-    [fc]. Additionally, it checks if the types of its arguments match the
-    expected ones defined in the function's header. The fields 'comp_id' and
-    'ret_type' of [fc] are set. *)
+    [fc] (the result is encapsulated in [Types.T_func]). Additionally, it checks
+    if the types of its arguments match the expected ones defined in the
+    function's header. The fields 'comp_id' and 'ret_type' of [fc] are set. *)
 and sem_funcCall fc : Types.t_type =
   let resultLookUpOption = look_up_entry fc.id in
   try
