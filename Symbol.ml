@@ -165,28 +165,27 @@ let add_standard_library () =
   add_func_lib "strcat" [ (2, T_array (-1, T_char)) ] T_none
 
 let look_up_entry (id : string) =
-  let resultEntryList =
-    (* Entries of ancestor scopes in decreasing order. *)
-    List.stable_sort
-      (fun e1 e2 -> compare e1.scope.depth e2.scope.depth * -1)
-      ((* Entries of ancestor scopes of the current scope. *)
-       List.filter
-         (fun e ->
-           (* [is_ancestor s1 s2] returns [true] if [s2] is part of [s1]'s
-              ancestor scopes or if [s1] and [s2] are the same scope. *)
-           let rec is_ancestor referenceScope candidateScope =
-             if referenceScope.parent = None then
-               candidateScope.parent = None
-             else
-               candidateScope.parent = None
-               || equal_scopes referenceScope candidateScope
-               || is_ancestor (Option.get referenceScope.parent) candidateScope
-           in
-           is_ancestor !current_scope e.scope)
-         ((* Entries with [id] as their name. *)
-          Hashtbl.find_all !symbolTable id))
+  let is_entry_from_ancestor_scope e =
+    (* [is_ancestor s1 s2] returns [true] if [s2] is part of [s1]'s ancestor
+       scopes or if [s1] and [s2] are the same scope. *)
+    let rec is_ancestor referenceScope candidateScope =
+      if referenceScope.parent = None then
+        candidateScope.parent = None
+      else
+        candidateScope.parent = None
+        || equal_scopes referenceScope candidateScope
+        || is_ancestor (Option.get referenceScope.parent) candidateScope
+    in
+    is_ancestor !current_scope e.scope
   in
-  try Some (List.hd resultEntryList) with _ -> None
+  (* Entries with [id] as their name. *)
+  Hashtbl.find_all !symbolTable id
+  (* Entries of ancestor scopes of the current scope. *)
+  |> List.filter is_entry_from_ancestor_scope
+  (* Entries of ancestor scopes in decreasing order of depths. *)
+  |> List.stable_sort (fun e1 e2 -> compare e1.scope.depth e2.scope.depth * -1)
+  (* Entry closest to the current scope. *)
+  |> fun entryList -> try Some (List.hd entryList) with Failure _ -> None
 
 let get_unused_entries () =
   let unusedEntriesList = ref [] in
