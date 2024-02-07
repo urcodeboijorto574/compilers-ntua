@@ -386,7 +386,8 @@ and sem_lvalue lv : Types.t_type =
         let entryFoundOption = look_up_entry id in
         if entryFoundOption = None then
           Error.handle_error "Undefined variable"
-            (Printf.sprintf "Undefined variable '%s' is being used in function."
+            (Printf.sprintf
+               "Undefined variable '%s' is being used in function '%s'." id
                Symbol.(!current_scope.name));
         let entryFound = Option.get entryFoundOption in
         set_entry_isUsed entryFound;
