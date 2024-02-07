@@ -357,7 +357,7 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
         type_of_s1
       else
         match (type_of_s1, type_of_s2) with
-        | None, type_of_s | type_of_s, None -> type_of_s
+        | None, _ | _, None -> None
         | _ ->
             Error.handle_error
               "Multiple types returned in if-then-else statement"
@@ -372,7 +372,7 @@ and sem_stmt : Ast.stmt -> Types.t_type option = function
       | Some true ->
           if type_of_s = None then Error.handle_warning "Infinite loop.";
           type_of_s
-      | None -> type_of_s)
+      | None -> None)
   | S_return x -> (
       match x with None -> Some T_none | Some e -> Some (sem_expr e))
   | S_semicolon -> None
