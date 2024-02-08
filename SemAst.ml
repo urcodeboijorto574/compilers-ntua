@@ -373,7 +373,25 @@ and sem_stmt (expectedReturnType : Types.t_type) :
       match constCondValueOpt with
       | Some false -> None
       | Some true ->
-          if type_of_s = None then Error.handle_warning "Infinite loop.";
+          let check_returnativeness () =
+            let rec is_stmt_returnative = function
+              | S_return e_opt -> true
+              | S_block stmtList -> List.exists is_stmt_returnative stmtList
+              | S_if_else (c, s1, s2) ->
+                  Option.fold
+                    ~none:(is_stmt_returnative s1 || is_stmt_returnative s2)
+                    ~some:(fun v -> is_stmt_returnative (if v then s1 else s2))
+                    (get_const_cond_value c)
+              | S_if (c, s) | S_while (c, s) ->
+                  Option.fold ~none:(is_stmt_returnative s)
+                    ~some:(fun v -> v && is_stmt_returnative s)
+                    (get_const_cond_value c)
+              | S_assignment _ | S_func_call _ | S_semicolon -> false
+            in
+            if not (is_stmt_returnative s) then
+              Error.handle_warning "Infinite loop."
+          in
+          Option.fold ~some:ignore ~none:(check_returnativeness ()) type_of_s;
           type_of_s
       | None -> None)
   | S_return x ->
