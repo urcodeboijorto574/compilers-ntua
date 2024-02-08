@@ -53,10 +53,10 @@ let main =
       try Parser.program Lexer.lexer lexbuf
       with Parser.Error -> raise (Error.Syntax_error text)
     in
-    if not !Error.isErrorsRaised then
+    if !Error.errorsRaisedCounter = 0 then
       Error.handle_success "Successful parsing.";
     SemAst.sem_on asts;
-    if !Error.isErrorsRaised then failwith Error.semantic_error_msg;
+    if !Error.errorsRaisedCounter <> 0 then failwith Error.semantic_error_msg;
     Error.handle_success "Semantically correct.";
     GenAst.gen_on asts !has_o_flag;
 
@@ -81,6 +81,7 @@ let main =
     end;
     Error.handle_success "IR code generation completed.";
     if clangExitCode <> 0 then raise (Error.File_not_found "./lib/lib.a");
+    if !Error.warningsRaisedCounter <> 0 then Error.error_report ();
     exit 0
   with
   | Error.File_not_found filename ->
@@ -94,10 +95,9 @@ let main =
             else
               ""))
   | Assert_failure _ ->
-      (if !Error.isErrorsRaised then
-         eprintf "%s.\n" Error.compilation_failed_msg
-       else
-         Error.(print_error_header internal_error_msg));
+      Error.(print_error_header internal_error_msg);
+      if Error.(!errorsRaisedCounter <> 0 || !warningsRaisedCounter <> 0) then
+        Error.error_report ();
       exit 1
   | Error.Syntax_error text ->
       Error.(print_error_header syntax_error_msg);
@@ -163,13 +163,16 @@ let main =
         (fun _ -> assert false)
         (fail text buffer) supplier checkpoint
   | Failure msg when msg = Error.semantic_error_msg ->
-      eprintf "%s.\n" Error.compilation_failed_msg;
+      Error.error_report ();
       exit 1
   | Failure msg ->
-      Error.(print_error_header (sprintf "%s\n%s\n" internal_error_msg msg));
+      Error.(print_error_header (sprintf "%s: %s\n" internal_error_msg msg));
+      if !Error.errorsRaisedCounter <> 0 || !Error.warningsRaisedCounter <> 0
+      then
+        Error.error_report ();
       exit 1
-  | e -> (
-      try Error.(handle_error internal_error_msg "Unexpected error caught.")
-      with Failure _ ->
-        eprintf "Exception: %s\n" (Printexc.to_string e);
-        exit 1)
+  | e ->
+      Error.(print_error_header internal_error_msg);
+      eprintf "Unexpected error caught.\nException: %s\n%!"
+        (Printexc.to_string e);
+      exit 1

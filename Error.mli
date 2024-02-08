@@ -1,6 +1,7 @@
 open Types
 
-val isErrorsRaised : bool ref
+val errorsRaisedCounter : int ref
+val warningsRaisedCounter : int ref
 
 exception File_not_found of string
 exception Shared_name_func_var
@@ -16,6 +17,9 @@ val type_error_msg : string
 
 (** [print_error_header msg] prints "Error: " in red and then the [msg] given. *)
 val print_error_header : string -> unit
+
+(** [error_report] prints the total numbers of errors and warnings in stderr. *)
+val error_report : unit -> unit
 
 (** [handle_error finalMsg infoMsg] prints the [infoMsg] to the standard error
     output. *)
