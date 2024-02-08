@@ -2,6 +2,7 @@ open Llvm
 open Arg
 open Filename
 open Parser
+open Printf
 module LexerUtil = MenhirLib.LexerUtil
 module ErrorReports = MenhirLib.ErrorReports
 module MenhirInterpreter = UnitActionsParser.MenhirInterpreter
@@ -24,7 +25,7 @@ let main =
   Arg.parse speclist (fun s -> filename := s) usage_msg;
 
   if !has_i_flag && !has_f_flag then begin
-    Printf.eprintf "%s\n" usage_msg;
+    eprintf "%s\n" usage_msg;
     exit 1
   end;
 
@@ -86,7 +87,7 @@ let main =
   with
   | Error.File_not_found filename ->
       Error.handle_error "File not found"
-        (Printf.sprintf "File \"%s\" not found.%s" filename
+        (sprintf "File \"%s\" not found.%s" filename
            (if filename = "./lib/lib.a" then
               "\n\
                Make sure the standard library is built before using the \
@@ -96,7 +97,7 @@ let main =
               ""))
   | Assert_failure _ ->
       (if !Error.isErrorsRaised then
-         Printf.eprintf "%s.\n" Error.compilation_failed_msg
+         eprintf "%s.\n" Error.compilation_failed_msg
        else
          Error.(print_error_header internal_error_msg));
       exit 1
@@ -157,18 +158,18 @@ let main =
           ParserMessages.message (state checkpoint)
           |> ErrorReports.expand (get text checkpoint)
         in
-        Printf.eprintf "%s%s%!" location message;
+        eprintf "%s%s%!" location message;
         exit 1
       in
       MenhirInterpreter.loop_handle
         (fun _ -> assert false)
         (fail text buffer) supplier checkpoint
   | Failure msg when msg = Error.semantic_error_msg ->
-      Printf.eprintf "%s.\n" Error.compilation_failed_msg;
+      eprintf "%s.\n" Error.compilation_failed_msg;
       exit 1
   | Failure _ -> exit 1
   | e -> (
       try Error.(handle_error internal_error_msg "Unexpected error caught.")
       with Failure _ ->
-        Printf.eprintf "Exception: %s\n" (Printexc.to_string e);
+        eprintf "Exception: %s\n" (Printexc.to_string e);
         exit 1)

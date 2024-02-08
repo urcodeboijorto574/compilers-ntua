@@ -1,5 +1,6 @@
 open Ast
 open Symbol
+open Printf
 
 (** [funcDefAncestors] is a stack that stores all the ancestors of a funcDef in
     runtime. *)
@@ -55,7 +56,7 @@ let rec sem_funcDef fd : unit =
       let overloadedParNameOption = duplicate_element resultList in
       if overloadedParNameOption <> None then
         Error.handle_error "Two parameters share identifier"
-          (Printf.sprintf "Parameter name '%s' in function '%s' is used twice."
+          (sprintf "Parameter name '%s' in function '%s' is used twice."
              (Option.get overloadedParNameOption)
              fd.header.id);
       resultList
@@ -70,8 +71,7 @@ let rec sem_funcDef fd : unit =
       let overloadedVarNameOption = duplicate_element resultList in
       if overloadedVarNameOption <> None then
         Error.handle_error "Two variables share identifier"
-          (Printf.sprintf
-             "Variable '%s' is declared twice in the function '%s'."
+          (sprintf "Variable '%s' is declared twice in the function '%s'."
              (Option.get overloadedVarNameOption)
              fd.header.id);
       resultList
@@ -86,7 +86,7 @@ let rec sem_funcDef fd : unit =
   in
   if overloadedParVarNameOption <> None then
     Error.handle_error "Parameter and variable share identifier"
-      (Printf.sprintf
+      (sprintf
          "The name '%s' is shared between a variable and a parameter in \
           function '%s'."
          (Option.get overloadedParVarNameOption)
@@ -101,8 +101,7 @@ let rec sem_funcDef fd : unit =
   in
   if expectedReturnType <> typeReturnedInBlock then
     Error.handle_type_error expectedReturnType typeReturnedInBlock
-      (Printf.sprintf
-         "Function '%s' doesn't return the expected type in its block."
+      (sprintf "Function '%s' doesn't return the expected type in its block."
          fd.header.id);
   if isMainProgram then
     List.iter
@@ -129,7 +128,7 @@ and sem_header isPartOfAFuncDef header : unit =
                  acc)
              [] funcDefAncestors)
       in
-      Printf.sprintf "(%d)" (Hashtbl.hash (String.concat "" ancestorsNames))
+      sprintf "(%d)" (Hashtbl.hash (String.concat "" ancestorsNames))
     in
     header.comp_id <- header.id ^ postfix
   end;
@@ -163,8 +162,7 @@ and sem_header isPartOfAFuncDef header : unit =
       if functionEntry.return_type <> Ast.t_type_of_retType header.ret_type then
         Error.handle_type_error functionEntry.return_type
           (Ast.t_type_of_retType header.ret_type)
-          (Printf.sprintf
-             "Return type of function '%s' differs between declarations."
+          (sprintf "Return type of function '%s' differs between declarations."
              header.id);
       let paramListFromHeaderExtended : (Types.t_type * bool) list =
         let open List in
@@ -188,14 +186,14 @@ and sem_header isPartOfAFuncDef header : unit =
           (fun i pEntry pHeader ->
             if pEntry.parameter_type <> fst pHeader then
               Error.handle_type_error pEntry.parameter_type (fst pHeader)
-                (Printf.sprintf
+                (sprintf
                    "The type of the parameter at position %d of the '%s' \
                     function's header differs from the one declared at its \
                     previous function header."
                    i header.id);
             if pEntry.passing = BY_REFERENCE <> snd pHeader then
               Error.handle_error Error.semantic_error_msg
-                (Printf.sprintf
+                (sprintf
                    "The type of passing of the parameter at position %d of \
                     '%s' function's header differs from the one declared at \
                     its previous function header."
@@ -252,7 +250,7 @@ and sem_localDefList : Ast.localDef list -> unit = function
         | Some (L_funcDef fd) -> Some fd
         | _ ->
             Error.handle_error "Function declared but never defined"
-              (Printf.sprintf "Function '%s' declared but never defined."
+              (sprintf "Function '%s' declared but never defined."
                  fdecl.header.id);
             None
       in
@@ -332,7 +330,7 @@ and sem_stmt (expectedReturnType : Types.t_type) :
           let typeExpr = sem_expr e in
           if not (Types.equal_types t typeExpr) then
             Error.handle_type_error t typeExpr
-              (Printf.sprintf
+              (sprintf
                  "The value of an expression of type %s is tried to be \
                   assigned to an l-value of type %s."
                  (Types.string_of_t_type typeExpr)
@@ -396,8 +394,8 @@ and sem_lvalue lv : Types.t_type =
         let entryFoundOption = look_up_entry id in
         if entryFoundOption = None then
           Error.handle_error "Undefined variable"
-            (Printf.sprintf
-               "Undefined variable '%s' is being used in function '%s'." id
+            (sprintf "Undefined variable '%s' is being used in function '%s'."
+               id
                Symbol.(!current_scope.name));
         let entryFound = Option.get entryFoundOption in
         set_entry_isUsed entryFound;
@@ -418,7 +416,7 @@ and sem_lvalue lv : Types.t_type =
         let typeExpr = sem_expr e in
         if not Types.(equal_types T_int typeExpr) then
           Error.handle_type_error Types.T_int typeExpr
-            (Printf.sprintf "Index of arrays must be of integer type.");
+            (sprintf "Index of arrays must be of integer type.");
         let rec get_name_of_lv = function
           | L_id id -> id
           | L_string s -> s
@@ -438,7 +436,7 @@ and sem_lvalue lv : Types.t_type =
             t
         | t ->
             Error.handle_error "Iteration on non-array type of variable"
-              (Printf.sprintf
+              (sprintf
                  "Variable '%s' is either not an array or it is declared as an \
                   array with less dimensions than as used."
                  (get_name_of_lv lv));
@@ -459,7 +457,7 @@ and sem_expr : Ast.expr -> Types.t_type = function
       match sem_funcCall fc with
       | T_func T_none ->
           Error.handle_error Error.type_error_msg
-            (Printf.sprintf
+            (sprintf
                "Function '%s' returns nothing and can't be used as an \
                 expression."
                fc.id);
@@ -480,7 +478,7 @@ and sem_expr : Ast.expr -> Types.t_type = function
       | _ ->
           Error.handle_type_error T_int
             (if typeExpr1 <> T_int then typeExpr1 else typeExpr2)
-            (Printf.sprintf
+            (sprintf
                "Arithmetic operators must be applied to integer expressions. \
                 %s argument is of non-integer type."
                (if typeExpr1 <> T_int then "Left" else "Right")));
@@ -519,7 +517,7 @@ and sem_funcCall fc : Types.t_type =
           in
           get_ancestorsNames (Some (Option.get resultLookUpOption).scope)
         in
-        Printf.sprintf "(%d)" (Hashtbl.hash (String.concat "" ancestorsNames))
+        sprintf "(%d)" (Hashtbl.hash (String.concat "" ancestorsNames))
       in
       fc.comp_id <- fc.id ^ postfix
     end;
@@ -536,8 +534,8 @@ and sem_funcCall fc : Types.t_type =
     in
     if not isNumOfParamsOK then
       Error.handle_error "Unexpected number of arguments in function call"
-        (Printf.sprintf
-           "Function '%s' expected %d arguments, but instead got %d." fc.id
+        (sprintf "Function '%s' expected %d arguments, but instead got %d."
+           fc.id
            (List.length functionEntry.parameters_list)
            (List.length fc.expr_list));
     let checkArgs () : unit =
@@ -555,7 +553,7 @@ and sem_funcCall fc : Types.t_type =
           in
           if not (Types.equal_types typeOfParam typeOfArg) then
             Error.handle_type_error typeOfParam typeOfArg
-              (Printf.sprintf
+              (sprintf
                  "The type of the argument at position %d of the '%s' function \
                   call differs from the one declared at the function \
                   definition."
@@ -565,7 +563,7 @@ and sem_funcCall fc : Types.t_type =
           in
           if isParamByRef && not isExprLValue then
             Error.handle_error "r-value passed by reference"
-              (Printf.sprintf
+              (sprintf
                  "'%s' function call: Argument at position %d that is passed \
                   by reference isn't an l-value."
                  fc.id i))

@@ -1,4 +1,5 @@
 open Types
+open Printf
 
 let isErrorsRaised = ref false
 
@@ -13,25 +14,25 @@ let lexing_error_msg = "Lexical error"
 let syntax_error_msg = "Syntax error"
 let semantic_error_msg = "Semantic error"
 let type_error_msg = "Type error"
-let print_error_header msg = Printf.eprintf "\027[31mError\027[0m: %s\n%!" msg
+let print_error_header msg = eprintf "\027[31mError\027[0m: %s\n%!" msg
 
 let handle_error finalMsg infoMsg =
   if not !isErrorsRaised then isErrorsRaised := true;
   print_error_header finalMsg;
-  Printf.eprintf "%s\n%!" infoMsg
+  eprintf "%s\n%!" infoMsg
 
 let handle_error_fatal finalMsg infoMsg =
   handle_error finalMsg infoMsg;
   failwith finalMsg
 
-let handle_warning = Printf.eprintf "\027[35mWarning\027[0m: %s\n%!"
-let handle_success = Printf.printf "\027[32m%s\027[0m\n%!"
+let handle_warning = eprintf "\027[35mWarning\027[0m: %s\n%!"
+let handle_success = printf "\027[32m%s\027[0m\n%!"
 
 let handle_type_error expT foundT infoMsg =
   if not !isErrorsRaised then isErrorsRaised := true;
   print_error_header type_error_msg;
-  Printf.eprintf "%s\n%s\n%!"
-    (Printf.sprintf "Expected type: %s, Encountered type: %s."
+  eprintf "%s\n%s\n%!"
+    (sprintf "Expected type: %s, Encountered type: %s."
        (Types.string_of_t_type expT)
        (Types.string_of_t_type foundT))
     infoMsg

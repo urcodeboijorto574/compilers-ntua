@@ -1,8 +1,8 @@
 {
   open Parser
+  open Printf
 
-  let int_of_hex digit1 digit2 =
-    int_of_string (Printf.sprintf "0x%c%c" digit1 digit2)
+  let int_of_hex digit1 digit2 = int_of_string (sprintf "0x%c%c" digit1 digit2)
 
   let incrementNumLines (lexbuf : Lexing.lexbuf) =
     let lcp : Lexing.position = lexbuf.lex_curr_p in
@@ -14,7 +14,7 @@
         pos_cnum = lcp.pos_cnum
       }
   let get_location_msg (lexbuf : Lexing.lexbuf) =
-    Printf.sprintf "File \"%s\", line %d:\n" lexbuf.lex_curr_p.pos_fname lexbuf.lex_curr_p.pos_lnum
+    sprintf "File \"%s\", line %d:\n" lexbuf.lex_curr_p.pos_fname lexbuf.lex_curr_p.pos_lnum
 
   let char_list_in_string = ref []
   let add_in_list c = char_list_in_string := c :: !char_list_in_string
@@ -100,7 +100,7 @@ rule lexer = parse
 
   | eof { T_eof }
   | _ as chr {
-      handle_error lexbuf (Printf.sprintf "Unknown character '%c'.\n" chr);
+      handle_error lexbuf (sprintf "Unknown character '%c'.\n" chr);
       lexer lexbuf
     }
 
