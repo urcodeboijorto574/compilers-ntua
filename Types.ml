@@ -34,14 +34,12 @@ let rec equal_types t1 t2 =
       if s1 = -1 || s2 = -1 then true else equal_types t1' t2'
   | _ -> t1 = t2
 
-let t_type_of_t_func = function
-  | T_array _ | T_none -> assert false
-  | T_func t | t -> t
+let get = function
+  | T_array (_, t) -> t
+  | T_func t -> t
+  | T_int | T_char | T_none -> failwith "t_type is not an encapsulated t_type"
 
-let t_type_of_t_array = function T_array (_, t) -> t | _ -> assert false
-
-let rec final_t_type_of_t_array = function
-  | T_func _ | T_none ->
-      raise (Invalid_argument "argument type is not an array")
-  | T_array (_, t) -> final_t_type_of_t_array t
+let rec join = function
+  | T_func _ | T_none -> failwith "t_type is not an array"
+  | T_array (_, t) -> join t
   | t -> t

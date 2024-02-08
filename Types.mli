@@ -24,16 +24,12 @@ val dimensions_list_of_t_array : t_type -> int list
     the same. If they are the same [true] is returned, otherwise [false]. *)
 val equal_types : t_type -> t_type -> bool
 
-(** [t_type_of_t_func t] takes a [T_func ti] type and returns the encapsulated
-    type [ti]. *)
-val t_type_of_t_func : t_type -> t_type
+(** [get t] is [t_in] if [t] is [T_func t_in] or [T_array (_, t_in)].
+    @raise Failure if [t] is [T_int], [T_char] or [T_none]. *)
+val get : t_type -> t_type
 
-(** [t_type_of_t_array t] takes a [T_array (size, ti)] type and returns the
-    encapsulated type [ti]. *)
-val t_type_of_t_array : t_type -> t_type
-
-(** [final_t_type_of_t_array t] returns the type of data that an array stores.
-    The only types that can be returned are [T_int] and [T_char]. Raises
-    [Invalid_argument] if the argument is neither of [T_array], [T_int] and
-    [T_char]. *)
-val final_t_type_of_t_array : t_type -> t_type
+(** [join t] returns the type of data that an array stores. The only types that
+    can be returned are [T_int] and [T_char].
+    @raise Failure
+      if the argument is neither of [T_array], [T_int] and [T_char]. *)
+val join : t_type -> t_type

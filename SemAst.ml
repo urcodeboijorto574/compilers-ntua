@@ -96,7 +96,7 @@ let rec sem_funcDef fd : unit =
   let typeReturnedInBlock =
     let open Types in
     T_func
-      (try Option.get (sem_block (t_type_of_t_func expectedReturnType) fd.block)
+      (try Option.get (sem_block (Types.get expectedReturnType) fd.block)
        with Invalid_argument _ -> T_none)
   in
   if expectedReturnType <> typeReturnedInBlock then
@@ -317,7 +317,7 @@ and sem_stmt (expectedReturnType : Types.t_type) :
       | Types.T_array (_, t) ->
           Error.handle_error "Assignment to array"
             "Assignment to an l-value of type array is not possible.";
-          Some (Types.final_t_type_of_t_array t)
+          Some (Types.join t)
       | Types.T_func t ->
           Error.handle_error "Assignment to function"
             "Assignment to a function call is not possible.";
@@ -525,7 +525,7 @@ and sem_funcCall fc : Types.t_type =
     in
     set_entry_isUsed (Option.get resultLookUpOption);
     if fc.ret_type = None then
-      fc.ret_type <- Some (Types.t_type_of_t_func functionEntry.return_type);
+      fc.ret_type <- Some (Types.get functionEntry.return_type);
     let isNumOfParamsOK =
       List.compare_lengths fc.expr_list functionEntry.parameters_list = 0
     in

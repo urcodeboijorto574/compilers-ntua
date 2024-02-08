@@ -21,7 +21,7 @@ let build_nop () =
   let zero = const_int bool_type 0 in
   build_add zero zero "nop" builder
 
-(* [named_values] holds the memory allocation of variables. *)
+(** [named_values] holds the memory allocation of variables. *)
 let named_values : (string, llvalue) Hashtbl.t = Hashtbl.create 2000
 
 (** [named_functions] stores the expanded fparDef list of a function. *)
@@ -29,10 +29,9 @@ let named_functions : (string, Ast.fparDef list) Hashtbl.t = Hashtbl.create 2000
 
 let blocks_list = ref []
 
-(** [t_type_of_stmt (s : Ast.stmt)] takes a statement [s] and returns a
-    [Types.t_type option]. If the statement [s] is a return statement or a
-    statement that always includes a return statement, then [Some t] is
-    returned, with [t] being the type of the expression returned, else [None]. *)
+(** [t_type_of_stmt s] is [Some t] if [s] is a return statement or a block with
+    an active return statement, that returns the type [t], else [None]. Note: an
+    active statement is one that exists in a block that can be ran. *)
 let rec t_type_of_stmt (s : Ast.stmt) : Types.t_type option =
   let rec t_type_of_expr = function
     | E_const_int _ | E_sgn_expr _ | E_op_expr_expr _ -> T_int
@@ -66,8 +65,7 @@ let rec t_type_of_stmt (s : Ast.stmt) : Types.t_type option =
 let rec lltype_of_t_type = function
   | T_int -> int_type
   | T_char -> char_type
-  | T_array (n, t) ->
-      pointer_type (lltype_of_t_type (Types.final_t_type_of_t_array t))
+  | T_array (n, t) -> pointer_type (lltype_of_t_type (Types.join t))
   | T_func t -> lltype_of_t_type t
   | T_none -> void_type context
 
@@ -640,7 +638,7 @@ let rec gen_funcDef funcDef =
   (* Generation of block *)
   position_at_end bodyBB builder;
   let returnValueAddrOpt =
-    match t_type_of_t_func (Ast.t_type_of_retType funcDef.header.ret_type) with
+    match Types.get (Ast.t_type_of_retType funcDef.header.ret_type) with
     | T_none -> None
     | t -> Some (build_alloca (lltype_of_t_type t) "returned_value_ptr" builder)
   in
