@@ -42,8 +42,7 @@ let rec t_type_of_stmt (s : Ast.stmt) : Types.t_type option =
     | E_expr_parenthesized e -> t_type_of_expr e
   in
   match s with
-  | S_return e_opt ->
-      Some (match e_opt with None -> T_none | Some e -> t_type_of_expr e)
+  | S_return e_opt -> Some (Option.fold ~none:T_none ~some:t_type_of_expr e_opt)
   | S_block stmtList -> begin
       match stmtList with
       | [] -> None

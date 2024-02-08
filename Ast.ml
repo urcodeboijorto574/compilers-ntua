@@ -192,10 +192,8 @@ let rec get_const_expr_value : expr -> int option = function
   | E_sgn_expr (sign, e) -> (
       match sign with
       | O_plus -> get_const_expr_value e
-      | O_minus -> (
-          match get_const_expr_value e with
-          | None -> None
-          | Some i -> Some (-1 * i)))
+      | O_minus -> Option.bind (get_const_expr_value e) (fun i -> Some (-1 * i))
+      )
   | E_op_expr_expr (e1, ao, e2) -> (
       match (get_const_expr_value e1, get_const_expr_value e2) with
       | Some i1, Some i2 ->
@@ -237,9 +235,7 @@ let get_const_cond_value c =
         | _ -> None)
     | C_cond_parenthesized c -> get_const_cond_value_helper c
   in
-  match get_const_cond_value_helper c with
-  | None -> None
-  | Some v ->
+  Option.bind (get_const_cond_value_helper c) (fun v ->
       let string_of_v = if v then "true" else "false" in
       Error.handle_warning ("Condition is always " ^ string_of_v ^ ".");
-      Some v
+      Some v)

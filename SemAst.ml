@@ -117,20 +117,17 @@ let rec sem_funcDef fd : unit =
     inserted in it. *)
 and sem_header isPartOfAFuncDef header : unit =
   if not (List.mem header.id Symbol.lib_function_names) then begin
-    let postfix : string =
-      let ancestorsNames : string list =
-        List.rev
-          (Stack.fold
-             (fun acc (fd : Ast.funcDef option) ->
-               if fd <> None then
-                 (Option.get fd).header.id :: acc
-               else
-                 acc)
-             [] funcDefAncestors)
-      in
-      sprintf "(%d)" (Hashtbl.hash (String.concat "" ancestorsNames))
+    let ancestorsNames : string list =
+      Stack.fold
+        (fun acc (fdOption : Ast.funcDef option) ->
+          Option.fold ~none:acc
+            ~some:(fun (fd : funcDef) -> fd.header.id :: acc)
+            fdOption)
+        [] funcDefAncestors
+      |> List.rev
     in
-    header.comp_id <- header.id ^ postfix
+    String.concat "" ancestorsNames |> Hashtbl.hash |> sprintf "(%d)"
+    |> fun postfix -> header.comp_id <- header.id ^ postfix
   end;
   let isMainProgram = !current_scope.depth = Symbol.initialScopeDepthValue in
   if isMainProgram then (
@@ -166,11 +163,10 @@ and sem_header isPartOfAFuncDef header : unit =
              header.id);
       let paramListFromHeaderExtended : (Types.t_type * bool) list =
         let open List in
-        map
-          (fun (fpd : Ast.fparDef) ->
-            List.init (List.length fpd.id_list) (fun _ ->
-                (Ast.t_type_of_fparType fpd.fpar_type, fpd.ref)))
-          header.fpar_def_list
+        header.fpar_def_list
+        |> map (fun (fpd : Ast.fparDef) ->
+               init (length fpd.id_list) (fun _ ->
+                   (Ast.t_type_of_fparType fpd.fpar_type, fpd.ref)))
         |> flatten
       in
       let matchingNumOfParams : bool =
@@ -347,13 +343,13 @@ and sem_stmt (expectedReturnType : Types.t_type) :
                  fc.id);
           None
       | T_none | T_int | T_char | T_array _ -> assert false)
-  | S_if (c, s) -> (
+  | S_if (c, s) ->
       sem_cond c;
       let constCondValue = Ast.get_const_cond_value c in
       let type_of_s = sem_stmt expectedReturnType s in
-      match constCondValue with
-      | None | Some false -> None
-      | Some true -> type_of_s)
+      Option.fold ~none:None
+        ~some:(fun v -> if v then type_of_s else None)
+        constCondValue
   | S_if_else (c, s1, s2) ->
       sem_cond c;
       let type_of_s1 = sem_stmt expectedReturnType s1 in
@@ -377,9 +373,7 @@ and sem_stmt (expectedReturnType : Types.t_type) :
           type_of_s
       | None -> None)
   | S_return x ->
-      let returnedType =
-        match x with None -> Types.T_none | Some e -> sem_expr e
-      in
+      let returnedType = Option.fold ~none:Types.T_none ~some:sem_expr x in
       if expectedReturnType <> returnedType then
         Error.handle_type_error expectedReturnType returnedType
           "Return statement in block has unexpected return type.";
@@ -511,17 +505,13 @@ and sem_funcCall fc : Types.t_type =
   try
     if resultLookUpOption = None then raise Not_found;
     if not (List.mem fc.id Symbol.lib_function_names) then begin
-      let postfix =
-        let ancestorsNames =
-          let rec get_ancestorsNames = function
-            | None -> []
-            | Some scope -> scope.name :: get_ancestorsNames scope.parent
-          in
-          get_ancestorsNames (Some (Option.get resultLookUpOption).scope)
-        in
-        sprintf "(%d)" (Hashtbl.hash (String.concat "" ancestorsNames))
+      let ancestorsNames =
+        let none = [] in
+        let rec some sc = sc.name :: Option.fold ~none ~some sc.parent in
+        Option.fold ~none ~some (Some (Option.get resultLookUpOption).scope)
       in
-      fc.comp_id <- fc.id ^ postfix
+      String.concat "" ancestorsNames |> Hashtbl.hash |> sprintf "(%d)"
+      |> fun postfix -> fc.comp_id <- fc.id ^ postfix
     end;
     let functionEntry =
       match (Option.get resultLookUpOption).kind with
