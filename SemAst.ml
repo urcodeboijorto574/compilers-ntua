@@ -105,7 +105,7 @@ let rec sem_funcDef fd : unit =
          fd.header.id);
   if isMainProgram then
     List.iter
-      (fun id -> Error.handle_warning ("Unused name '" ^ id ^ "'."))
+      (fun id -> Error.handle_warning (sprintf "Unused name '%s'." id))
       (Symbol.get_unused_entries ());
   Symbol.close_scope ()
 
@@ -180,7 +180,7 @@ and sem_header isPartOfAFuncDef header : unit =
       in
       if not matchingNumOfParams then
         Error.handle_error "Function overload"
-          ("Function '" ^ header.id ^ "' is overloaded.");
+          (sprintf "Function '%s' is overloaded." header.id);
       let checkParams () : unit =
         iteri2
           (fun i pEntry pHeader ->
@@ -203,11 +203,11 @@ and sem_header isPartOfAFuncDef header : unit =
       if matchingNumOfParams then checkParams ();
       if functionEntry.state = Symbol.DEFINED then
         Error.handle_error "Redefinition of function"
-          ("Function '" ^ header.id ^ "' is defined twice.");
+          (sprintf "Function '%s' is defined twice." header.id);
       Symbol.set_func_defined functionEntry
     with Error.Shared_name_func_var ->
       Error.handle_error "Function and variable share the same name"
-        ("Name '" ^ header.id ^ "' is shared with a function and a variable.")
+        (sprintf "Name '%s' is shared with a function and a variable." header.id)
 
 (** [sem_fparDefList (fpdl : Ast.fparDef list)] semantically analyses the
     function's parameter definitions [fpdl]. *)
@@ -275,7 +275,7 @@ and sem_funcDecl fd : unit =
     sem_header false fd.header
   else
     Error.handle_warning
-      ("Function '" ^ fd.header.id ^ "' has redundant declarations.")
+      (sprintf "Function '%s' has redundant declarations" fd.header.id)
 
 (** [sem_varDef (vd : Ast.varDef)] enters in the symbolTable every variable
     defined in the variable definition [vd]. *)
@@ -343,7 +343,8 @@ and sem_stmt (expectedReturnType : Types.t_type) :
       | T_func t ->
           if t <> T_none then
             Error.handle_warning
-              ("The return value of the function '" ^ fc.id ^ "' is not used.");
+              (sprintf "The return value of the function '%s' is not used."
+                 fc.id);
           None
       | T_none | T_int | T_char | T_array _ -> assert false)
   | S_if (c, s) -> (
@@ -426,12 +427,13 @@ and sem_lvalue lv : Types.t_type =
         | Types.T_array (n, t) ->
             if n <> -1 then begin
               match Ast.get_const_expr_value e with
-              | None -> ()
-              | Some index ->
-                  if index < 0 || index >= n then
-                    Error.handle_error "Segmentation fault"
-                      ("Attempt to access an out of bounds element of the \
-                        array '" ^ get_name_of_lv lv ^ "'.")
+              | Some index when index < 0 || index >= n ->
+                  Error.handle_error "Segmentation fault"
+                    (sprintf
+                       "Attempt to access an out of bounds element of the \
+                        array '%s'."
+                       (get_name_of_lv lv))
+              | _ -> ()
             end;
             t
         | t ->
@@ -574,11 +576,11 @@ and sem_funcCall fc : Types.t_type =
   with
   | Not_found ->
       Error.handle_error "Undeclared function called"
-        ("Function '" ^ fc.id ^ "' is called, but never declared.");
+        (sprintf "Function '%s' is called, but never declared." fc.id);
       T_none
   | Error.Shared_name_func_var ->
       Error.handle_error "Function and variable share the same name"
-        ("Name '" ^ fc.id ^ "' is shared with a function and a variable.");
+        (sprintf "Name '%s' is shared with a function and a variable." fc.id);
       T_none
 
 (** [sem_on (ast : Ast.funcDef)] semantically analyses the root of the ast [ast]
