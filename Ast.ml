@@ -147,6 +147,7 @@ and cond =
   | C_cond_parenthesized of cond
 
 (* Functions to construct the records above *)
+
 let rec newFuncDef (a, b, c) =
   {
     header = a;
@@ -169,6 +170,7 @@ and newLValue a = { lv_kind = a; lv_type = None }
 and newFuncCall (a, b) = { id = a; comp_id = a; expr_list = b; ret_type = None }
 
 (* Type conversion functions *)
+
 let t_type_of_dataType = function
   | ConstInt -> Types.T_int
   | ConstChar -> Types.T_char
@@ -185,50 +187,66 @@ let t_type_of_varType (vt : varType) : Types.t_type =
   let open Types in
   construct_array_type vt.array_dimensions (t_type_of_dataType vt.data_type)
 
-(* Helper functions for checks *)
+(* Constant expression/condition evaluation functions *)
 
-let rec get_const_expr_value : expr -> int option = function
-  | E_const_int ci -> Some ci
+let rec get_const_expr_value : expr -> (Types.t_type * int) option = function
+  | E_const_int ci -> Some (T_int, ci)
+  | E_const_char cc -> Some (T_char, Char.code cc)
+  | E_lvalue { lv_kind = L_comp (L_string str, index) } ->
+      Option.bind (get_const_expr_value index) (fun (t, index) ->
+          let open Types in
+          if t = T_int then
+            try Some (T_char, Char.code (String.get str index))
+            with Invalid_argument _ ->
+              if index = String.length str then
+                Some (T_char, Char.code '\000')
+              else
+                None
+          else
+            None)
   | E_sgn_expr (sign, e) ->
-      Option.bind (get_const_expr_value e) (fun v ->
-          match sign with O_plus -> Some v | O_minus -> Some (-v))
+      Option.map
+        (fun (t, v) -> (t, if t = Types.T_int && sign = O_minus then -v else v))
+        (get_const_expr_value e)
   | E_op_expr_expr (e1, ao, e2) -> (
       match (get_const_expr_value e1, get_const_expr_value e2) with
-      | Some i1, Some i2 ->
-          Some
-            (match ao with
-            | O_plus -> i1 + i2
-            | O_minus -> i1 - i2
-            | O_mul -> i1 * i2
-            | O_div -> i1 / i2
-            | O_mod -> i1 mod i2)
+      | Some (T_int, i1), Some (T_int, i2) ->
+          let open Int in
+          let func_of_arithmOperator = function
+            | O_plus -> add
+            | O_minus -> sub
+            | O_mul -> mul
+            | O_div -> div
+            | O_mod -> rem
+          in
+          Some (T_int, (func_of_arithmOperator ao) i1 i2)
       | _ -> None)
   | E_expr_parenthesized e -> get_const_expr_value e
-  | E_const_char _ | E_lvalue _ | E_func_call _ -> None
+  | E_lvalue _ | E_func_call _ -> None
 
 let rec get_const_cond_value = function
-  | C_not_cond (lo, c) ->
-      Option.map not (get_const_cond_value c)
-      (* Option.bind (get_const_cond_value c) (fun v -> Some (not v)) *)
+  | C_not_cond (lo, c) -> Option.map not (get_const_cond_value c)
   | C_cond_cond (c1, lo, c2) -> begin
-      Option.bind (get_const_cond_value c1) (fun v1 ->
-          if lo = O_or && v1 then
-            Some true
-          else if lo = O_and && not v1 then
-            Some false
-          else
-            get_const_cond_value c2)
+      match (get_const_cond_value c1, get_const_cond_value c2) with
+      | None, None -> None
+      | (Some v, None | None, Some v) when lo = O_or ->
+          if v then Some true else None
+      | Some v, None | None, Some v -> if not v then Some false else None
+      | Some v1, Some v2 when lo = O_or -> Some (v1 || v2)
+      | Some v1, Some v2 -> Some (v1 && v2)
     end
-  | C_expr_expr (e1, co, e2) -> (
+  | C_expr_expr (e1, co, e2) -> begin
       match (get_const_expr_value e1, get_const_expr_value e2) with
-      | Some i1, Some i2 ->
+      | Some (t1, v1), Some (t2, v2)
+        when t1 = t2 && Types.(t1 = T_int || t1 = T_char) ->
           Some
             (match co with
-            | O_equal -> i1 = i2
-            | O_less -> i1 < i2
-            | O_greater -> i1 > i2
-            | O_less_eq -> i1 <= i2
-            | O_greater_eq -> i1 >= i2
-            | O_not_equal -> i1 <> i2)
-      | _ -> None)
+            | O_equal -> v1 = v2
+            | O_less -> v1 < v2
+            | O_greater -> v1 > v2
+            | O_less_eq -> v1 <= v2
+            | O_greater_eq -> v1 >= v2
+            | O_not_equal -> v1 <> v2)
+      | _ -> None
+    end
   | C_cond_parenthesized c -> get_const_cond_value c

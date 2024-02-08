@@ -424,7 +424,7 @@ and sem_lvalue lv : Types.t_type =
         | Types.T_array (n, t) ->
             if n <> -1 then begin
               match Ast.get_const_expr_value e with
-              | Some index when index < 0 || index >= n ->
+              | Some (T_int, index) when index < 0 || index >= n ->
                   Error.handle_error "Segmentation fault"
                     (sprintf
                        "Attempt to access an out of bounds element of the \
@@ -545,9 +545,8 @@ and sem_funcCall fc : Types.t_type =
       in
       iteri2
         (fun i param arg ->
-          let typeOfParam, typeOfArg =
-            (t_type_of_param_entry param, sem_expr arg)
-          in
+          let typeOfParam = t_type_of_param_entry param in
+          let typeOfArg = sem_expr arg in
           if not (Types.equal_types typeOfParam typeOfArg) then
             Error.handle_type_error typeOfParam typeOfArg
               (sprintf
@@ -555,9 +554,8 @@ and sem_funcCall fc : Types.t_type =
                   call differs from the one declared at the function \
                   definition."
                  i fc.id);
-          let isParamByRef, isExprLValue =
-            (is_by_ref_of_param_entry param, is_lvalue_of_expr arg)
-          in
+          let isParamByRef = is_by_ref_of_param_entry param in
+          let isExprLValue = is_lvalue_of_expr arg in
           if isParamByRef && not isExprLValue then
             Error.handle_error "r-value passed by reference"
               (sprintf

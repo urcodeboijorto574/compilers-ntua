@@ -1,6 +1,5 @@
 %{
   open Ast
-  open Types
 %}
 
 (* Token declarations *)

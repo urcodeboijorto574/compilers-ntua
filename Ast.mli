@@ -140,7 +140,8 @@ and cond =
   | C_expr_expr of expr * compOperator * expr
   | C_cond_parenthesized of cond
 
-(* Functions to construct the records above *)
+(* Functions to construct the AST nodes *)
+
 val newFuncDef : header * localDef list * stmt list -> funcDef
 val newFuncDecl : header -> funcDecl
 val newHeader : string * fparDef list * retType -> header
@@ -169,11 +170,11 @@ val t_type_of_fparType : fparType -> Types.t_type
     the corresponding type. *)
 val t_type_of_varType : varType -> Types.t_type
 
-(* Helper functions for checks *)
+(* Constant expression/condition evaluation functions *)
 
 (** [get_const_expr_value e] checks whether an expression [e] has a constant
     integer value or not. *)
-val get_const_expr_value : expr -> int option
+val get_const_expr_value : expr -> (Types.t_type * int) option
 
 (** [get_const_cond_value c] checks whether a condition [c] has a constant
     value. If so, a warning message gets printed in standard error output. *)

@@ -545,7 +545,7 @@ and gen_varDef sf_alloca struct_index vd =
     let dimList = vd.var_type.array_dimensions in
     let array_alloca =
       let arraySize : Llvm.llvalue =
-        let productOfList = List.fold_left (fun acc d -> acc * d) 1 dimList in
+        let productOfList = List.fold_left Int.mul 1 dimList in
         const_int int_type productOfList
       in
       let t = lltype_of_t_type (Ast.t_type_of_dataType vd.var_type.data_type) in
