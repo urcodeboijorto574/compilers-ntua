@@ -56,11 +56,9 @@ let main =
     if not !Error.isErrorsRaised then
       Error.handle_success "Successful parsing.";
     SemAst.sem_on asts;
-    if not !Error.isErrorsRaised then (
-      Error.handle_success "Semantically correct.";
-      GenAst.gen_on asts !has_o_flag)
-    else
-      failwith Error.semantic_error_msg;
+    if !Error.isErrorsRaised then failwith Error.semantic_error_msg;
+    Error.handle_success "Semantically correct.";
+    GenAst.gen_on asts !has_o_flag;
 
     print_module "a.ll" GenAst.the_module;
     let llc_command = "llc -o a.s a.ll" in
@@ -167,7 +165,9 @@ let main =
   | Failure msg when msg = Error.semantic_error_msg ->
       eprintf "%s.\n" Error.compilation_failed_msg;
       exit 1
-  | Failure _ -> exit 1
+  | Failure msg ->
+      Error.(print_error_header (sprintf "%s\n%s\n" internal_error_msg msg));
+      exit 1
   | e -> (
       try Error.(handle_error internal_error_msg "Unexpected error caught.")
       with Failure _ ->

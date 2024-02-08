@@ -24,7 +24,7 @@ let construct_array_type dimList endType =
   | _ -> failwith "Can't construct array of non-integers and non-characters"
 
 let rec dimensions_list_of_t_array = function
-  | T_func _ | T_none -> raise (Invalid_argument "type is T_func or T_none")
+  | T_func _ | T_none -> failwith "t_type is T_func or T_none"
   | T_int | T_char -> []
   | T_array (n, t) -> n :: dimensions_list_of_t_array t
 

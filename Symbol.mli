@@ -65,7 +65,8 @@ val current_scope : scope ref
 val open_scope : string -> unit
 
 (** [close_scope] closes the current scope and makes the parent scope the
-    current scope. *)
+    current scope.
+    @raise Failure if the current scope is the scope of the root function. *)
 val close_scope : unit -> unit
 
 (** [equal_scopes] checks whether the 2 scopes given as arguments are the same

@@ -83,7 +83,7 @@ let rec t_type_of_lltype lltype =
   | TypeKind.Pointer -> T_array (-1, t_type_of_lltype (Llvm.element_type lltype))
   | TypeKind.Function -> T_func (t_type_of_lltype (return_type lltype))
   | TypeKind.Void -> T_none
-  | _ -> raise (Invalid_argument "t_type is invalid")
+  | _ -> failwith "t_type is invalid"
 
 let lltype_of_fparDef fpd =
   let result = lltype_of_t_type (Ast.t_type_of_fparType fpd.fpar_type) in

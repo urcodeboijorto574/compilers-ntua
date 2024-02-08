@@ -12,12 +12,13 @@ val string_of_t_type : t_type -> string
 (** [construct_array_type arrayList dataType] takes two arguments,
     [arrayList : int list], which represents the dimensions of the array, and
     [dataType], which is the type of expressions that will be stored in the
-    array. *)
+    array.
+    @raise Failure if [dataType] is not [T_int] and [T_char]. *)
 val construct_array_type : int list -> t_type -> t_type
 
 (** [dimensions_list_of_t_array t] converts the type [t] to a dimensions list
-    (it is the reverse operation of construct_array_type). Raises
-    [Invalid_argument] if [t] is [T_func] or [T_none]. *)
+    (it is the reverse operation of construct_array_type).
+    @raise Failure if [t] is [T_func] or [T_none]. *)
 val dimensions_list_of_t_array : t_type -> int list
 
 (** [equal_types] takes two arguments of type [t_type] and checks if they are

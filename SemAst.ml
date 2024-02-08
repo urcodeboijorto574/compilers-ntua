@@ -8,11 +8,12 @@ let funcDefAncestors : funcDef option Stack.t = Stack.create ()
 
 (** [iteri2 f l1 l2] Same as [List.iter2], but the function is applied to the
     index of the elements as first argument (counting from 0), and the two
-    elements themselves as second and third arguments. *)
+    elements themselves as second and third arguments.
+    @raise Failure if the two lists are determined to have different lengths. *)
 let iteri2 f l1 l2 =
   let rec helper index = function
     | [], [] -> ()
-    | [], _ | _, [] -> raise (Invalid_argument "iteri2")
+    | [], _ | _, [] -> failwith "iteri2"
     | h1 :: t1, h2 :: t2 ->
         f index h1 h2;
         helper (index + 1) (t1, t2)
