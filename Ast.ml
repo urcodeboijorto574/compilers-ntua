@@ -189,11 +189,9 @@ let t_type_of_varType (vt : varType) : Types.t_type =
 
 let rec get_const_expr_value : expr -> int option = function
   | E_const_int ci -> Some ci
-  | E_sgn_expr (sign, e) -> (
-      match sign with
-      | O_plus -> get_const_expr_value e
-      | O_minus -> Option.bind (get_const_expr_value e) (fun i -> Some (-1 * i))
-      )
+  | E_sgn_expr (sign, e) ->
+      Option.bind (get_const_expr_value e) (fun v ->
+          match sign with O_plus -> Some v | O_minus -> Some (-v))
   | E_op_expr_expr (e1, ao, e2) -> (
       match (get_const_expr_value e1, get_const_expr_value e2) with
       | Some i1, Some i2 ->
@@ -208,34 +206,29 @@ let rec get_const_expr_value : expr -> int option = function
   | E_expr_parenthesized e -> get_const_expr_value e
   | E_const_char _ | E_lvalue _ | E_func_call _ -> None
 
-let get_const_cond_value c =
-  let rec get_const_cond_value_helper = function
-    | C_not_cond (lo, c) ->
-        Option.bind (get_const_cond_value_helper c) (fun v -> Some (not v))
-    | C_cond_cond (c1, lo, c2) -> begin
-        Option.bind (get_const_cond_value_helper c1) (fun v1 ->
-            if lo = O_or && v1 then
-              Some true
-            else if lo = O_and && not v1 then
-              Some false
-            else
-              get_const_cond_value_helper c2)
-      end
-    | C_expr_expr (e1, co, e2) -> (
-        match (get_const_expr_value e1, get_const_expr_value e2) with
-        | Some i1, Some i2 ->
-            Some
-              (match co with
-              | O_equal -> i1 = i2
-              | O_less -> i1 < i2
-              | O_greater -> i1 > i2
-              | O_less_eq -> i1 <= i2
-              | O_greater_eq -> i1 >= i2
-              | O_not_equal -> i1 <> i2)
-        | _ -> None)
-    | C_cond_parenthesized c -> get_const_cond_value_helper c
-  in
-  Option.bind (get_const_cond_value_helper c) (fun v ->
-      let string_of_v = if v then "true" else "false" in
-      Error.handle_warning ("Condition is always " ^ string_of_v ^ ".");
-      Some v)
+let rec get_const_cond_value = function
+  | C_not_cond (lo, c) ->
+      Option.map not (get_const_cond_value c)
+      (* Option.bind (get_const_cond_value c) (fun v -> Some (not v)) *)
+  | C_cond_cond (c1, lo, c2) -> begin
+      Option.bind (get_const_cond_value c1) (fun v1 ->
+          if lo = O_or && v1 then
+            Some true
+          else if lo = O_and && not v1 then
+            Some false
+          else
+            get_const_cond_value c2)
+    end
+  | C_expr_expr (e1, co, e2) -> (
+      match (get_const_expr_value e1, get_const_expr_value e2) with
+      | Some i1, Some i2 ->
+          Some
+            (match co with
+            | O_equal -> i1 = i2
+            | O_less -> i1 < i2
+            | O_greater -> i1 > i2
+            | O_less_eq -> i1 <= i2
+            | O_greater_eq -> i1 >= i2
+            | O_not_equal -> i1 <> i2)
+      | _ -> None)
+  | C_cond_parenthesized c -> get_const_cond_value c

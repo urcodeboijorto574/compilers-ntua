@@ -344,29 +344,32 @@ and sem_stmt (expectedReturnType : Types.t_type) :
           None
       | T_none | T_int | T_char | T_array _ -> assert false)
   | S_if (c, s) ->
-      sem_cond c;
-      let constCondValue = Ast.get_const_cond_value c in
+      let constCondValueOpt =
+        if sem_cond c then Ast.get_const_cond_value c else None
+      in
       let type_of_s = sem_stmt expectedReturnType s in
-      Option.fold ~none:None
-        ~some:(fun v -> if v then type_of_s else None)
-        constCondValue
+      Option.bind constCondValueOpt (fun v -> if v then type_of_s else None)
   | S_if_else (c, s1, s2) ->
-      sem_cond c;
+      let constCondValueOpt =
+        if sem_cond c then Ast.get_const_cond_value c else None
+      in
       let type_of_s1 = sem_stmt expectedReturnType s1 in
       let type_of_s2 = sem_stmt expectedReturnType s2 in
       if type_of_s1 = type_of_s2 then
         type_of_s1
       else if type_of_s1 = None || type_of_s2 = None then
-        None
+        Option.bind constCondValueOpt (fun v ->
+            if v then type_of_s1 else type_of_s2)
       else (
         Error.handle_error "Multiple types returned in if-then-else statement"
           "In an if-then-else statement two different types are returned.";
         None)
   | S_while (c, s) -> (
-      sem_cond c;
-      let constCondValue = Ast.get_const_cond_value c in
+      let constCondValueOpt =
+        if sem_cond c then Ast.get_const_cond_value c else None
+      in
       let type_of_s = sem_stmt expectedReturnType s in
-      match constCondValue with
+      match constCondValueOpt with
       | Some false -> None
       | Some true ->
           if type_of_s = None then Error.handle_warning "Infinite loop.";
@@ -481,19 +484,21 @@ and sem_expr : Ast.expr -> Types.t_type = function
       T_int
   | E_expr_parenthesized e -> sem_expr e
 
-(** [sem_cond (c : Ast.cond)] semantically analyses condition [c]. *)
-and sem_cond : Ast.cond -> unit = function
+(** [sem_cond (c : Ast.cond)] semantically analyses condition [c]. [true] is
+    returned if all comparison operators included are applied to arguments of
+    the same type. *)
+and sem_cond : Ast.cond -> bool = function
   | C_not_cond (lo, c) -> sem_cond c
-  | C_cond_cond (c1, lo, c2) ->
-      sem_cond c1;
-      sem_cond c2
+  | C_cond_cond (c1, lo, c2) -> sem_cond c1 && sem_cond c2
   | C_expr_expr (e1, co, e2) ->
       let typeExpr1, typeExpr2 = (sem_expr e1, sem_expr e2) in
-      if not (Types.equal_types typeExpr1 typeExpr2) then
+      let exprTypesMatch = Types.equal_types typeExpr1 typeExpr2 in
+      if not exprTypesMatch then
         Error.handle_type_error typeExpr1 typeExpr2
           "Arguments of a logical operator have different types. Only \
            expressions of the same type can be compared with a logical \
-           operator."
+           operator.";
+      exprTypesMatch
   | C_cond_parenthesized c -> sem_cond c
 
 (** [sem_funcCall (fc : Ast.funcCall)] returns the return type of function call
