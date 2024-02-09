@@ -288,19 +288,21 @@ and sem_varDef vd : unit =
     block ([expT] is not encapsulated in [Types.T_func]). *)
 and sem_block (expectedReturnType : Types.t_type) (bl : Ast.stmt list) :
     Types.t_type option =
-  let rec get_type_of_stmt_list result warningRaised = function
-    | [] -> result
-    | head :: tail -> (
-        match sem_stmt expectedReturnType head with
-        | None -> get_type_of_stmt_list result warningRaised tail
-        | Some typ ->
-            if tail <> [] && not warningRaised then
-              Error.handle_warning "A section of a block is never reached.";
-            get_type_of_stmt_list
-              (if result = None then Some typ else result)
-              true tail)
+  let isWarningRaised = ref false in
+  let raiseWarning () =
+    if not !isWarningRaised then
+      Error.handle_warning "A section of a block is never reached.";
+    isWarningRaised := true
   in
-  get_type_of_stmt_list None false bl
+  List.fold_left
+    (fun acc stmt ->
+      let typeOfStmt = sem_stmt expectedReturnType stmt in
+      match acc with
+      | None -> typeOfStmt
+      | Some _ ->
+          raiseWarning ();
+          acc)
+    None bl
 
 (** [sem_stmt (expT : Types.t_type) (s : Ast.stmt)] semantically analyses the
     statement [s] and returns [Some t] if [s] is a return statement or [None] if
