@@ -173,21 +173,19 @@ let rec gen_funcCall funcDef (fc : Ast.funcCall) =
 
 and gen_lvalue funcDef lv =
   let gen_lvalue_address id =
-    let rec search_address i stackFrameAlloca stackFrame =
+    let rec search_address funcDef i stackFrameAlloca =
+      let stackFrame = Option.get funcDef.stack_frame in
       let isIndexOutOfBounds = i >= stackFrame.stack_frame_length in
       if isIndexOutOfBounds then
+        let parentFuncDef = Option.get funcDef.parent_func in
+        let initialIndex = if parentFuncDef.parent_func = None then 0 else 1 in
         let parentStackFrameAlloca =
           let access_link_ptr =
-            build_struct_gep
-              (Option.get stackFrame.stack_frame_addr)
-              0 "access_link_ptr" builder
+            build_struct_gep stackFrameAlloca 0 "access_link_ptr" builder
           in
           build_load access_link_ptr "access_link_val" builder
         in
-        let parentStackFrame =
-          Option.(map (fun fd -> get fd.stack_frame) funcDef.parent_func |> get)
-        in
-        search_address 0 parentStackFrameAlloca parentStackFrame
+        search_address parentFuncDef initialIndex parentStackFrameAlloca
       else
         let var_name, elem_pos, is_ref, is_array =
           List.nth stackFrame.al_par_var_records i
@@ -202,13 +200,13 @@ and gen_lvalue funcDef lv =
           else
             paramAddr
         else
-          search_address (i + 1) stackFrameAlloca stackFrame
+          search_address funcDef (i + 1) stackFrameAlloca
     in
     let initialIndex = if funcDef.parent_func = None then 0 else 1 in
     let stackFrameAddr =
       Option.get (Option.get funcDef.stack_frame).stack_frame_addr
     in
-    search_address initialIndex stackFrameAddr (Option.get funcDef.stack_frame)
+    search_address funcDef initialIndex stackFrameAddr
   in
   match lv.lv_kind with
   | L_id id -> gen_lvalue_address id
