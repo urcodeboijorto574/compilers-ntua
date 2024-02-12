@@ -5,7 +5,7 @@ else
    EXE=
 endif
 
-OCAMLOPT_FLAGS=-g
+OCAMLOPT_FLAGS=-g -O3
 OCAMLOPT=ocamlopt
 OCAMLDEP=ocamldep
 OCAMLFIND=ocamlfind
