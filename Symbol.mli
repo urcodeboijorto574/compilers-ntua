@@ -16,7 +16,7 @@ and entry = {
   id : string;
   scope : scope;
   mutable kind : entry_kind;
-  mutable isUsed : bool;
+  mutable is_used : bool;
 }
 
 and entry_kind =
@@ -24,7 +24,10 @@ and entry_kind =
   | ENTRY_function of entry_function
   | ENTRY_parameter of entry_parameter
 
-and entry_variable = { variable_type : Types.t_type }
+and entry_variable = {
+  variable_type : Types.t_type;
+  mutable is_initialized : bool;
+}
 
 and entry_parameter = {
   parameter_type : Types.t_type;
@@ -43,12 +46,15 @@ and entry_function = {
   mutable state : entry_func_state;
 }
 
-(** [set_func_defined entryFunc] sets the state of in an entry_function
-    [entryFunc] to [DEFINED]. *)
+(** [set_func_defined entryFunc] sets the state of [entryFunc] to [DEFINED]. *)
 val set_func_defined : entry_function -> unit
 
-(** [set_entry_isUsed e] sets the field 'isUsed' of an entry to [true]. *)
+(** [set_entry_isUsed e] sets the field 'is_used' of [e] to [true]. *)
 val set_entry_isUsed : entry -> unit
+
+(** [set_var_isInitialized ev] sets the field 'is_initialized' of [ev] to
+    [true]. *)
+val set_var_isInitialized : entry_variable -> unit
 
 (** [initialScopeDepthValue] is the depth of the scope in which the root
     function exists. *)

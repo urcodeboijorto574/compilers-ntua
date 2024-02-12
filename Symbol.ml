@@ -28,7 +28,7 @@ and entry = {
   id : string;
   scope : scope;
   mutable kind : entry_kind;
-  mutable isUsed : bool;
+  mutable is_used : bool;
 }
 
 and entry_kind =
@@ -36,7 +36,10 @@ and entry_kind =
   | ENTRY_function of entry_function
   | ENTRY_parameter of entry_parameter
 
-and entry_variable = { variable_type : Types.t_type }
+and entry_variable = {
+  variable_type : Types.t_type;
+  mutable is_initialized : bool;
+}
 
 and entry_parameter = {
   parameter_type : Types.t_type;
@@ -56,7 +59,8 @@ and entry_function = {
 }
 
 let set_func_defined entryFunc = entryFunc.state <- DEFINED
-and set_entry_isUsed entry = entry.isUsed <- true
+and set_entry_isUsed entry = entry.is_used <- true
+and set_var_isInitialized entryVar = entryVar.is_initialized <- true
 
 let initialScopeDepthValue = 0
 
@@ -102,15 +106,16 @@ let create_symbol_table numOfBuckets =
 (** [enter_entry i e] takes an identifier [i] and an entry kind [e] and creates
     and adds a new entry in the symbolTable. *)
 let enter_entry ident eKind =
-  let isUsed =
+  let is_used =
     List.mem ident lib_function_names
     || !current_scope.depth = initialScopeDepthValue
   in
-  let e = { id = ident; scope = !current_scope; kind = eKind; isUsed } in
+  let e = { id = ident; scope = !current_scope; kind = eKind; is_used } in
   Hashtbl.add !symbolTable ident e
 
 let enter_variable id typ =
-  enter_entry id (ENTRY_variable { variable_type = typ })
+  enter_entry id
+    (ENTRY_variable { variable_type = typ; is_initialized = false })
 
 let enter_parameter id typ isRef =
   let kind =
@@ -189,6 +194,6 @@ let get_unused_entries () =
   let unusedEntriesList = ref [] in
   Hashtbl.iter
     (fun id e ->
-      if not e.isUsed then unusedEntriesList := id :: !unusedEntriesList)
+      if not e.is_used then unusedEntriesList := id :: !unusedEntriesList)
     !symbolTable;
   !unusedEntriesList

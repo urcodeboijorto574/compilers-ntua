@@ -44,3 +44,6 @@ let handle_type_error expT foundT infoMsg =
        (Types.string_of_t_type expT)
        (Types.string_of_t_type foundT))
     infoMsg
+
+let handle_uninitialized_lval id =
+  handle_warning (sprintf "Variable '%s' is used uninitialized." id)

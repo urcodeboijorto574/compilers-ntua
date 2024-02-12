@@ -316,7 +316,7 @@ and sem_stmt (expectedReturnType : Types.t_type) :
           Error.handle_error "Assignment to const type"
             "Assignment to a string literal's element is not possible."
       | _ -> ());
-      match sem_lvalue lv with
+      match sem_lvalue ~isUsedAsLValue:true lv with
       | Types.T_array (_, t) ->
           Error.handle_error "Assignment to array"
             "Assignment to an l-value of type array is not possible.";
@@ -406,7 +406,7 @@ and sem_stmt (expectedReturnType : Types.t_type) :
 
 (** [sem_lvalue (lval : Ast.lvalue)] returns the type of the l-value [lval].
     Also, the field 'lv_type' of [lv] is set. *)
-and sem_lvalue lv : Types.t_type =
+and sem_lvalue ?(isUsedAsLValue = false) lv : Types.t_type =
   let resultArrayType : Types.t_type option ref = ref None in
   let rec sem_lvalue_kind = function
     | L_id id ->
@@ -417,7 +417,17 @@ and sem_lvalue lv : Types.t_type =
                id
                Symbol.(!current_scope.name));
         let entryFound = Option.get entryFoundOption in
-        set_entry_isUsed entryFound;
+        if isUsedAsLValue then
+          match entryFound.kind with
+          | ENTRY_variable ev -> Symbol.set_var_isInitialized ev
+          | _ -> ()
+        else if
+          match entryFound.kind with
+          | ENTRY_variable ev -> not ev.is_initialized
+          | _ -> false
+        then
+          Error.handle_uninitialized_lval id;
+        Symbol.set_entry_isUsed entryFound;
         let entryType =
           match entryFound.kind with
           | ENTRY_variable ev -> ev.variable_type
@@ -468,10 +478,10 @@ and sem_lvalue lv : Types.t_type =
   resultType
 
 (** [sem_expr (e : Ast.expr)] returns the type of the expression [e]. *)
-and sem_expr : Ast.expr -> Types.t_type = function
+and sem_expr ?(isUsedAsLValue = false) : Ast.expr -> Types.t_type = function
   | E_const_int ci -> Types.T_int
   | E_const_char cc -> Types.T_char
-  | E_lvalue lv -> sem_lvalue lv
+  | E_lvalue lv -> sem_lvalue ~isUsedAsLValue lv
   | E_func_call fc -> (
       let open Types in
       match sem_funcCall fc with
@@ -485,13 +495,14 @@ and sem_expr : Ast.expr -> Types.t_type = function
       | T_func t -> t
       | T_none | T_int | T_char | T_array _ -> assert false)
   | E_sgn_expr (s, e) ->
-      let typeExpr = sem_expr e in
+      let typeExpr = sem_expr ~isUsedAsLValue e in
       if not (Types.equal_types Types.T_int typeExpr) then
         Error.handle_type_error Types.T_int typeExpr
           "Operator `-` (minus sign) must be applied to an integer expression.";
       Types.T_int
   | E_op_expr_expr (e1, ao, e2) ->
-      let typeExpr1, typeExpr2 = (sem_expr e1, sem_expr e2) in
+      let typeExpr1 = sem_expr ~isUsedAsLValue e1 in
+      let typeExpr2 = sem_expr ~isUsedAsLValue e2 in
       let open Types in
       (match (equal_types T_int typeExpr1, equal_types T_int typeExpr2) with
       | true, true -> ()
@@ -503,7 +514,7 @@ and sem_expr : Ast.expr -> Types.t_type = function
                 %s argument is of non-integer type."
                (if typeExpr1 <> T_int then "Left" else "Right")));
       T_int
-  | E_expr_parenthesized e -> sem_expr e
+  | E_expr_parenthesized e -> sem_expr ~isUsedAsLValue e
 
 (** [sem_cond (c : Ast.cond)] semantically analyses condition [c]. [true] is
     returned if all comparison operators included are applied to arguments of
@@ -512,7 +523,8 @@ and sem_cond : Ast.cond -> bool = function
   | C_not_cond (lo, c) -> sem_cond c
   | C_cond_cond (c1, lo, c2) -> sem_cond c1 && sem_cond c2
   | C_expr_expr (e1, co, e2) ->
-      let typeExpr1, typeExpr2 = (sem_expr e1, sem_expr e2) in
+      let typeExpr1 = sem_expr e1 in
+      let typeExpr2 = sem_expr e2 in
       let exprTypesMatch = Types.equal_types typeExpr1 typeExpr2 in
       if not exprTypesMatch then
         Error.handle_type_error typeExpr1 typeExpr2
@@ -566,8 +578,12 @@ and sem_funcCall fc : Types.t_type =
       in
       iteri2
         (fun i param arg ->
+          let isParamByRef = is_by_ref_of_param_entry param in
+          let isExprLValue = is_lvalue_of_expr arg in
           let typeOfParam = t_type_of_param_entry param in
-          let typeOfArg = sem_expr arg in
+          let typeOfArg =
+            sem_expr ~isUsedAsLValue:(isExprLValue || isParamByRef) arg
+          in
           if not (Types.equal_types typeOfParam typeOfArg) then
             Error.handle_type_error typeOfParam typeOfArg
               (sprintf
@@ -575,8 +591,6 @@ and sem_funcCall fc : Types.t_type =
                   call differs from the one declared at the function \
                   definition."
                  i fc.id);
-          let isParamByRef = is_by_ref_of_param_entry param in
-          let isExprLValue = is_lvalue_of_expr arg in
           if isParamByRef && not isExprLValue then
             Error.handle_error "r-value passed by reference"
               (sprintf

@@ -40,3 +40,7 @@ val handle_success : string -> unit
     the encountered type [foundT] and then the info message [infoMsg] to the
     stderr. *)
 val handle_type_error : Types.t_type -> Types.t_type -> string -> unit
+
+(** [uninitialized_lval_msg id] prints a warning message about the [id] named
+    lvalue being used uninitialized. *)
+val handle_uninitialized_lval : string -> unit
