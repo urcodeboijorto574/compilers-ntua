@@ -210,7 +210,7 @@ let rec get_const_expr_value : expr -> (Types.t_type * int) option = function
         (get_const_expr_value e)
   | E_op_expr_expr (e1, ao, e2) -> (
       match (get_const_expr_value e1, get_const_expr_value e2) with
-      | Some (T_int, i1), Some (T_int, i2) ->
+      | Some (T_int, i1), Some (T_int, i2) -> (
           let open Int in
           let func_of_arithmOperator = function
             | O_plus -> add
@@ -219,7 +219,12 @@ let rec get_const_expr_value : expr -> (Types.t_type * int) option = function
             | O_div -> div
             | O_mod -> rem
           in
-          Some (T_int, (func_of_arithmOperator ao) i1 i2)
+          try Some (T_int, (func_of_arithmOperator ao) i1 i2)
+          with Division_by_zero ->
+            Error.handle_error "Division by zero"
+              (Printf.sprintf "The following division happens: '%d div %d'." i1
+                 i2);
+            None)
       | _ -> None)
   | E_expr_parenthesized e -> get_const_expr_value e
   | E_lvalue _ | E_func_call _ -> None
