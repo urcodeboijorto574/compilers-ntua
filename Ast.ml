@@ -209,7 +209,12 @@ let rec get_const_expr_value : expr -> (Types.t_type * int) option = function
         (fun (t, v) -> (t, if t = Types.T_int && sign = O_minus then -v else v))
         (get_const_expr_value e)
   | E_op_expr_expr (e1, ao, e2) -> (
-      match (get_const_expr_value e1, get_const_expr_value e2) with
+      let constVal1 = get_const_expr_value e1 in
+      let constVal2 = get_const_expr_value e2 in
+      if constVal2 = Some (T_int, 0) && (ao = O_div || ao = O_mod) then
+        Error.handle_error "Division by zero"
+          "Division by constant expression which evaluates to zero.";
+      match (constVal1, constVal2) with
       | Some (T_int, i1), Some (T_int, i2) -> (
           let open Int in
           let func_of_arithmOperator = function
@@ -220,11 +225,7 @@ let rec get_const_expr_value : expr -> (Types.t_type * int) option = function
             | O_mod -> rem
           in
           try Some (T_int, (func_of_arithmOperator ao) i1 i2)
-          with Division_by_zero ->
-            Error.handle_error "Division by zero"
-              (Printf.sprintf "The following division happens: '%d div %d'." i1
-                 i2);
-            None)
+          with Division_by_zero -> None)
       | _ -> None)
   | E_expr_parenthesized e -> get_const_expr_value e
   | E_lvalue _ | E_func_call _ -> None
