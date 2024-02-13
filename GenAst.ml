@@ -328,8 +328,42 @@ and gen_expr ?(is_param_ref = false) funcDef expr =
       | O_plus -> resultInstr (build_add, "addtmp")
       | O_minus -> resultInstr (build_sub, "subtmp")
       | O_mul -> resultInstr (build_mul, "multmp")
-      | O_div -> resultInstr (build_sdiv, "divtmp")
-      | O_mod -> resultInstr (build_srem, "modtmp"))
+      | (O_div as divisionOp) | (O_mod as divisionOp) -> (
+          let start_basic_block = insertion_block builder in
+          let function_bb = block_parent start_basic_block in
+          let denom_is_zero_block =
+            append_block context "denom_is_zero" function_bb
+          in
+          let denom_not_zero_block =
+            append_block context "denom_not_zero" function_bb
+          in
+          let cond_val () =
+            build_icmp Llvm.Icmp.Eq rhs_val (const_int int_type 0)
+              "is_denom_zero" builder
+          in
+
+          position_at_end start_basic_block builder;
+          ignore
+            (build_cond_br (cond_val ()) denom_is_zero_block
+               denom_not_zero_block builder);
+
+          position_at_end denom_is_zero_block builder;
+          let errorFlagAddr =
+            match lookup_global "error_flag" the_module with
+            | Some llv -> llv
+            | None ->
+                Error.handle_error_fatal
+                  "lookup_global for error_flag global variable"
+                  "error_flag is not defined as a global variable"
+          in
+          ignore (build_store (const_int int_type 1) errorFlagAddr builder);
+          ignore (build_br denom_not_zero_block builder);
+
+          position_at_end denom_not_zero_block builder;
+          match divisionOp with
+          | O_div -> resultInstr (build_sdiv, "divtmp")
+          | O_mod -> resultInstr (build_srem, "modtmp")
+          | _ -> assert false))
   | E_expr_parenthesized expr -> gen_expr funcDef expr
 
 and gen_cond funcDef returnCondValueAddr = function
@@ -647,9 +681,9 @@ let rec gen_funcDef ?(isMainFuncDef = false) funcDef =
   let returnValueAddrOpt =
     match Types.get (Ast.t_type_of_retType funcDef.header.ret_type) with
     | T_none when isMainFuncDef ->
-        Some (build_alloca int_type "exit_value_ptr" builder)
+        Some (build_alloca int_type "return_value_ptr" builder)
     | T_none -> None
-    | t -> Some (build_alloca (lltype_of_t_type t) "returned_value_ptr" builder)
+    | t -> Some (build_alloca (lltype_of_t_type t) "return_value_ptr" builder)
   in
   gen_stmt funcDef returnValueAddrOpt returnBB (S_block funcDef.block);
   ignore (build_br returnBB builder);
@@ -657,7 +691,7 @@ let rec gen_funcDef ?(isMainFuncDef = false) funcDef =
   (match returnValueAddrOpt with
   | None -> ignore (build_ret_void builder)
   | Some addr when isMainFuncDef ->
-      let errorFlagLlvaluePtr =
+      let errorFlagAddr =
         match lookup_global "error_flag" the_module with
         | Some llv -> llv
         | None ->
@@ -665,12 +699,10 @@ let rec gen_funcDef ?(isMainFuncDef = false) funcDef =
               "lookup_global for error_flag global variable"
               "error_flag is not defined as a global variable"
       in
-      let errorFlagLlvalue =
-        build_load errorFlagLlvaluePtr "error_flag" builder
-      in
+      let errorFlagLlvalue = build_load errorFlagAddr "error_flag" builder in
       ignore (build_ret errorFlagLlvalue builder)
   | Some addr ->
-      let returnValue = build_load addr "returned_value" builder in
+      let returnValue = build_load addr "return_value" builder in
       ignore (build_ret returnValue builder));
 
   blocks_list := List.tl !blocks_list;
