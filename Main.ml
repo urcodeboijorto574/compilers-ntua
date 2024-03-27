@@ -44,7 +44,9 @@ let main =
         try
           let line = input_line inChannel in
           get_text_from_in_channel (acc ^ line ^ "\n")
-        with End_of_file -> acc
+        with End_of_file ->
+          close_in inChannel;
+          acc
       in
       get_text_from_in_channel ""
     in
