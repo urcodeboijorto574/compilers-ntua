@@ -576,7 +576,10 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
       let name = if access_link = None then "main" else name in
       let ft =
         let return_type =
-          lltype_of_t_type (Ast.t_type_of_retType header.ret_type)
+          if access_link = None then
+            int_type
+          else
+            lltype_of_t_type (Ast.t_type_of_retType header.ret_type)
         in
         let param_types_array =
           Option.to_list access_link @ List.map lltype_of_fparDef args
@@ -587,7 +590,7 @@ and gen_header (header : Ast.header) (access_link : Llvm.lltype option) =
       declare_function name ft the_module
   | Some x -> x
 
-let rec gen_funcDef funcDef =
+let rec gen_funcDef ?(isMainFuncDef = false) funcDef =
   let stackFrame = Option.get funcDef.stack_frame in
   let funcDef_ll = gen_header funcDef.header stackFrame.access_link in
   let entryBB =
@@ -637,6 +640,8 @@ let rec gen_funcDef funcDef =
   position_at_end bodyBB builder;
   let returnValueAddrOpt =
     match Types.get (Ast.t_type_of_retType funcDef.header.ret_type) with
+    | T_none when isMainFuncDef ->
+        Some (build_alloca int_type "exit_value_ptr" builder)
     | T_none -> None
     | t -> Some (build_alloca (lltype_of_t_type t) "returned_value_ptr" builder)
   in
@@ -645,6 +650,8 @@ let rec gen_funcDef funcDef =
   position_at_end returnBB builder;
   (match returnValueAddrOpt with
   | None -> ignore (build_ret_void builder)
+  | Some addr when isMainFuncDef ->
+      ignore (build_ret (const_int int_type 0) builder)
   | Some addr ->
       let returnValue = build_load addr "returned_value" builder in
       ignore (build_ret returnValue builder));
@@ -892,7 +899,7 @@ let gen_on asts optimize =
 
   define_lib_funcs ();
   set_stack_frames asts;
-  gen_funcDef asts;
+  gen_funcDef ~isMainFuncDef:true asts;
 
   if optimize = true then begin
     let mpm = PassManager.create () in
