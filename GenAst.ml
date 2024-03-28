@@ -616,6 +616,12 @@ let rec gen_funcDef ?(isMainFuncDef = false) funcDef =
   (* Generation of parameters *)
   Array.iteri (gen_param funcDef params_array) (params funcDef_ll);
 
+  (if isMainFuncDef then
+     let errorFlag =
+       define_global "error_flag" (const_int int_type 0) the_module
+     in
+     set_global_constant false errorFlag);
+
   (* Generation of local definitions *)
   let struct_index = ref (Array.length (params funcDef_ll)) in
   let rec iterate local_def =
@@ -651,7 +657,18 @@ let rec gen_funcDef ?(isMainFuncDef = false) funcDef =
   (match returnValueAddrOpt with
   | None -> ignore (build_ret_void builder)
   | Some addr when isMainFuncDef ->
-      ignore (build_ret (const_int int_type 0) builder)
+      let errorFlagLlvaluePtr =
+        match lookup_global "error_flag" the_module with
+        | Some llv -> llv
+        | None ->
+            Error.handle_error_fatal
+              "lookup_global for error_flag global variable"
+              "error_flag is not defined as a global variable"
+      in
+      let errorFlagLlvalue =
+        build_load errorFlagLlvaluePtr "error_flag" builder
+      in
+      ignore (build_ret errorFlagLlvalue builder)
   | Some addr ->
       let returnValue = build_load addr "returned_value" builder in
       ignore (build_ret returnValue builder));
