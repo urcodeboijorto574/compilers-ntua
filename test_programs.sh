@@ -28,8 +28,8 @@ do
 
       # If compilation was successful, run the executable
       if [ -f "./a.out" ]; then
-        ((++correctCounter))
         ./a.out
+        (( $? == 0 ? ++correctCounter : ++errorCounter))
       else
         ((++errorCounter))
       fi
