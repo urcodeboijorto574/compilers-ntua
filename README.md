@@ -79,6 +79,28 @@ To run your program execute:
 ./a.out
 ```
 
+## Contributing
+
+Before opening a pull request ensure your code is properly formatted. To format your code we recommend the `ocamlformat` tool, version 0.26.1. To install it execute:
+
+```bash
+opam install ocamlformat.0.26.1
+```
+
+The formatting style is given in the `.ocamlformat` file in the base directory of the project. To format all (human generated) _.ml_ files execute:
+
+```bash
+make format
+```
+
+Alternatively, you can use your own formatting tool. Make sure the formatting rules are the same ones included in `.ocamlformat`.
+
+<sub>Note: By default all files are gitignored in `.gitignore` file. To add your files exclude them names from `.gitignore`.</sub>
+
+## Thanks!
+
+If you found this project useful, we would be grateful if you could give it a star ⭐ on GitHub. Your support is appreciated!
+
 ## Acknowledgments
 
 - [llvm.org](https://llvm.org)
