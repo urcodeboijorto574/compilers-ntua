@@ -1,0 +1,9 @@
+opam-version: "2.1"
+depends: [
+  "ocamlfind" {= "1.9.5"}
+  "menhir" {= "20231231"}
+  "menhirLib" {= "20231231"}
+  "llvm" {= "14.0.6"}
+  "clang"   # No specific version mentioned, so it will use the latest available
+  "gcc"     # No specific version mentioned, so it will use the latest available
+]
